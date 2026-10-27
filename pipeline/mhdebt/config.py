@@ -5,6 +5,14 @@ import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
+try:  # load pipeline/.env (or ./.env) so `mhdebt` works without exporting variables by hand
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    load_dotenv()
+except ImportError:
+    pass
+
 
 def _list(name: str, default: str) -> list[str]:
     return [s.strip().upper() for s in os.getenv(name, default).split(",") if s.strip()]

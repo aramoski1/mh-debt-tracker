@@ -1,0 +1,65 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Setup: install everything",
+      "type": "shell",
+      "command": "cd pipeline && python3 -m venv .venv && . .venv/bin/activate && pip install -e '.[dev]' && cd ../web && npm install",
+      "windows": {
+        "command": "cd pipeline; python -m venv .venv; .venv\\Scripts\\activate; pip install -e '.[dev]'; cd ..\\web; npm install"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: pipeline",
+      "type": "shell",
+      "command": "cd pipeline && . .venv/bin/activate && pytest -q",
+      "windows": { "command": "cd pipeline; .venv\\Scripts\\activate; pytest -q" },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: web typecheck",
+      "type": "shell",
+      "command": "cd web && npx tsc --noEmit",
+      "group": "test",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "App: demo mode",
+      "type": "shell",
+      "command": "cd web && NEXT_PUBLIC_SUPABASE_URL=demo NEXT_PUBLIC_SUPABASE_ANON_KEY=demo npm run dev",
+      "windows": { "command": "cd web; $env:NEXT_PUBLIC_SUPABASE_URL='demo'; $env:NEXT_PUBLIC_SUPABASE_ANON_KEY='demo'; npm run dev" },
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "App: dev server",
+      "type": "shell",
+      "command": "cd web && npm run dev",
+      "isBackground": true,
+      "problemMatcher": []
+    },
+    {
+      "label": "Probe: all sources",
+      "type": "shell",
+      "command": "cd pipeline && . .venv/bin/activate && mhdebt probe maricopa && mhdebt probe pima && mhdebt probe fdic && mhdebt probe cmbs --limit 3",
+      "windows": { "command": "cd pipeline; .venv\\Scripts\\activate; mhdebt probe maricopa; mhdebt probe pima; mhdebt probe fdic; mhdebt probe cmbs --limit 3" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: full nightly run",
+      "type": "shell",
+      "command": "cd pipeline && . .venv/bin/activate && mhdebt run",
+      "windows": { "command": "cd pipeline; .venv\\Scripts\\activate; mhdebt run" },
+      "problemMatcher": []
+    },
+    {
+      "label": "Pipeline: rebuild scores",
+      "type": "shell",
+      "command": "cd pipeline && . .venv/bin/activate && mhdebt build && mhdebt model && mhdebt top --n 30",
+      "windows": { "command": "cd pipeline; .venv\\Scripts\\activate; mhdebt build; mhdebt model; mhdebt top --n 30" },
+      "problemMatcher": []
+    }
+  ]
+}

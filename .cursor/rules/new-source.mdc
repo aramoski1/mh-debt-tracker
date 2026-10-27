@@ -1,0 +1,14 @@
+---
+description: How to add a new county or data source to the pipeline
+globs: pipeline/mhdebt/sources/**
+alwaysApply: false
+---
+
+# Adding a data source
+
+1. Create `pipeline/mhdebt/sources/<name>.py`. Start with a module docstring listing the exact URLs, auth, field names and any codes (copy the style of `maricopa.py`).
+2. For a county, provide `park_parcels(client) -> Iterator[dict]` returning the same keys as `maricopa.park_parcels` (county, apn, state, situs_*, owner_*, land_use_code, land_use_desc, lat, lon, last_sale_date, deed_number, raw), and a recorder function or an export loader returning `recorded_documents` rows. Normalize document types with `doc_types.normalize_doc_type`.
+3. Use `PoliteClient` for all HTTP (rate limits, retries, cache) and `arcgis.query` for ArcGIS layers.
+4. Wire it into `jobs.py` (reuse `ingest_parcels` by adding the county to its fetcher map) and the CLI in `cli.py`, including a `probe` command.
+5. Add tests with a saved fixture of a real response in `pipeline/tests/fixtures/`.
+6. Update `BUILD_GUIDE.md` (Steps 2, 3 and 5) with the new commands.

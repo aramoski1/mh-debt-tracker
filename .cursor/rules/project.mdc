@@ -1,0 +1,31 @@
+---
+description: Architecture and ground rules for the park debt tracker
+alwaysApply: true
+---
+
+# Park Debt Tracker
+
+Finds mobile home and RV parks whose loans are coming due, estimates when, and scores owner pressure (0-100) for Cooper Cardinal's brokerage team. Arizona first (Maricopa, Pima). Free data only.
+
+## Layout
+- `supabase/migrations/` — the only source of truth for the schema. Change the schema by adding a new migration file, never by editing an applied one.
+- `pipeline/mhdebt/` — Python 3.11 package and `mhdebt` CLI (Typer).
+  - `sources/` one module per data source; `jobs.py` orchestrates; `match.py` entity resolution; `lenders.py` lender typing;
+    `maturity.py` exact/estimated maturities; `scoring.py` the score; `docai.py` Claude document reading.
+- `web/` — Next.js 15 App Router + Supabase (@supabase/ssr) + MapLibre + Tailwind 4. Demo mode when `NEXT_PUBLIC_SUPABASE_URL=demo`.
+- `BUILD_GUIDE.md` — the step-by-step setup. Keep it accurate when behavior changes.
+
+## Rules
+- Every job in `jobs.py` must be idempotent: safe to re-run nightly without duplicating rows. Use the upsert helpers in `db.py`.
+- County loan statuses are derived by replaying recorded documents in date order (`build_county_loans`); don't set them elsewhere.
+- Tests never touch the network. Use fixtures in `pipeline/tests/fixtures/`. When a live response surprises a parser, save it as a fixture and add a test.
+- Every new data source gets a `mhdebt probe <name>` command that prints the raw response and the parsed result.
+- SQL values are always parameters (`%s`). F-strings may only build column lists from fixed constants.
+- Model assumptions (term priors, spreads, lot rents) live as named constants at the top of `maturity.py`, `rates.py`, `scoring.py`. Explain any change in the commit message.
+- Never invent a maturity date. A date from a document is accepted only with a quoted evidence string (`docai.trustworthy_maturity`).
+- Keys live in `pipeline/.env` and `web/.env.local` (git-ignored). Never hardcode or print them.
+
+## Commands
+- Tests: `cd pipeline && pytest -q` (the DB test runs when `TEST_DATABASE_ADMIN_URL` points at a Postgres 16).
+- Web typecheck: `cd web && npx tsc --noEmit`.
+- Run after any pipeline change: tests, then `mhdebt model` on a dev database.

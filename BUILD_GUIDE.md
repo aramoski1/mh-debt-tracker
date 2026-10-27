@@ -35,23 +35,57 @@ What you end up with: a nightly pipeline that finds every mobile home and RV par
 
 ---
 
-## Step 0. Accounts and tools (30 minutes)
+## Step 0. Get the project into Cursor (20 minutes)
 
-You need:
+### Accounts
 
-1. **Supabase** (free tier is enough to start): create a project named `park-debt-tracker`. Choose the US West region.
-2. **GitHub**: a private repo for this code.
-3. **Vercel**: for the web app. Note that Vercel's free Hobby plan is for non-commercial use; a client deployment should be on Pro.
+1. **Supabase** (free tier is enough to start): a project named `park-debt-tracker`, region US West. Step 1 covers the setup.
+2. **GitHub**: the private repo `aramoski1/mh-debt-tracker`.
+3. **Vercel**: for the web app. Vercel's free Hobby plan is for non-commercial use; a client deployment should be on Pro.
 4. **Anthropic API key**: for reading loan documents and structuring call notes.
-5. Locally: Python 3.11+, Node 20+, and Cursor or Claude Code.
+5. **On your computer**: Cursor, Python 3.11+, Node 20+ and Git. In Cursor, install the extensions it suggests when the project opens (Python, Tailwind CSS, ESLint, PostgreSQL); they're listed in `.vscode/extensions.json`.
+
+### Open it in Cursor
+
+If the code is already on GitHub: in Cursor, open the Command Palette (Cmd+Shift+P on Mac, Ctrl+Shift+P on Windows) and run **Git: Clone**. Paste `https://github.com/aramoski1/mh-debt-tracker.git`, choose a folder, and click **Open** when it finishes.
+
+If you're starting from the zip: unzip `mh-debt-tracker.zip`, then in Cursor choose **File > Open Folder** and pick the `mh-debt-tracker` folder. It's already a git repo with one commit. To put it on GitHub, open the terminal (Ctrl+` ) and run:
 
 ```bash
-git clone <your repo> && cd mh-debt-tracker
-cd pipeline && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+git remote add origin https://github.com/aramoski1/mh-debt-tracker.git
+git push -u origin main
+```
+
+Cursor will ask you to sign in to GitHub the first time you push.
+
+### Install everything
+
+The fastest way: Command Palette > **Tasks: Run Task** > **Setup: install everything**. Or run it yourself in Cursor's terminal:
+
+```bash
+cd pipeline && python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 cd ../web && npm install
 ```
 
-**Check:** `mhdebt --help` lists the commands, and `cd pipeline && pytest -q` shows 32 passing and 1 skipped (the end-to-end database test runs once a local Postgres is available; see Step 9).
+On Windows, activate with `.venv\Scripts\activate` instead of `source .venv/bin/activate`.
+
+Then tell Cursor which Python to use: Command Palette > **Python: Select Interpreter** > choose the one in `pipeline/.venv`. Without this, Cursor's editor won't find the `mhdebt` package and will underline imports in red.
+
+**Check:**
+- In the terminal, `mhdebt --help` lists the commands.
+- **Tasks: Run Task > Test: pipeline** shows 32 passing and 1 skipped. The skipped one is the end-to-end database test, which runs once Postgres is available (Step 9).
+- **Tasks: Run Task > App: demo mode**, then open http://localhost:3000. You should see the prospects screen with fictional demo parks.
+
+### How to use Cursor's agent on this project
+
+The project ships with Cursor rules in `.cursor/rules/`. The agent reads them automatically, so it knows the architecture, the data sources, how to run tests, and the conventions (idempotent jobs, no network calls in tests, every new source gets a probe command). Useful prompts as you go:
+
+- "Run the Maricopa probe and tell me whether `_doc_from_json` parses the response correctly. Fix it if not."
+- "Add Pinal County as a source, following the pattern in `sources/maricopa.py`, with a probe command and tests."
+- "Explain why park X scored 64, using the components in `park_scores`."
+- "The Fannie export printed `no column found for ['maturity_date']`. Here's the header row: … Add the right aliases."
+
+Keep each agent request to one step of this guide, run the tests after every change (**Test: pipeline**), and commit when they pass.
 
 ---
 
@@ -67,8 +101,9 @@ Then copy two connection values:
 ```bash
 cp pipeline/.env.example pipeline/.env      # fill DATABASE_URL, ANTHROPIC_API_KEY, SEC_USER_AGENT
 cp web/.env.example web/.env.local          # fill NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
-set -a && source pipeline/.env && set +a
 ```
+
+Open both files in Cursor and paste the values in. The pipeline reads `pipeline/.env` automatically whenever you run `mhdebt` from the `pipeline` folder. Both files are git-ignored, so keys never get committed. Don't paste keys into the Cursor chat.
 
 **Check:** the Table Editor shows `parks`, `loans`, `recorded_documents` and the `park_overview` view.
 
@@ -76,7 +111,7 @@ set -a && source pipeline/.env && set +a
 
 ## Step 2. Confirm the live sources before loading anything (20 minutes)
 
-Some county endpoints are not formally documented. The probes print exactly what each source returns so you can confirm field names. Run them first:
+Some county endpoints are not formally documented. The probes print exactly what each source returns so you can confirm field names. Run them first, in Cursor's terminal from the `pipeline` folder with the virtual environment active (or **Tasks: Run Task > Probe: all sources**):
 
 ```bash
 mhdebt probe maricopa       # distinct park use codes + one recorder document, raw and parsed
@@ -91,6 +126,8 @@ What to look for:
 - **Maricopa parcels**: codes in the 0840 to 0899 range.
 - **Pima**: if park codes don't start with 084/085/089, set `PIMA_PARK_WHERE` in `.env` to the right filter.
 - **FDIC**: every field should say `ok`. If one says `MISSING`, change it in `sources/fdic.py`.
+
+If something doesn't parse, select the probe output in the terminal, add it to the Cursor chat (Cmd+L / Ctrl+L), and ask the agent to fix the parser and add a test using that response as a fixture.
 
 ---
 
@@ -237,10 +274,7 @@ All the assumptions are named constants at the top of `rates.py`, `maturity.py` 
 
 ## Step 8. Deploy the app
 
-```bash
-cd web
-npm run dev    # http://localhost:3000
-```
+Run **Tasks: Run Task > App: dev server** (or `cd web && npm run dev`) and open http://localhost:3000.
 
 **Try it without a database first:** set `NEXT_PUBLIC_SUPABASE_URL=demo` in `.env.local` and the app runs on fictional demo parks (labeled as such in the header). Regenerate demo data with `python pipeline/scripts/make_demo.py <postgres url> web/demo/data.json`.
 
