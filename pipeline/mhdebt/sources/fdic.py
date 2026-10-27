@@ -77,7 +77,16 @@ def size_kind(total_assets_k: int | None) -> str:
 
 
 def probe_fields(client: PoliteClient, cert: int = 628) -> None:
-    resp = client.get(f"{BASE}/financials", params={"filters": f"CERT:{cert}", "limit": 1, "format": "json"}).json()
-    keys = set(resp["data"][0]["data"].keys()) if resp.get("data") else set()
-    for logical, f in FIELDS.items():
-        print(f"{logical:13s} {f:10s} {'ok' if f in keys else 'MISSING'}")
+    """Ask for each call-report field by name. The unfiltered financials payload omits loan balances."""
+    for logical, field in FIELDS.items():
+        resp = client.get(
+            f"{BASE}/financials",
+            params={"filters": f"CERT:{cert}", "fields": f"CERT,REPDTE,{field}",
+                    "sort_by": "REPDTE", "sort_order": "DESC", "limit": 1, "format": "json"},
+        )
+        keys = set()
+        if resp.status_code == 200:
+            data = resp.json().get("data") or []
+            if data:
+                keys = set(data[0]["data"].keys())
+        print(f"{logical:13s} {field:10s} {'ok' if field in keys else 'MISSING'}")

@@ -1,4 +1,6 @@
+import json
 from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 
 from mhdebt import docai
@@ -17,6 +19,7 @@ def test_doc_types():
     assert normalize_doc_type("AS") == "assignment"
     assert normalize_doc_type("NOTICE OF TRUSTEE SALE") == "trustee_sale_notice"
     assert normalize_doc_type("WARRANTY DEED") == "deed"
+    assert normalize_doc_type("SPEC/W D") == "deed"
     assert normalize_doc_type("MG") == "mortgage"
 
 
@@ -36,6 +39,15 @@ def test_maricopa_doc_parsing_and_adjacency():
     found = rec.adjacent_loans("20210900001", "Saguaro Vista Holdings, L.L.C.")
     assert [x["recording_number"] for x in found] == ["20210900002"]
     assert found[0]["references_number"] == "20210900001"
+
+
+def test_maricopa_special_warranty_deed_code():
+    j = json.loads((Path(__file__).parent / "fixtures" / "maricopa_20240443284.json").read_text())
+    d = maricopa._doc_from_json("20240443284", j)
+    assert d["doc_type"] == "deed"
+    assert d["doc_type_raw"] == "SPEC/W D"
+    assert d["recording_date"] == date(2024, 8, 20)
+    assert d["grantees"] == ["LAND EQUITY INVESTORS LLC", "PROPERTY RESERVE ARIZONA LLC"]
 
 
 def test_maricopa_puc_kinds():

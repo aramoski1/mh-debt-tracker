@@ -1,5 +1,5 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/pipeline/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/pipeline/.venv/Scripts/python.exe",
   "python.testing.pytestEnabled": true,
   "python.testing.cwd": "${workspaceFolder}/pipeline",
   "python.testing.pytestArgs": ["tests"],

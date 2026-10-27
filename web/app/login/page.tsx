@@ -12,7 +12,7 @@ export default function Login() {
     e.preventDefault();
     const { error } = await supabaseBrowser().auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: false },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) setErr(error.message);
     else setSent(true);
@@ -29,7 +29,7 @@ export default function Login() {
                  className="h-9 w-full rounded border border-stone-300 px-2" />
           <button className="h-9 w-full rounded bg-stone-900 font-medium text-white">Email me a link</button>
           {err && <p className="text-red-700">{err}</p>}
-          <p className="text-xs text-stone-500">Accounts are invited by an admin in Supabase.</p>
+          <p className="text-xs text-stone-500">First time here creates your account. We’ll email you a sign-in link.</p>
         </form>
       )}
     </div>

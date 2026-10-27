@@ -203,7 +203,10 @@ def probe_cmbs(limit: int = 3):
     typer.echo(f"{len(fs)} candidate trusts. Checking {limit}:")
     for f in fs[:limit]:
         loans = edgar_cmbs.fetch_park_loans(c, f, None)
-        typer.echo(f"  {f.company} {f.filed}: {len(loans)} park loans")
+        if loans is None:
+            typer.echo(f"  {f.company} {f.filed}: no CMBS asset file")
+        else:
+            typer.echo(f"  {f.company} {f.filed}: {len(loans)} park loans")
 
 
 if __name__ == "__main__":

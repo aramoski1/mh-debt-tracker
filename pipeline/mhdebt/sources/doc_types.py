@@ -26,7 +26,7 @@ PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"ASSIGN|^AS$|^AD$"), "assignment"),
     (re.compile(r"MORTGAGE|^MG$|^MTG$"), "mortgage"),
     (re.compile(r"FIN.*STATEMENT|UCC|F/S"), "ucc"),
-    (re.compile(r"DEED|^DE$|^WD$|^SW$|^QC$|^QD$"), "deed"),
+    (re.compile(r"DEED|^DE$|^WD$|^SWD?$|^QC$|^QD$|SPEC/?W|\bW D$"), "deed"),
 ]
 
 LOAN_TYPES = {"deed_of_trust", "mortgage"}
