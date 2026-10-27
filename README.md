@@ -1,0 +1,21 @@
+# Park Debt Tracker
+
+Finds mobile home and RV parks whose loans are coming due, estimates when, and scores how much pressure each owner is under, so a brokerage can call the right owners 12 to 24 months before a refinance forces a decision. Built on free public data; Arizona first.
+
+- `pipeline/`: Python ingestion and modeling (`mhdebt` CLI), runs nightly on GitHub Actions
+- `supabase/`: Postgres schema with row-level security
+- `web/`: Next.js app (map, ranked prospects, park pages, call notes, alerts)
+
+Start with **[BUILD_GUIDE.md](BUILD_GUIDE.md)**.
+
+Quick look without any setup:
+
+```bash
+cd web && npm install
+echo "NEXT_PUBLIC_SUPABASE_URL=demo" > .env.local && echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=demo" >> .env.local
+npm run dev
+```
+
+The demo shows fictional parks, owners and loans.
+
+Tests: `cd pipeline && pip install -e ".[dev]" && pytest -q`

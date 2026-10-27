@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="us-ascii"?>
+<assetData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.sec.gov/edgar/document/absee/cmbs/assetdata">
+  <assets>
+    <assetTypeNumber>Prospectus Loan ID</assetTypeNumber>
+    <assetNumber>14</assetNumber>
+    <reportingPeriodBeginningDate>09-12-2026</reportingPeriodBeginningDate>
+    <reportingPeriodEndDate>10-10-2026</reportingPeriodEndDate>
+    <originatorName>Argentic Real Estate Finance LLC</originatorName>
+    <originationDate>11-20-2019</originationDate>
+    <originalLoanAmount>8250000.00</originalLoanAmount>
+    <originalTermLoanNumber>84</originalTermLoanNumber>
+    <maturityDate>12-06-2026</maturityDate>
+    <originalAmortizationTermNumber>360</originalAmortizationTermNumber>
+    <originalInterestRatePercentage>0.04150</originalInterestRatePercentage>
+    <interestOnlyIndicator>false</interestOnlyIndicator>
+    <balloonIndicator>true</balloonIndicator>
+    <modifiedIndicator>false</modifiedIndicator>
+    <property>
+      <propertyName>Sunrise Mobile Home Park</propertyName>
+      <propertyAddress>4400 E Main St</propertyAddress>
+      <propertyCity>Mesa</propertyCity>
+      <propertyState>AZ</propertyState>
+      <propertyZip>85205</propertyZip>
+      <propertyCounty>Maricopa</propertyCounty>
+      <propertyTypeCode>MH</propertyTypeCode>
+      <unitsBedsRoomsNumber>142</unitsBedsRoomsNumber>
+      <yearBuiltNumber>1972</yearBuiltNumber>
+      <valuationSecuritizationAmount>12900000</valuationSecuritizationAmount>
+      <mostRecentPhysicalOccupancyPercentage>0.95</mostRecentPhysicalOccupancyPercentage>
+      <mostRecentNetOperatingIncomeAmount>702000</mostRecentNetOperatingIncomeAmount>
+      <mostRecentDebtServiceAmount>481000</mostRecentDebtServiceAmount>
+      <mostRecentDebtServiceCoverageNetOperatingIncomePercentage>1.46</mostRecentDebtServiceCoverageNetOperatingIncomePercentage>
+    </property>
+    <property>
+      <propertyName>Palm Shadows MHC</propertyName>
+      <propertyAddress>2155 N Country Club Dr</propertyAddress>
+      <propertyCity>Mesa</propertyCity>
+      <propertyState>AZ</propertyState>
+      <propertyZip>85201</propertyZip>
+      <propertyCounty>Maricopa</propertyCounty>
+      <propertyTypeCode>MH</propertyTypeCode>
+      <unitsBedsRoomsNumber>88</unitsBedsRoomsNumber>
+    </property>
+    <reportPeriodInterestRatePercentage>0.04150</reportPeriodInterestRatePercentage>
+    <reportPeriodEndActualBalanceAmount>7412233.18</reportPeriodEndActualBalanceAmount>
+    <paymentStatusLoanCode>0</paymentStatusLoanCode>
+    <primaryServicerName>Midland Loan Services</primaryServicerName>
+  </assets>
+  <assets>
+    <assetTypeNumber>Prospectus Loan ID</assetTypeNumber>
+    <assetNumber>2</assetNumber>
+    <originationDate>01-15-2020</originationDate>
+    <originalLoanAmount>60000000.00</originalLoanAmount>
+    <maturityDate>02-01-2030</maturityDate>
+    <property>
+      <propertyName>One Central Office</propertyName>
+      <propertyCity>Phoenix</propertyCity>
+      <propertyState>AZ</propertyState>
+      <propertyTypeCode>OF</propertyTypeCode>
+    </property>
+    <reportPeriodEndActualBalanceAmount>60000000</reportPeriodEndActualBalanceAmount>
+  </assets>
+  <assets>
+    <assetTypeNumber>Prospectus Loan ID</assetTypeNumber>
+    <assetNumber>31</assetNumber>
+    <originatorName>LMF Commercial, LLC</originatorName>
+    <originationDate>05-03-2021</originationDate>
+    <originalLoanAmount>3100000.00</originalLoanAmount>
+    <originalTermLoanNumber>60</originalTermLoanNumber>
+    <maturityDate>06-06-2026</maturityDate>
+    <originalInterestRatePercentage>0.0398</originalInterestRatePercentage>
+    <property>
+      <propertyName>Desert Palms RV Resort</propertyName>
+      <propertyAddress>1590 W Ajo Way</propertyAddress>
+      <propertyCity>Tucson</propertyCity>
+      <propertyState>AZ</propertyState>
+      <propertyZip>85713</propertyZip>
+      <propertyCounty>Pima</propertyCounty>
+      <propertyTypeCode>OT</propertyTypeCode>
+      <unitsBedsRoomsNumber>210</unitsBedsRoomsNumber>
+    </property>
+    <reportPeriodEndActualBalanceAmount>2950000</reportPeriodEndActualBalanceAmount>
+    <paymentStatusLoanCode>5</paymentStatusLoanCode>
+  </assets>
+  <assets>
+    <assetTypeNumber>Prospectus Loan ID</assetTypeNumber>
+    <assetNumber>40</assetNumber>
+    <originationDate>03-01-2022</originationDate>
+    <maturityDate>03-01-2032</maturityDate>
+    <property>
+      <propertyName>Lone Star MHP</propertyName>
+      <propertyCity>Waco</propertyCity>
+      <propertyState>TX</propertyState>
+      <propertyTypeCode>MH</propertyTypeCode>
+    </property>
+  </assets>
+</assetData>
