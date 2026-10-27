@@ -89,14 +89,19 @@ Keep each agent request to one step of this guide, run the tests after every cha
 
 ---
 
-## Step 1. Create the database (10 minutes)
+## Step 1. Connect to the database (10 minutes)
 
-In Supabase, open **SQL Editor**, paste the contents of `supabase/migrations/20261027000001_init.sql`, and run it. Or with the Supabase CLI: `supabase link` then `supabase db push`.
+**Already done:** the Supabase project `park-debt-tracker` exists in your org (region West US, North California; project URL `https://mlwseriuekgimfzqxzsd.supabase.co`), and the schema in `supabase/migrations/20261027000001_init.sql` has been run: 14 tables, row-level security on every table, and the `park_overview` view.
 
-Then copy two connection values:
+What you still need to do in the Supabase dashboard:
 
-- **Project Settings > Database > Connection string > Session pooler** → this is `DATABASE_URL` for the pipeline.
-- **Project Settings > API** → the project URL and `anon` key for the web app.
+1. **Set the database password.** It was generated when the project was created and wasn't saved anywhere. Go to **Project Settings > Database > Reset database password**, generate a new one, and store it in your password manager.
+2. **Copy the pipeline connection string.** Click **Connect** (top bar) > **Session pooler**, copy the URI, and replace `[YOUR-PASSWORD]` with the password from step 1. That's `DATABASE_URL`.
+3. **Copy the app keys.** Go to **Project Settings > API**. You need the project URL (above) and the `anon` public key.
+
+Future schema changes go in new files in `supabase/migrations/`. Run them in the SQL Editor, or with the Supabase CLI (`supabase link --project-ref mlwseriuekgimfzqxzsd`, then `supabase db push`).
+
+Then, in Cursor's terminal from the project root:
 
 ```bash
 cp pipeline/.env.example pipeline/.env      # fill DATABASE_URL, ANTHROPIC_API_KEY, SEC_USER_AGENT
