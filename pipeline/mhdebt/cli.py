@@ -6,8 +6,9 @@ Typical first run (Arizona):
   mhdebt ingest parcels --county pima
   mhdebt ingest cmbs
   mhdebt ingest agency --agency fannie --file data/agency/fannie/dus_mhc.csv
-  mhdebt ingest sba --file data/sba/foia-7a-fy2010-present.csv
+  mhdebt ingest sba                       # downloads the public FOIA CSVs, then loads them
   mhdebt ingest recorder --county maricopa
+  mhdebt ingest operating --file data/operating/rents.csv --source <vendor>   # rent, sites, vacancy
   mhdebt build
   mhdebt extract --limit 50
   mhdebt model
@@ -72,9 +73,12 @@ def ingest_agency(agency: str = typer.Option(..., help="fannie | freddie"), file
 
 
 @ingest.command("sba")
-def ingest_sba(file: Path = typer.Option(...), states: str = typer.Option(None)):
+def ingest_sba(file: Path = typer.Option(None, help="One FOIA CSV already on disk. Omit to download the public files."),
+               states: str = typer.Option(None),
+               since_fy: int = typer.Option(2010, help="Skip snapshots that end before this fiscal year")):
+    prepared = jobs.prepare_sba(PoliteClient(), _states(states), since_fy, file)
     with db.connect() as conn:
-        _out(jobs.ingest_sba_file(conn, file, _states(states)))
+        _out(jobs.ingest_sba_prepared(conn, prepared))
 
 
 @ingest.command("recorder")
@@ -89,6 +93,17 @@ def ingest_recorder(county: str = typer.Option("maricopa")):
 def ingest_recorder_export(county: str = typer.Option(...), file: Path = typer.Option(...)):
     with db.connect() as conn:
         _out(jobs.ingest_recorder_export(conn, file, county.lower()))
+
+
+@ingest.command("operating")
+def ingest_operating(file: Path = typer.Option(..., help="CSV or XLSX, one row per community"),
+                     source: str = typer.Option("csv", help="Who the figures come from, e.g. the data vendor"),
+                     as_of: str = typer.Option(None, help="YYYY-MM-DD for rows without an as-of column; default today"),
+                     states: str = typer.Option(None)):
+    """Load rent, site count and vacancy per park. Takes effect on the next `mhdebt model`."""
+    when = date.fromisoformat(as_of) if as_of else None
+    with db.connect() as conn:
+        _out(jobs.ingest_operating_file(conn, file, source.strip().lower(), _states(states), when))
 
 
 @app.command()
@@ -129,11 +144,17 @@ def run(skip_extract: bool = False):
     """Nightly: refresh every automatic source, then rebuild and rescore."""
     client = PoliteClient()
     states = settings.target_states
+    try:
+        sba_rows = jobs.prepare_sba(client, states)
+    except Exception as exc:  # noqa: BLE001 - a FOIA outage should not skip the other sources
+        logging.exception("sba download failed: %s", exc)
+        sba_rows = []
     with db.connect() as conn:
         for step in (lambda: jobs.ingest_hifld(conn, client, states),
                      lambda: jobs.ingest_parcels(conn, client, "maricopa") if "AZ" in states else {},
                      lambda: jobs.ingest_parcels(conn, client, "pima") if "AZ" in states else {},
                      lambda: jobs.ingest_cmbs(conn, client, states),
+                     lambda: jobs.ingest_sba_prepared(conn, sba_rows),
                      lambda: jobs.ingest_recorder_maricopa(conn, client) if "AZ" in states else {}):
             try:
                 _out(step())
@@ -185,6 +206,17 @@ def probe_pima():
     vals = arcgis.distinct(c, pima.PARCELS, "PARCEL_USE")
     typer.echo(f"{len(vals)} distinct PARCEL_USE values; those starting 08:")
     typer.echo([v for v in vals if str(v).startswith("08")])
+
+
+@probe.command("sba")
+def probe_sba(since_fy: int = 2010):
+    from .sources import sba
+
+    html = PoliteClient().get(sba.DATASET_PAGE, cache_ttl=24 * 3600).text
+    urls = sba.foia_csv_urls(html, since_fy)
+    typer.echo(f"{len(urls)} FOIA CSVs covering FY{since_fy} or later:")
+    for url in urls:
+        typer.echo(f"  {url}")
 
 
 @probe.command("fdic")

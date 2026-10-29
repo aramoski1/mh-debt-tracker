@@ -1,10 +1,11 @@
 """Pipeline jobs. Each job is idempotent and safe to re-run; `run_all` executes them in order.
 
   parks:     ingest_hifld -> ingest_parcels (county) -> geocode_parks
-  loans:     ingest_cmbs, ingest_agency_file, ingest_sba_file -> match_loans
+  loans:     ingest_cmbs, ingest_agency_file, ingest_sba -> match_loans
   county:    ingest_recorder (Maricopa API) / ingest_recorder_export (Pima) -> build_county_loans
   enrich:    classify_lenders (FDIC) -> extract_documents (Claude)
   model:     estimate_maturities -> score_parks (+ alerts)
+  operating: ingest_operating_file (rent, sites, vacancy per park; also entered by brokers on the park page)
 """
 from __future__ import annotations
 
@@ -12,7 +13,7 @@ import logging
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import db, geocode, maturity
+from . import db, geocode, maturity, operating
 from .config import settings
 from .docai import extract, trustworthy_maturity
 from .http import PoliteClient
@@ -39,15 +40,67 @@ def _candidates(conn, states: list[str]) -> list[Candidate]:
 # ---------------------------------------------------------------------------
 
 def ingest_hifld(conn, client: PoliteClient, states: list[str], geojson: Path | None = None) -> dict:
+    """Load the federal park list.
+
+    A park already in the database within 150 meters, with an address that does not contradict the
+    federal record, keeps its loans and owner and picks up the federal name, phone and site count.
+    """
     with db.source_run(conn, "hifld") as stats:
-        rows = hifld.load_geojson(geojson, states) if geojson else hifld.fetch(client, states)
-        n = 0
-        for rec in rows:
-            db.upsert_park_by_source(conn, "hifld", rec["source_id"], rec)
-            n += 1
+        rows = list(hifld.load_geojson(geojson, states) if geojson else hifld.fetch(client, states))
+        cands = _candidates(conn, states)
+        claimed: set[str] = set()
+        linked = created = 0
+        for i, rec in enumerate(rows, start=1):
+            existing = conn.execute(
+                "select id from parks where sources->>'hifld' = %s", (rec["source_id"],)
+            ).fetchone()
+            if existing:
+                db.upsert_park_by_source(conn, "hifld", rec["source_id"], rec)
+            else:
+                park_id = _attach_hifld(conn, rec, cands, claimed)
+                if park_id:
+                    linked += 1
+                    claimed.add(park_id)
+                else:
+                    park_id = db.upsert_park_by_source(conn, "hifld", rec["source_id"], rec)
+                    created += 1
+                    claimed.add(park_id)
+                    cands.append(Candidate(
+                        park_id, rec.get("name"), rec.get("address"), rec.get("city"),
+                        rec.get("zip"), _num(rec.get("lat")), _num(rec.get("lon")),
+                    ))
+            if i % 200 == 0:
+                conn.commit()
         conn.commit()
-        stats["parks"] = n
+        stats["parks"] = len(rows)
+        stats["linked"] = linked
+        stats["created"] = created
     return stats
+
+
+def _num(v) -> float | None:
+    try:
+        return float(v) if v is not None and v != "" else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _attach_hifld(conn, rec: dict, cands: list[Candidate], claimed: set[str]) -> str | None:
+    lat, lon = _num(rec.get("lat")), _num(rec.get("lon"))
+    if lat is None or lon is None:
+        return None
+    probe = Probe(rec.get("name"), rec.get("address"), rec.get("city"), rec.get("zip"), lat, lon)
+    near = nearest(lat, lon, cands, within_m=150)
+    if near is None or near.id in claimed:
+        return None
+    if near.address and rec.get("address") and similarity(probe, near) < 0.5:
+        return None
+    taken = conn.execute("select sources->>'hifld' as hifld from parks where id = %s", (near.id,)).fetchone()
+    if taken and taken["hifld"]:
+        return None
+    db.add_park_source(conn, near.id, "hifld", rec["source_id"])
+    db.upsert_park_by_source(conn, "hifld", rec["source_id"], rec)
+    return near.id
 
 
 def ingest_parcels(conn, client: PoliteClient, county: str, rows=None) -> dict:
@@ -213,15 +266,40 @@ def ingest_agency_file(conn, path: Path, agency_name: str, states: list[str]) ->
     return stats
 
 
-def ingest_sba_file(conn, path: Path, states: list[str]) -> dict:
+def prepare_sba(client: PoliteClient, states: list[str], since_fy: int = 2010,
+                file: Path | None = None) -> list[tuple[Path, list[dict]]]:
+    """Download (unless `file` is set) and parse FOIA rows before a database connection is opened.
+
+    The CSVs are a few hundred megabytes. Parsing them while a Supabase session sits idle gets the
+    connection closed, so the caller should connect only after this returns."""
+    paths = [file] if file else sba.download_foia(client, settings.data_dir / "sba", since_fy)
+    prepared = []
+    for path in paths:
+        rows = list(sba.load(path, states))
+        log.info("sba %s: %s park loans", path.name, len(rows))
+        prepared.append((path, rows))
+    return prepared
+
+
+def ingest_sba_prepared(conn, prepared: list[tuple[Path, list[dict]]]) -> dict:
+    loans = 0
+    for path, rows in prepared:
+        loans += ingest_sba_file(conn, path, [], rows).get("loans", 0)
+    return {"files": [path.name for path, _ in prepared], "loans": loans}
+
+
+def ingest_sba_file(conn, path: Path, states: list[str], rows: list[dict] | None = None) -> dict:
+    pending = rows if rows is not None else list(sba.load(path, states))
     with db.source_run(conn, "sba_file") as stats:
         n = 0
-        for rec in sba.load(path, states):
+        for rec in pending:
             # The bank behind an SBA loan is a normal bank; keep the program on the loan, not the lender.
             rec["raw"]["program_lender"] = "sba"
             _loan_with_lender(conn, rec, rec.get("lender_name_raw"), "unknown")
             db.upsert_loan(conn, "sba", rec["source_loan_id"], rec)
             n += 1
+            if n % 200 == 0:
+                conn.commit()
         conn.commit()
         stats["loans"] = n
     return stats
@@ -593,6 +671,45 @@ def estimate_maturities(conn, today: date | None = None) -> dict:
     return stats
 
 
+def ingest_operating_file(conn, path: Path, source: str, states: list[str], as_of: date | None = None) -> dict:
+    """Load per-park rent, site and vacancy figures from a CSV/XLSX. Rows are matched to known parks by tracker id,
+    or by name, address and location; rows that match no park are listed, never created as new parks."""
+    as_of = as_of or date.today()
+    with db.source_run(conn, f"operating_{source}") as stats:
+        cands = _candidates(conn, states)
+        by_id = {c.id: c for c in cands}
+        n, unmatched = 0, []
+        for rec in operating.load(path, as_of):
+            m = rec["match"]
+            park_id = m["park_id"] if m["park_id"] in by_id else None
+            if not park_id:
+                lat, lon = _num(m["lat"]), _num(m["lon"])
+                probe = Probe(m["name"], m["address"], m["city"], m["zip"], lat, lon)
+                hit, _ = best_match(probe, cands)
+                if hit is None and lat is not None and lon is not None:
+                    near = nearest(lat, lon, cands, within_m=150)
+                    if near and (not near.address or not m["address"] or similarity(probe, near) >= 0.5):
+                        hit = near
+                park_id = hit.id if hit else None
+            if not park_id:
+                unmatched.append(" ".join(x for x in (m["name"], m["address"], m["city"]) if x) or "(no identity)")
+                continue
+            v = rec["values"]
+            cols = list(operating.FIELDS)
+            conn.execute(f"""
+                insert into park_operating (park_id, source, source_ref, observed_on, {", ".join(cols)})
+                values (%s, %s, %s, %s, {", ".join(["%s"] * len(cols))})
+                on conflict (park_id, source, source_ref, observed_on) do update set
+                  {", ".join(f"{c} = excluded.{c}" for c in cols)}, created_at = now()""",
+                (park_id, source, path.name, rec["observed_on"], *[v.get(c) for c in cols]))
+            n += 1
+            if n % 200 == 0:
+                conn.commit()
+        conn.commit()
+        stats.update(rows=n, unmatched=len(unmatched), unmatched_sample=unmatched[:25])
+    return stats
+
+
 def _estimate_from_row(r: dict, today: date) -> maturity.Estimate | None:
     if r["p50_date"] is None:
         return None
@@ -619,12 +736,21 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
         by_park: dict[str, list[dict]] = {}
         for ln in loans:
             by_park.setdefault(str(ln["park_id"]), []).append(ln)
+        op_rows: dict[str, list[dict]] = {}
+        for r in conn.execute("select * from park_operating order by park_id, observed_on desc, created_at desc"):
+            op_rows.setdefault(str(r["park_id"]), []).append(r)
 
         n = jumps = 0
         for p in parks:
+            op = operating.merge(op_rows.get(str(p["id"]), []))
+            owned_since = op.get("owned_since")
             pf = ParkFacts(state=p["state"], kind=p["kind"], units=p["units"],
                            owner_entity_type=p["entity_type"] or "unknown", owner_state=p["mailing_state"],
-                           owner_park_count=p["park_count"], held_since=p["held_since"])
+                           owner_park_count=p["park_count"], held_since=owned_since or p["held_since"],
+                           held_since_basis="reported" if owned_since else "deed",
+                           lot_rent=op.get("rent_current"), rentable_sites=op.rentable_sites(),
+                           occupancy=op.occupancy(),
+                           operating_source=op.source_of("rent_current", "total_sites", "vacant_sites", "occupancy_pct"))
             best, best_loan = score(pf, None, rates, today), None
             for ln in by_park.get(str(p["id"]), []):
                 lf = LoanFacts(lender_kind=ln["lender_kind"],

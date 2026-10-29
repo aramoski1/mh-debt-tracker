@@ -23,9 +23,9 @@ export function monthsFromNow(d: string | null | undefined) {
 }
 
 export function scoreTone(s: number | null | undefined) {
-  if (s == null) return "bg-stone-100 text-stone-500";
-  if (s >= 60) return "bg-red-700 text-white";
-  if (s >= 45) return "bg-amber-600 text-white";
-  if (s >= 30) return "bg-amber-100 text-amber-900";
-  return "bg-stone-100 text-stone-600";
+  if (s == null) return "bg-[#f4f4f4] text-[#787d85]";
+  if (s >= 60) return "bg-[#85152a] text-white";
+  if (s >= 45) return "bg-[#dd9933] text-[#18191b]";
+  if (s >= 30) return "bg-[#f8e7c8] text-[#47161f]";
+  return "bg-[#f4f4f4] text-[#333539]";
 }

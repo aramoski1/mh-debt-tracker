@@ -1,7 +1,9 @@
 import { supabaseServer } from "@/lib/supabase/server";
+import { monthsFromNow } from "@/lib/format";
 import type { ParkRow } from "@/lib/types";
 import Filters from "./Filters";
 import Prospects from "./Prospects";
+import CallList from "./CallList";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +40,33 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   const { data, error } = await q;
   const rows = (data ?? []) as ParkRow[];
 
+  const dueYear = rows.filter((r) => {
+    const m = monthsFromNow(r.maturity_date);
+    return m != null && m >= 0 && m <= 12;
+  }).length;
+  const documented = rows.filter((r) => r.maturity_basis === "reported" || r.maturity_basis === "document").length;
+  const foreclosure = rows.filter((r) => r.loan_status === "foreclosure").length;
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      <section className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-[#e2e2e2] bg-[#e2e2e2] sm:grid-cols-4">
+        {[
+          ["Parks in view", rows.length],
+          ["Due within 12 months", dueYear],
+          ["Date from a document", documented],
+          ["Foreclosure on record", foreclosure],
+        ].map(([label, n]) => (
+          <div key={String(label)} className="bg-white px-4 py-3">
+            <p className="text-[10px] font-medium tracking-[0.18em] text-[#787d85]">{String(label).toUpperCase()}</p>
+            <p className="num mt-1 text-2xl font-medium text-[#18191b]">{n}</p>
+          </div>
+        ))}
+      </section>
+      <div id="calls" className="scroll-mt-20">
+        <CallList rows={rows} />
+      </div>
       <Filters current={sp} />
-      {error && <p className="rounded border border-red-200 bg-red-50 p-3 text-red-800">{error.message}</p>}
+      {error && <p className="rounded-sm border border-[#e2e2e2] bg-[#f8e7ea] p-3 text-[#85152a]">{error.message}</p>}
       <Prospects rows={rows} />
     </div>
   );

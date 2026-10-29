@@ -16,6 +16,8 @@ export type ParkRow = {
   lon: number | null;
   kind: "mhp" | "rv" | "mixed" | "unknown";
   units: number | null;
+  phone?: string | null;
+  website?: string | null;
   owner_id: string | null;
   owner_name: string | null;
   owner_entity_type: string | null;

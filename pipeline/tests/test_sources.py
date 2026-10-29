@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 from mhdebt import docai
 from mhdebt.geocode import parse_response
-from mhdebt.sources import agency, maricopa, pima, sba
+from mhdebt.sources import agency, hifld, maricopa, pima, sba
 from mhdebt.sources.doc_types import normalize_doc_type
 
 
@@ -41,6 +41,17 @@ def test_maricopa_doc_parsing_and_adjacency():
     assert found[0]["references_number"] == "20210900001"
 
 
+def test_maricopa_search_result_uses_document_code_string():
+    j = json.loads((Path(__file__).parent / "fixtures" / "maricopa_search_result.json").read_text())
+    d = maricopa._doc_from_json(str(j["recordingNumber"]), j)
+    assert d["doc_type"] == "release"
+    assert d["doc_type_raw"] == "REL D/T"
+    assert d["recording_date"] == date(2020, 1, 2)
+    assert d["grantees"] == []
+    named = maricopa._doc_from_json("1", {"names": "ACME LLC; ARIZONA BANK", "documentCode": "DEED TRST"})
+    assert named["grantees"] == ["ACME LLC", "ARIZONA BANK"]
+
+
 def test_maricopa_special_warranty_deed_code():
     j = json.loads((Path(__file__).parent / "fixtures" / "maricopa_20240443284.json").read_text())
     d = maricopa._doc_from_json("20240443284", j)
@@ -71,6 +82,23 @@ def test_agency_loader(tmp_path):
     r = rows[0]
     assert r["maturity_date"] == date(2029, 7, 1) and r["note_rate"] == 4.12 and r["dscr_current"] == 1.62
     assert r["units"] == 120 and r["lender_kind"] == "agency_fannie"
+
+
+def test_hifld_normalizes_arcgis_ids():
+    rec = hifld.normalize({
+        "MHPID": 1003.0, "NAME": "SHADY ACRES", "STATE": "AZ", "TYPE": "MOBILE HOME PARK", "UNITS": 40, "STATUS": "OPEN",
+    })
+    assert rec["source_id"] == "1003" and rec["state"] == "AZ" and rec["kind"] == "mhp" and rec["units"] == 40
+
+
+def test_sba_foia_page_lists_current_csvs():
+    html = (Path(__file__).parent / "fixtures" / "sba_foia_dataset.html").read_text()
+    urls = sba.foia_csv_urls(html, 2010)
+    assert [u.rsplit("/", 1)[-1] for u in urls] == [
+        "FOIA_7a_FY2010_FY2019_asof_260630.csv",
+        "FOIA_7a_FY2020_Present_asof_260630.csv",
+        "FOIA_504_FY2010_Present_asof_260630.csv",
+    ]
 
 
 def test_sba_loader(tmp_path):

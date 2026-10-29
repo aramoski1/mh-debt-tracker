@@ -15,12 +15,15 @@ How we find loans without a search API:
   1. Acquisition loans: when a park is bought with financing, the deed of trust is recorded immediately
      after the deed, so it sits at DEED_NUMBER + 1 (occasionally +2..+4). We check those numbers.
   2. Refinances, modifications and releases after the purchase: a name search on the owner entity.
-     The search endpoint is configurable (MARICOPA_RECORDER_SEARCH_URL) because it is undocumented;
-     without it, step 1 still covers every financed acquisition.
+     The search endpoint is configurable (MARICOPA_RECORDER_SEARCH_URL) because it is undocumented.
+     GET /documents/search accepts beginDate, endDate, documentCode, pageSize and pageNumber, but a
+     live check on 2026-10-27 showed it ignores `name` and returns empty `names`, so do not point the
+     setting at that URL. Without a real name search, step 1 still covers every financed acquisition.
 """
 from __future__ import annotations
 
 import os
+import re
 from datetime import date
 from typing import Iterator
 
@@ -31,7 +34,7 @@ from .doc_types import normalize_doc_type
 
 PARCELS = "https://gis.mcassessor.maricopa.gov/arcgis/rest/services/Parcels/MapServer/0"
 RECORDER = os.getenv("MARICOPA_RECORDER_API", "https://publicapi.recorder.maricopa.gov")
-SEARCH_URL = os.getenv("MARICOPA_RECORDER_SEARCH_URL", "")  # e.g. f"{RECORDER}/documents/search"
+SEARCH_URL = os.getenv("MARICOPA_RECORDER_SEARCH_URL", "")  # must actually filter by name; /documents/search does not
 PARK_WHERE = "PUC >= '0840' AND PUC <= '0899'"
 ADJACENT_LOOKAHEAD = 4
 MAX_SEARCH_PAGES = 20
@@ -99,6 +102,8 @@ def _doc_from_json(num: str, j: dict) -> dict:
         codes = [codes]
     codes = [c.get("description") or c.get("code") if isinstance(c, dict) else str(c) for c in codes]
     names = _first(j, "names", "parties", "grantorGrantee") or []
+    if isinstance(names, str):
+        names = [part.strip() for part in re.split(r"[;|]", names) if part.strip()]
     grantors, grantees, flat = [], [], []
     for n in names:
         if isinstance(n, dict):

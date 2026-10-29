@@ -19,6 +19,7 @@ HOST_RPS: dict[str, float] = {
     "efts.sec.gov": 5.0,
     "geocoding.geo.census.gov": 2.0,
     "api.fdic.gov": 4.0,
+    "data.sba.gov": 1.0,
 }
 DEFAULT_RPS = 3.0
 
@@ -84,6 +85,39 @@ class PoliteClient:
                 cpath.write_bytes(resp.content)
             return resp
         raise RuntimeError("unreachable")
+
+    def download(self, url: str, dest: Path, retries: int = 4) -> Path:
+        """Stream a file to disk. Skip the transfer when dest already has the published Content-Length."""
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        head = self.request("HEAD", url)
+        length = int(head.headers.get("content-length") or 0)
+        if dest.exists() and length and dest.stat().st_size == length:
+            return dest
+        tmp = dest.with_name(dest.name + ".part")
+        host = urlparse(url).netloc
+        delay = 2.0
+        for attempt in range(retries + 1):
+            self._throttle(host)
+            try:
+                with self._client.stream("GET", url) as resp:
+                    if resp.status_code in (429, 500, 502, 503, 504) and attempt < retries:
+                        time.sleep(float(resp.headers.get("Retry-After") or delay))
+                        delay *= 2
+                        continue
+                    resp.raise_for_status()
+                    with tmp.open("wb") as fh:
+                        for chunk in resp.iter_bytes(1024 * 1024):
+                            fh.write(chunk)
+                break
+            except (httpx.TransportError, httpx.TimeoutException):
+                if attempt == retries:
+                    raise
+                time.sleep(delay)
+                delay *= 2
+        else:
+            raise RuntimeError(f"download failed: {url}")
+        tmp.replace(dest)
+        return dest
 
     def get(self, url: str, **kwargs: Any) -> httpx.Response:
         return self.request("GET", url, **kwargs)

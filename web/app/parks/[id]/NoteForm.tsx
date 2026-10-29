@@ -34,9 +34,9 @@ export default function NoteForm({ parkId }: { parkId: string }) {
     <form onSubmit={submit} className="space-y-2">
       <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={3}
                 placeholder="e.g. Spoke with Bob. Loan with Western Alliance comes due next March at 4.1%, they offered 7.25%. Thinking about retiring, call back after New Year."
-                className="w-full rounded border border-stone-300 p-2" />
+                className="w-full rounded-sm border border-[#e2e2e2] p-2" />
       <div className="flex items-center gap-3">
-        <button disabled={busy} className="rounded bg-stone-900 px-3 py-1.5 font-medium text-white disabled:opacity-50">
+        <button disabled={busy} className="rounded-sm bg-[#85152a] px-3 py-1.5 font-medium text-white hover:bg-[#6e1023] disabled:opacity-50">
           {busy ? "Saving…" : "Save note"}
         </button>
         {err && <span className="text-red-700">{err}</span>}

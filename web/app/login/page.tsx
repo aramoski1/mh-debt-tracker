@@ -19,19 +19,24 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto mt-24 max-w-sm rounded border border-stone-200 bg-white p-6">
-      <h1 className="mb-4 text-lg font-semibold">Sign in</h1>
+    <div className="mx-auto mt-10 max-w-sm overflow-hidden rounded-sm border border-[#e2e2e2] bg-white">
+      <div className="border-b-2 border-[#dd9933] bg-[#18191b] px-6 py-5 text-white">
+        <p className="text-[10px] font-medium tracking-[0.28em] text-white/70">COOPER CARDINAL</p>
+        <h1 className="text-lg font-medium">Debt Desk</h1>
+      </div>
+      <div className="p-6">
       {sent ? (
         <p>Check {email} for a sign-in link.</p>
       ) : (
         <form onSubmit={submit} className="space-y-3">
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
-                 className="h-9 w-full rounded border border-stone-300 px-2" />
-          <button className="h-9 w-full rounded bg-stone-900 font-medium text-white">Email me a link</button>
-          {err && <p className="text-red-700">{err}</p>}
-          <p className="text-xs text-stone-500">First time here creates your account. We’ll email you a sign-in link.</p>
+                 className="h-9 w-full rounded-sm border border-[#e2e2e2] px-2" />
+          <button className="h-9 w-full rounded-sm bg-[#85152a] font-medium text-white hover:bg-[#6e1023]">Email me a link</button>
+          {err && <p className="text-[#85152a]">{err}</p>}
+          <p className="text-xs text-[#787d85]">First time here creates your account. We’ll email you a sign-in link.</p>
         </form>
       )}
+      </div>
     </div>
   );
 }

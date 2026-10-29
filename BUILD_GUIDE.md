@@ -122,6 +122,7 @@ Some county endpoints are not formally documented. The probes print exactly what
 mhdebt probe maricopa       # distinct park use codes + one recorder document, raw and parsed
 mhdebt probe pima           # PARCEL_USE values starting with 08
 mhdebt probe fdic           # confirms the call-report fields used for CRE concentration
+mhdebt probe sba            # lists the public 7(a) and 504 CSV snapshots the loader will download
 mhdebt probe cmbs --limit 3 # finds CMBS trusts and counts park loans in a few
 ```
 
@@ -144,7 +145,7 @@ mhdebt ingest parcels --county maricopa  # adds parcels, owners of record, last 
 mhdebt ingest parcels --county pima
 ```
 
-If the HIFLD mirror is down, download `mobile-home-parks-geojson.zip` from DataLumos (project 239601), unzip it, and run `mhdebt ingest hifld --geojson path/to/file.geojson`.
+`mhdebt ingest hifld` reads the public federal archive on ArcGIS Online and, if that is down, the NASA mirror of the same list. A park already loaded from a county parcel at the same address keeps its loan and gains the federal name and phone. `mhdebt ingest hifld --geojson path` still accepts a local file when both public copies are down.
 
 **Check:** in Supabase SQL Editor:
 
@@ -179,13 +180,13 @@ mhdebt ingest agency --agency freddie --file data/agency/freddie/k_mhc_az.csv
 
 The loader accepts many column spellings. If it prints `no column found for [...]`, add that header to `ALIASES` in `sources/agency.py`.
 
-### 4c. SBA (free, manual download)
-
-Download the 7(a) and 504 FOIA CSVs from data.sba.gov and run:
+### 4c. SBA (free, automatic)
 
 ```bash
-mhdebt ingest sba --file data/sba/foia-7a-fy2020-present.csv
+mhdebt ingest sba
 ```
+
+This reads the public dataset page at data.sba.gov and downloads the 7(a) and 504 CSV snapshots whose fiscal years reach 2010 (about 500 MB). Pass `--since-fy 1991` to include the older decades, or `--file` to load a CSV you already have. The nightly run does this download on its own.
 
 This mostly finds RV parks (NAICS 721211). SBA loans fully amortize, so they don't create a balloon, but they give the exact origination date, lender and the operating business.
 
@@ -207,7 +208,7 @@ mhdebt ingest recorder --county maricopa
 
 How it finds loans without a search API: each Maricopa parcel carries `DEED_NUMBER`, the recording number of the last deed. When a park is bought with a loan, the deed of trust is recorded right behind the deed, so the pipeline checks the next few recording numbers. That catches every financed acquisition for free.
 
-To also catch **refinances, modifications, releases and foreclosure notices** after the purchase, it needs a name search. Because a name search returns documents without a parcel, results are attached to a park only when that's unambiguous: the owner is a company or trust (people's names collide with strangers') that owns exactly one tracked park. Everything else is saved unlinked so it can be reviewed rather than guessed onto the wrong park. Open any document on recorder.maricopa.gov with your browser's developer tools on the Network tab, run a name search, and copy the JSON search URL the page calls. Put it in `MARICOPA_RECORDER_SEARCH_URL`; the code sends `name`, `beginDate`, `endDate`, `pageSize` and `pageNumber` (adjust in `Recorder.search_by_name` if the page uses different parameter names).
+To also catch **refinances, modifications, releases and foreclosure notices** after the purchase, it needs a name search. Because a name search returns documents without a parcel, results are attached to a park only when that's unambiguous: the owner is a company or trust (people's names collide with strangers') that owns exactly one tracked park. Everything else is saved unlinked so it can be reviewed rather than guessed onto the wrong park. `GET /documents/search` on the public API does not filter by name (it ignores `name` and returns blank party names), so do not put that URL in `MARICOPA_RECORDER_SEARCH_URL`. The website search at recorder.maricopa.gov is the one that accepts a name. Open it with your browser's developer tools on the Network tab, run a name search, and copy the JSON URL the page calls. Put it in `MARICOPA_RECORDER_SEARCH_URL`; the code sends `name`, `beginDate`, `endDate`, `pageSize` and `pageNumber` (adjust in `Recorder.search_by_name` if the page uses different parameter names).
 
 **Pima** has a free portal but no API. Search by owner name for deeds of trust, releases and modifications, export the results, and load them:
 
@@ -307,7 +308,7 @@ Push to GitHub, then in the repo's **Settings > Secrets and variables > Actions*
 
 `.github/workflows/pipeline.yml` runs `mhdebt run` every night at 2:17 AM Arizona time and can be run by hand from the Actions tab. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
 
-The manual sources (Fannie, Freddie, SBA, Pima exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build && mhdebt model`.
+The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build && mhdebt model`. SBA is included in the nightly run.
 
 To run the database test locally, start any Postgres 16 and set `TEST_DATABASE_ADMIN_URL`, for example `postgresql://postgres:postgres@localhost:5432/postgres`.
 

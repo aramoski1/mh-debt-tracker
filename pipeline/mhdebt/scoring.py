@@ -17,7 +17,8 @@ from datetime import date
 from .maturity import Estimate
 from .rates import RateCurve
 
-# Assumed average monthly lot rent by state, used only when a park's income isn't reported.
+# Assumed average monthly lot rent by state, used only when neither the loan nor the park's operating figures
+# (park_operating: broker entry or an imported rent survey) give one.
 # National average asking lot rent was about $752 in Q2 2025 (Northmarq). Replace with MHVillage or
 # Cooper Cardinal's own rent rolls for target markets.
 LOT_RENT = {"AZ": 700, "TX": 600, "FL": 800, "CA": 1000, "CO": 850, "NV": 750, "NM": 550, "UT": 700, "ND": 550,
@@ -39,6 +40,12 @@ class ParkFacts:
     owner_state: str | None = None
     owner_park_count: int | None = None  # None: owner unknown
     held_since: date | None = None
+    held_since_basis: str = "deed"          # deed | reported owned-since date
+    # From park_operating; None falls back to units and the statewide assumptions.
+    lot_rent: float | None = None           # average monthly lot rent
+    rentable_sites: int | None = None       # total sites less those under development
+    occupancy: float | None = None          # 0-1
+    operating_source: str | None = None
 
 
 @dataclass
@@ -92,10 +99,26 @@ def balance_after(principal: float, annual_rate_pct: float, amort_months: int, m
 
 
 def estimated_noi(p: ParkFacts) -> float | None:
-    if not p.units:
-        return None
-    monthly = RV_SITE_MONTHLY if p.kind == "rv" else LOT_RENT.get(p.state, LOT_RENT["_default"])
-    return p.units * monthly * 12 * OCCUPANCY * (1 - EXPENSE_RATIO)
+    return noi_with_basis(p)[0]
+
+
+def noi_with_basis(p: ParkFacts) -> tuple[float | None, str]:
+    """Sites x monthly lot rent x 12 x occupancy x (1 - expenses), using the park's own figures where known."""
+    sites = p.rentable_sites or p.units
+    if not sites:
+        return None, "estimated from units and market lot rent"
+    rent = p.lot_rent or (RV_SITE_MONTHLY if p.kind == "rv" else LOT_RENT.get(p.state, LOT_RENT["_default"]))
+    occ = p.occupancy if p.occupancy is not None else OCCUPANCY
+    noi = sites * rent * 12 * occ * (1 - EXPENSE_RATIO)
+    if p.lot_rent and p.occupancy is not None:
+        basis = f"reported ${rent:,.0f} rent and {occ:.0%} occupancy"
+    elif p.lot_rent:
+        basis = f"reported ${rent:,.0f} rent, assumed {OCCUPANCY:.0%} occupancy"
+    elif p.occupancy is not None:
+        basis = f"reported {occ:.0%} occupancy, market lot rent"
+    else:
+        return noi, "estimated from units and market lot rent"
+    return noi, basis + (f" ({p.operating_source})" if p.operating_source else "")
 
 
 def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date) -> Score:
@@ -128,8 +151,10 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
         comp["rate_shock"] = {"points": 0}
 
     # --- refinance gap ---------------------------------------------------------------------
-    noi = (loan.noi if loan and loan.noi else None) or estimated_noi(park)
-    noi_basis = "reported" if loan and loan.noi else "estimated from units and market lot rent"
+    if loan and loan.noi:
+        noi, noi_basis = loan.noi, "reported"
+    else:
+        noi, noi_basis = noi_with_basis(park)
     bal = None
     if loan:
         bal = loan.current_balance
@@ -167,12 +192,13 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
 
     # --- owner -----------------------------------------------------------------------------
     op, owhy = 0.0, []
+    held_note = "" if park.held_since_basis == "deed" else " (reported owned-since date)"
     if park.held_since:
         years = (today - park.held_since).days / 365.25
         if years >= 15:
-            op += 5; owhy.append(f"held about {years:.0f} years")
+            op += 5; owhy.append(f"held about {years:.0f} years{held_note}")
         elif years >= 8:
-            op += 3; owhy.append(f"held about {years:.0f} years")
+            op += 3; owhy.append(f"held about {years:.0f} years{held_note}")
     if park.owner_state and park.owner_state.upper() != park.state.upper():
         op += 3; owhy.append(f"owner based in {park.owner_state}")
     if park.owner_entity_type in ("individual", "trust"):
