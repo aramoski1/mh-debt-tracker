@@ -1,8 +1,12 @@
 """Interest rate history, used to estimate what an owner paid then versus what a refinance costs now.
 
-Primary source: FRED's 5-year Treasury constant maturity (DGS5), free CSV, no key:
+FRED constant-maturity yields and the bank prime and Moody's Baa spread, free CSV, no key:
   https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS5
-If FRED is unreachable, an approximate table of annual averages is used instead.
+SOFR, New York Fed, no key (verified 2026-10-30):
+  https://markets.newyorkfed.org/api/rates/secured/sofr/search.csv
+The model still prices a park loan off the 5-year Treasury plus a spread. The spread is the
+median measured from CMBS and SBA notes when that sample has at least 8 loans; otherwise the
+assumed SPREAD table below. If FRED is unreachable, an approximate annual table is used instead.
 """
 from __future__ import annotations
 
@@ -11,8 +15,11 @@ import io
 from datetime import date
 
 from .http import PoliteClient
+from .spreads import MIN_SAMPLE
 
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS5"
+FRED_SERIES = ("DGS5", "DGS7", "DGS10", "DPRIME", "BAA10Y")
+SOFR_URL = "https://markets.newyorkfed.org/api/rates/secured/sofr/search.csv"
 
 # Approximate annual averages of the 5-year Treasury yield (%), fallback only. Refresh from FRED when possible.
 FALLBACK_5Y = {
@@ -33,9 +40,47 @@ SPREAD = {
 SELLER_FLOOR = 5.0
 
 
+def parse_fred(text: str, series: str) -> list[tuple[date, float]]:
+    """FRED fredgraph.csv rows. A '.' value is a missing print and is skipped."""
+    out = []
+    for row in csv.DictReader(io.StringIO(text)):
+        raw_d = row.get("observation_date") or row.get("DATE")
+        raw_v = row.get(series)
+        if not raw_d or raw_v in (None, "", "."):
+            continue
+        out.append((date.fromisoformat(raw_d[:10]), float(raw_v)))
+    return out
+
+
+def parse_sofr(text: str) -> list[tuple[date, float]]:
+    """NY Fed SOFR CSV. Dates are M/D/YYYY. The rate column is 'Rate (%)'."""
+    out = []
+    for row in csv.DictReader(io.StringIO(text)):
+        raw_d, raw_v = row.get("Effective Date"), row.get("Rate (%)")
+        if not raw_d or not raw_v:
+            continue
+        m, d, y = (int(x) for x in raw_d.split("/"))
+        out.append((date(y, m, d), float(raw_v)))
+    return out
+
+
+def fetch_prints(client: PoliteClient) -> list[tuple[str, date, float]]:
+    """Download every series before a database connection is opened."""
+    out: list[tuple[str, date, float]] = []
+    for series in FRED_SERIES:
+        text = client.get(f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series}", cache_ttl=86400).text
+        out.extend((series, d, v) for d, v in parse_fred(text, series))
+    text = client.get(SOFR_URL, params={"startDate": "04/02/2018", "endDate": date.today().strftime("%m/%d/%Y")},
+                      cache_ttl=86400).text
+    out.extend(("SOFR", d, v) for d, v in parse_sofr(text))
+    return out
+
+
 class RateCurve:
-    def __init__(self, monthly: dict[tuple[int, int], float] | None = None):
+    def __init__(self, monthly: dict[tuple[int, int], float] | None = None, spreads: dict[str, dict] | None = None):
         self.monthly = monthly or {}
+        # kind -> {median, n, source}; only kinds with n >= MIN_SAMPLE belong here
+        self.spreads = spreads or {}
 
     @classmethod
     def load(cls, client: PoliteClient | None = None) -> "RateCurve":
@@ -63,8 +108,16 @@ class RateCurve:
             return self.monthly[key]
         return FALLBACK_5Y[min(FALLBACK_5Y, key=lambda y: abs(y - d.year))]
 
+    def spread_for(self, lender_kind: str) -> tuple[float, str, int]:
+        """(spread in percentage points, 'measured' or 'assumed', sample size)."""
+        measured = self.spreads.get(lender_kind)
+        if measured and int(measured.get("n") or 0) >= MIN_SAMPLE:
+            return float(measured["median"]), "measured", int(measured["n"])
+        return SPREAD.get(lender_kind, SPREAD["unknown"]), "assumed", int(measured["n"]) if measured else 0
+
     def loan_rate(self, d: date, lender_kind: str) -> float:
-        rate = self.treasury_5y(d) + SPREAD.get(lender_kind, SPREAD["unknown"])
+        spread, _, _ = self.spread_for(lender_kind)
+        rate = self.treasury_5y(d) + spread
         if lender_kind == "individual":
             rate = max(rate, SELLER_FLOOR)
         return round(rate, 2)

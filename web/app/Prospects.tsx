@@ -32,9 +32,27 @@ export default function Prospects({ rows }: { rows: ParkRow[] }) {
     a.click();
   };
 
+  const downloadExcel = () => {
+    const cols: (keyof ParkRow)[] = ["name", "city", "state", "units", "score", "owner_name", "lender_name", "maturity_date", "maturity_basis"];
+    const esc = (v: unknown) => String(v ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+    const row = (vals: unknown[]) => `<Row>${vals.map((v) => `<Cell><Data ss:Type="String">${esc(v)}</Data></Cell>`).join("")}</Row>`;
+    const xml = `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Prospects"><Table>
+${row(cols)}
+${rows.map((r) => row(cols.map((c) => r[c]))).join("\n")}
+</Table></Worksheet></Workbook>`;
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `park-prospects-${new Date().toISOString().slice(0, 10)}.xls`;
+    a.click();
+  };
+
   return (
     <div className="grid gap-3 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.5fr)]">
-      <div className="h-[380px] overflow-hidden rounded-sm border border-[#e2e2e2] xl:sticky xl:top-20 xl:h-[calc(100vh-6rem)]">
+      <div className="relative z-0 h-[380px] overflow-hidden rounded-sm border border-[#e2e2e2] xl:sticky xl:top-20 xl:h-[calc(100vh-6rem)]">
         <ParkMap rows={rows} highlight={hover} />
       </div>
       <div className="overflow-x-auto rounded-sm border border-[#e2e2e2] bg-white">
@@ -43,9 +61,11 @@ export default function Prospects({ rows }: { rows: ParkRow[] }) {
             {stats.total.toLocaleString()} parks · {stats.within12.toLocaleString()} maturing within 12 months ·{" "}
             {stats.known.toLocaleString()} with a known date
           </span>
-          <button onClick={download} className="font-medium text-[#85152a] hover:underline">
-            Export CSV
-          </button>
+          <span className="flex gap-3">
+            <button onClick={download} className="font-medium text-[#85152a] hover:underline">Export CSV</button>
+            <button onClick={downloadExcel} className="font-medium text-[#85152a] hover:underline">Export Excel</button>
+            <button onClick={() => window.print()} className="font-medium text-[#85152a] hover:underline">Print</button>
+          </span>
         </div>
         <table className="w-full min-w-[860px]">
           <thead className="bg-[#f7f7f8] text-left text-xs tracking-wide text-[#787d85]">

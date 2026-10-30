@@ -1,10 +1,23 @@
 // Demo mode: NEXT_PUBLIC_SUPABASE_URL=demo serves fictional parks from demo/data.json so the app can be
 // tried before a Supabase project exists. Supports the small subset of the query API the app uses.
 import data from "@/demo/data.json";
+import desk from "@/demo/desk.json";
 
 type Row = Record<string, unknown>;
-const tables = data as unknown as Record<string, Row[]>;
-const memoryNotes: Row[] = [];
+const tables: Record<string, Row[]> = { ...(data as unknown as Record<string, Row[]>), ...(desk as unknown as Record<string, Row[]>) };
+const written: Record<string, Row[]> = {};
+const dropped = new Set<string>();
+
+function rowKey(table: string, row: Row) {
+  return `${table}:${String(row.park_id ?? row.id ?? "")}`;
+}
+
+function rowsOf(table: string): Row[] {
+  const base = (tables[table] ?? []).filter((r) => !dropped.has(rowKey(table, r)));
+  const over = written[table] ?? [];
+  const overKeys = new Set(over.map((r) => rowKey(table, r)));
+  return [...over, ...base.filter((r) => !overKeys.has(rowKey(table, r)))];
+}
 
 class Query implements PromiseLike<{ data: unknown; error: null }> {
   private filters: ((r: Row) => boolean)[] = [];
@@ -13,9 +26,14 @@ class Query implements PromiseLike<{ data: unknown; error: null }> {
   private max = Infinity;
   private single = false;
 
+  private op: "select" | "update" | "delete" = "select";
+  private patch: Row | null = null;
+
   constructor(private table: string) {}
 
   select() { return this; }
+  update(row: Row) { this.op = "update"; this.patch = row; return this; }
+  delete() { this.op = "delete"; return this; }
   eq(k: string, v: unknown) { this.filters.push((r) => r[k] === v); return this; }
   gte(k: string, v: number | string) { this.filters.push((r) => r[k] != null && (r[k] as number | string) >= v); return this; }
   lte(k: string, v: number | string) { this.filters.push((r) => r[k] != null && (r[k] as number | string) <= v); return this; }
@@ -31,8 +49,16 @@ class Query implements PromiseLike<{ data: unknown; error: null }> {
   maybeSingle() { this.single = true; return this; }
 
   private run() {
-    const source = this.table === "activities" ? [...memoryNotes, ...(tables.activities ?? [])] : tables[this.table] ?? [];
-    let rows = source.filter((r) => this.filters.every((f) => f(r)));
+    if (this.op === "delete") {
+      for (const r of rowsOf(this.table).filter((r) => this.filters.every((f) => f(r)))) dropped.add(rowKey(this.table, r));
+      if (written[this.table]) written[this.table] = written[this.table].filter((r) => !dropped.has(rowKey(this.table, r)));
+      return { data: null, error: null };
+    }
+    if (this.op === "update" && this.patch) {
+      for (const r of rowsOf(this.table).filter((r) => this.filters.every((f) => f(r)))) Object.assign(r, this.patch);
+      return { data: null, error: null };
+    }
+    let rows = rowsOf(this.table).filter((r) => this.filters.every((f) => f(r)));
     if (this.sortKey) {
       const k = this.sortKey;
       rows = [...rows].sort((a, b) => {
@@ -55,7 +81,17 @@ export function demoClient() {
     from: (table: string) =>
       Object.assign(new Query(table), {
         insert: async (row: Row) => {
-          memoryNotes.unshift({ id: crypto.randomUUID(), created_at: new Date().toISOString(), ...row });
+          const saved = { id: crypto.randomUUID(), created_at: new Date().toISOString(), ...row };
+          (written[table] ??= []).unshift(saved);
+          return { error: null };
+        },
+        upsert: async (row: Row) => {
+          const bag = (written[table] ??= []);
+          const k = rowKey(table, row);
+          const i = bag.findIndex((r) => rowKey(table, r) === k);
+          const saved = { ...(i >= 0 ? bag[i] : {}), ...row, updated_at: new Date().toISOString() };
+          if (i >= 0) bag[i] = saved;
+          else bag.unshift(saved);
           return { error: null };
         },
       }),

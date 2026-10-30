@@ -167,6 +167,32 @@ class Recorder:
                 break  # another transaction started; stop looking
         return out
 
+    def search_by_code(self, document_code: str, begin: date, end: date | None = None, page_size: int = 100) -> list[dict]:
+        """Search by document code. Verified 2026-10-30: NS returns N/TR SALE, LP returns LIS PEND.
+
+        The search rows have an empty names string. Call document() for the parties.
+        Do not use this endpoint for a name; it ignores that parameter.
+        """
+        url = f"{RECORDER}/documents/search"
+        params = {"documentCode": document_code, "beginDate": begin.isoformat(),
+                  "endDate": (end or date.today()).isoformat(), "pageSize": page_size, "pageNumber": 1}
+        out: list[dict] = []
+        seen: set[str] = set()
+        for _ in range(MAX_SEARCH_PAGES):
+            j = self.client.get(url, params=params, cache_ttl=86400).json()
+            rows = j.get("searchResults") or []
+            new = 0
+            for r in rows:
+                num = str(_first(r, "recordingNumber", "documentNumber") or "")
+                if num and num not in seen:
+                    seen.add(num)
+                    out.append(_doc_from_json(num, r))
+                    new += 1
+            if len(rows) < page_size or new == 0:
+                break
+            params["pageNumber"] += 1
+        return out
+
     def search_by_name(self, name: str, begin: date, end: date | None = None) -> list[dict]:
         """Name search for later loan activity. Requires MARICOPA_RECORDER_SEARCH_URL (see module doc)."""
         if not SEARCH_URL:

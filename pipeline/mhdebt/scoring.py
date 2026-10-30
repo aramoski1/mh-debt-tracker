@@ -46,6 +46,7 @@ class ParkFacts:
     rentable_sites: int | None = None       # total sites less those under development
     occupancy: float | None = None          # 0-1
     operating_source: str | None = None
+    value: float | None = None              # a saved asking or underwriting price; LTV is not applied without one
 
 
 @dataclass
@@ -139,16 +140,20 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
         comp["maturity"] = {"points": 0, "why": "No recorded loan found (possibly owned free and clear)."}
 
     # --- rate shock ------------------------------------------------------------------------
-    new_rate = rates.loan_rate(today, loan.lender_kind if loan else "community_bank")
+    kind = loan.lender_kind if loan else "community_bank"
+    spread, spread_basis, spread_n = rates.spread_for(kind)
+    new_rate = rates.loan_rate(today, kind)
     old_rate = None
     if loan and loan.start_date:
         old_rate = loan.note_rate or rates.loan_rate(loan.start_date, loan.lender_kind)
         shock = new_rate - old_rate
         comp["rate_shock"] = {"points": round(20 * _clamp(shock / 3.0), 1), "old_rate": round(old_rate, 2),
                               "old_rate_basis": "reported" if loan.note_rate else "estimated",
-                              "new_rate": new_rate, "shock_pct_pts": round(shock, 2)}
+                              "new_rate": new_rate, "shock_pct_pts": round(shock, 2),
+                              "spread": spread, "spread_basis": spread_basis, "spread_n": spread_n}
     else:
-        comp["rate_shock"] = {"points": 0}
+        comp["rate_shock"] = {"points": 0, "new_rate": new_rate, "spread": spread,
+                              "spread_basis": spread_basis, "spread_n": spread_n}
 
     # --- refinance gap ---------------------------------------------------------------------
     if loan and loan.noi:
@@ -165,14 +170,22 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
     if noi and bal:
         ds_new = payment(bal, new_rate, REFI_AMORT_YEARS) * 12
         dscr_new = noi / ds_new if ds_new else None
-        # Proceeds a lender would offer: the lower of the DSCR test and the LTV cap at a market cap rate.
+        # DSCR test: a new loan of this size would have to clear 1.25x. The 75% LTV cap is applied
+        # only when a price has been saved. There is no market value to invent one from.
         max_loan_dscr = bal * (dscr_new / DSCR_TEST) if dscr_new else 0
-        gap = max(0.0, bal - max_loan_dscr)
+        if park.value and park.value > 0:
+            max_loan = min(max_loan_dscr, park.value * REFI_LTV_CAP)
+            ltv_note = f"75% of the saved price ${park.value:,.0f}"
+        else:
+            max_loan = max_loan_dscr
+            ltv_note = "no saved price, so the 75% LTV cap was not applied"
+        gap = max(0.0, bal - max_loan)
         pts = 20 * _clamp((1.40 - dscr_new) / 0.55) if dscr_new else 0
         comp["refi_gap"] = {"points": round(pts, 1), "noi": round(noi), "noi_basis": noi_basis,
                             "balance": round(bal), "balance_basis": "reported" if loan.current_balance else "estimated",
                             "dscr_at_new_rate": round(dscr_new, 2) if dscr_new else None,
-                            "equity_needed": round(gap, -3)}
+                            "equity_needed": round(gap, -3), "ltv_applied": bool(park.value),
+                            "why": ltv_note}
     else:
         comp["refi_gap"] = {"points": 0, "why": "Not enough data (need loan amount and units or income)."}
 
@@ -207,5 +220,52 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
         op += 3; owhy.append("single-park owner")
     comp["owner"] = {"points": min(15, op), "why": "; ".join(owhy) or None}
 
-    total = sum(c["points"] for c in comp.values())
+    total = sum(comp[k]["points"] for k in ("maturity", "rate_shock", "refi_gap", "lender", "owner"))
     return Score(total=round(min(100, total), 1), components=comp)
+
+
+def acquisition_fit(
+    *,
+    units: int | None,
+    state: str | None,
+    kind: str | None,
+    note_rate: float | None,
+    market_rate: float | None,
+    km_to_managed: float | None,
+    min_sites: int = 50,
+    max_sites: int = 400,
+    states: list[str] | None = None,
+    kinds: list[str] | None = None,
+) -> dict:
+    """0-100 fit against the buy box. A missing fact scores 0 and says why, so parks stay comparable."""
+    states = [s.upper() for s in (states or ["AZ"])]
+    kinds = kinds or ["mhp", "rv", "mixed"]
+    parts = []
+    if units is None:
+        parts.append({"key": "size", "points": 0, "max": 25, "why": "Site count is unknown."})
+    elif min_sites <= units <= max_sites:
+        parts.append({"key": "size", "points": 25, "max": 25, "why": f"{units} sites is inside {min_sites}-{max_sites}."})
+    else:
+        parts.append({"key": "size", "points": 0, "max": 25, "why": f"{units} sites is outside {min_sites}-{max_sites}."})
+    st = (state or "").upper()
+    parts.append({"key": "state", "points": 20 if st in states else 0, "max": 20,
+                  "why": f"{st or 'Unknown state'} {'is' if st in states else 'is not'} in the buy box."})
+    parts.append({"key": "kind", "points": 15 if kind in kinds else 0, "max": 15,
+                  "why": f"{kind or 'unknown'} {'is' if kind in kinds else 'is not'} a type the box wants."})
+    if note_rate is None or market_rate is None:
+        parts.append({"key": "rate", "points": 0, "max": 20, "why": "No note rate to compare with today's rate."})
+    elif note_rate + 0.50 < market_rate:
+        parts.append({"key": "rate", "points": 20, "max": 20,
+                      "why": f"Note rate {note_rate:.2f}% is at least half a point inside today's {market_rate:.2f}%."})
+    else:
+        parts.append({"key": "rate", "points": 0, "max": 20,
+                      "why": f"Note rate {note_rate:.2f}% is not inside today's {market_rate:.2f}%."})
+    if km_to_managed is None:
+        parts.append({"key": "distance", "points": 0, "max": 20, "why": "No managed park is marked, so distance is not scored."})
+    elif km_to_managed <= 40:
+        parts.append({"key": "distance", "points": 20, "max": 20,
+                      "why": f"About {km_to_managed / 1.609:.0f} miles from a managed park."})
+    else:
+        parts.append({"key": "distance", "points": 0, "max": 20,
+                      "why": f"About {km_to_managed / 1.609:.0f} miles from the nearest managed park."})
+    return {"points": sum(p["points"] for p in parts), "parts": parts}

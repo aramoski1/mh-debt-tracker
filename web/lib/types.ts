@@ -24,6 +24,8 @@ export type ParkRow = {
   owner_city: string | null;
   owner_state: string | null;
   owner_park_count: number | null;
+  flood_zone?: string | null;
+  managed?: boolean | null;
   score: number | null;
   score_components: Record<string, ScoreComponent> | null;
   loan_id: string | null;

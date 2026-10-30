@@ -62,7 +62,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
           </div>
         ))}
       </section>
-      <div id="calls" className="scroll-mt-20">
+      <div id="calls" className="relative z-10 scroll-mt-20">
         <CallList rows={rows} />
       </div>
       <Filters current={sp} />

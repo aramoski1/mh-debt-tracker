@@ -7,6 +7,8 @@ import { callLine } from "@/lib/brief";
 import { mergeOperating, occupancy, type Merged, type OperatingRow } from "@/lib/operating";
 import NoteForm from "./NoteForm";
 import OperatingForm from "./OperatingForm";
+import DeskActions from "./DeskActions";
+import UnderwritingDesk from "./UnderwritingDesk";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +76,8 @@ function OperatingFacts({ m }: { m: Merged }) {
 export default async function ParkPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await supabaseServer();
-  const [{ data: park }, { data: loans }, { data: docs }, { data: notes }, { data: parcels }, { data: opRows }] = await Promise.all([
+  const [{ data: park }, { data: loans }, { data: docs }, { data: notes }, { data: parcels }, { data: opRows },
+    { data: savedCase }, { data: deal }] = await Promise.all([
     supabase.from("park_overview").select("*").eq("id", id).maybeSingle(),
     supabase.from("loans").select("*, lenders(name, kind, cre_concentration), maturity_estimates(*)").eq("park_id", id)
       .order("recording_date", { ascending: false, nullsFirst: false }),
@@ -83,6 +86,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
     supabase.from("parcels").select("*").eq("park_id", id),
     supabase.from("park_operating").select("*").eq("park_id", id)
       .order("observed_on", { ascending: false }).order("created_at", { ascending: false }),
+    supabase.from("underwriting").select("*").eq("park_id", id).maybeSingle(),
+    supabase.from("deals").select("*").eq("park_id", id).maybeSingle(),
   ]);
   if (!park) notFound();
   const p = park as ParkRow;
@@ -104,13 +109,18 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           </p>
           <p className="mt-2">
             <span className="text-[#787d85]">Owner </span>
-            <span className="font-medium">{p.owner_name ?? "Unknown"}</span>
+            {p.owner_id ? (
+              <Link href={`/owners/${p.owner_id}`} className="font-medium hover:text-[#85152a]">{p.owner_name ?? "Unknown"}</Link>
+            ) : (
+              <span className="font-medium">{p.owner_name ?? "Unknown"}</span>
+            )}
             <span className="text-[#787d85]">
               {" "}· {[p.owner_city, p.owner_state].filter(Boolean).join(", ")}
               {p.owner_park_count && p.owner_park_count > 1 ? ` · owns ${p.owner_park_count} parks` : ""}
             </span>
           </p>
           {p.phone && <a className="num mt-1 inline-block text-[#85152a]" href={`tel:${p.phone}`}>{p.phone}</a>}
+          {p.flood_zone && <p className="mt-1 text-xs text-[#787d85]">FEMA flood zone {p.flood_zone}</p>}
         </div>
         <div className="text-right">
           <div className={`num inline-block rounded-sm px-3 py-1 text-2xl font-semibold ${scoreTone(p.score)}`}>
@@ -131,6 +141,35 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
               : "Use the loan section below if the owner asks for the source."}
         </p>
       </section>
+
+      <DeskActions parkId={p.id} stage={deal?.stage ?? null} nextAction={deal?.next_action ?? null} managed={!!p.managed} />
+
+      {comps.fit && (
+        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+          <h2 className="font-semibold">Acquisition fit {Math.round(Number(comps.fit.points ?? 0))}</h2>
+          <ul className="mt-2 space-y-1 text-sm">
+            {((comps.fit.parts as { key: string; points: number; max: number; why: string }[] | undefined) ?? []).map((part) => (
+              <li key={part.key} className="flex justify-between gap-4">
+                <span>{part.why}</span>
+                <span className="num shrink-0 text-[#787d85]">{part.points}/{part.max}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <UnderwritingDesk
+        parkId={p.id}
+        parkName={p.name}
+        city={p.city}
+        saved={savedCase as { price?: number | null; cap_rate?: number | null; lot_rent?: number | null; occupancy_pct?: number | null; expense_pct?: number | null; rent_growth?: number | null; sites?: number | null } | null}
+        sites={p.units}
+        lotRent={op.rent_current ? Number(op.rent_current.value) : null}
+        occupancyPct={occupancy(op) != null ? Math.round((occupancy(op) as number) * 100) : null}
+        modelRate={comps.rate_shock?.new_rate != null ? Number(comps.rate_shock.new_rate) : null}
+        spreadBasis={comps.rate_shock?.spread_basis != null ? String(comps.rate_shock.spread_basis) : null}
+        noteRate={p.note_rate}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-sm border border-[#e2e2e2] bg-white p-4 lg:col-span-2">
@@ -221,7 +260,12 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
                       {BASIS_LABEL[l.maturity_date ? l.maturity_basis : est?.basis ?? "unknown"]}
                     </span>
                   </td>
-                  <td className="px-4 py-2 capitalize">{l.status}</td>
+                  <td className="px-4 py-2 capitalize">
+                    {l.status}
+                    {l.payment_status ? ` · ${l.payment_status}` : ""}
+                    {l.noi_current ? ` · NOI ${money(Number(l.noi_current))}` : ""}
+                    {l.raw?.modified ? " · modified" : ""}
+                  </td>
                 </tr>
               );
             })}

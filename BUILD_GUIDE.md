@@ -248,7 +248,9 @@ Look at a few in Supabase (`recorded_documents.extracted`) and compare against t
 ## Step 7. Estimate maturities and score
 
 ```bash
+mhdebt rates          # Treasury, prime, Baa, SOFR, then the measured spreads
 mhdebt model
+mhdebt holdout        # term prior versus stated maturities; see docs/ACCURACY.md
 mhdebt top --n 30
 ```
 
@@ -308,7 +310,9 @@ Push to GitHub, then in the repo's **Settings > Secrets and variables > Actions*
 
 `.github/workflows/pipeline.yml` runs `mhdebt run` every night at 2:17 AM Arizona time and can be run by hand from the Actions tab. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
 
-The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build && mhdebt model`. SBA is included in the nightly run.
+The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build` and `mhdebt model`. SBA, rates, a capped Maricopa distress pull, and 100 FEMA flood lookups are in the nightly run.
+
+Distress is `mhdebt ingest distress` (document codes NS and LP, default 14 days and 80 documents). Flood is `mhdebt ingest flood`. A notice is attached to a park only when a single entity owner of one park is on the document. Everyone else is stored for review and left off the park.
 
 To run the database test locally, start any Postgres 16 and set `TEST_DATABASE_ADMIN_URL`, for example `postgresql://postgres:postgres@localhost:5432/postgres`.
 

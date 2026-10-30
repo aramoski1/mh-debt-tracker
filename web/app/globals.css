@@ -18,3 +18,7 @@ body {
 .num {
   font-variant-numeric: tabular-nums;
 }
+
+@media print {
+  header, form, #calls { display: none !important; }
+}

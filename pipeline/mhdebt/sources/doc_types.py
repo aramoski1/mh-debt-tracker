@@ -13,7 +13,7 @@ import re
 PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"CANCEL|RESCI|WITHDRAW"), "cancellation"),
     (re.compile(r"REL\w*\W+(OF\W+)?LIS\W*PEND|LIS\W*PEND\w*\W+REL"), "lis_pendens_release"),
-    (re.compile(r"NOTICE.*(TRUSTEE|SALE)|TRUSTEE.?S? SALE|^NS$|^NTS$"), "trustee_sale_notice"),
+    (re.compile(r"NOTICE.*(TRUSTEE|SALE)|TRUSTEE.?S? SALE|^NS$|^NTS$|N/?TR\W*SALE"), "trustee_sale_notice"),
     (re.compile(r"TRUSTEE.?S? DEED|^TD$|SHERIFF|TREASURER"), "trustee_deed"),
     (re.compile(r"LIS PEND|^LP$"), "lis_pendens"),
     (re.compile(r"PART(IAL)? REL|^PR$"), "partial_release"),

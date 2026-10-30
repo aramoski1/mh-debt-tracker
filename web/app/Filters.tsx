@@ -16,7 +16,7 @@ export default function Filters({ current }: { current: SP }) {
     <form className="flex flex-wrap items-end gap-2 rounded-sm border border-[#e2e2e2] bg-white p-3">
       <label className="flex flex-col gap-1">
         <span className="text-xs tracking-wide text-[#787d85]">Search</span>
-        <input name="q" defaultValue={current.q} placeholder="Park, owner or city"
+        <input id="desk-search" name="q" defaultValue={current.q} placeholder="Park, owner or city"
                className="h-8 w-56 rounded-sm border border-[#e2e2e2] px-2" />
       </label>
       <label className="flex flex-col gap-1">

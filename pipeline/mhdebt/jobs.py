@@ -18,12 +18,14 @@ from .config import settings
 from .docai import extract, trustworthy_maturity
 from .http import PoliteClient
 from .lenders import LenderClassifier, is_title_company, strip_descriptors
-from .match import Candidate, Probe, best_match, nearest, similarity
+from .match import Candidate, Probe, best_match, haversine_m, nearest, similarity
 from .normalize import nice_title, norm_entity
-from .rates import RateCurve
-from .scoring import LoanFacts, ParkFacts, score
+from .rates import RateCurve, fetch_prints
+from .scoring import LoanFacts, ParkFacts, acquisition_fit, score
 from .sources import agency, edgar_cmbs, fdic, hifld, maricopa, pima, sba
+from .sources import fema
 from .sources.doc_types import CURE_TYPES, DISTRESS_TYPES, LOAN_TYPES
+from .spreads import median_spreads, spread_for_model
 
 log = logging.getLogger("mhdebt")
 
@@ -666,6 +668,8 @@ def estimate_maturities(conn, today: date | None = None) -> dict:
                          (r["id"], e.p10, e.p50, e.p90, e.prob_12m, e.prob_24m, e.prob_past_due, e.likely, e.basis, e.method,
                           e.explanation))
             n += 1
+            if n % 200 == 0:
+                conn.commit()
         conn.commit()
         stats["estimated"] = n
     return stats
@@ -722,7 +726,7 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
     today = today or date.today()
     with db.source_run(conn, "score") as stats:
         parks = conn.execute("""
-            select p.id, p.name, p.state, p.kind, p.units, o.entity_type, o.mailing_state, o.park_count,
+            select p.id, p.name, p.state, p.kind, p.units, p.lat, p.lon, o.entity_type, o.mailing_state, o.park_count,
                    (select min(pa.last_sale_date) from parcels pa where pa.park_id = p.id) as held_since,
                    s.score as prev_score
             from parks p left join owners o on o.id = p.owner_id left join park_scores s on s.park_id = p.id
@@ -739,6 +743,11 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
         op_rows: dict[str, list[dict]] = {}
         for r in conn.execute("select * from park_operating order by park_id, observed_on desc, created_at desc"):
             op_rows.setdefault(str(r["park_id"]), []).append(r)
+        prices = {str(r["park_id"]): float(r["price"])
+                  for r in conn.execute("select park_id, price from underwriting where price is not null")}
+        box = conn.execute("select min_sites, max_sites, states, kinds from buy_box where id = 1").fetchone()
+        managed = conn.execute("""select p.lat, p.lon from portfolio pf join parks p on p.id = pf.park_id
+                                  where p.lat is not null and p.lon is not null""").fetchall()
 
         n = jumps = 0
         for p in parks:
@@ -750,7 +759,8 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
                            held_since_basis="reported" if owned_since else "deed",
                            lot_rent=op.get("rent_current"), rentable_sites=op.rentable_sites(),
                            occupancy=op.occupancy(),
-                           operating_source=op.source_of("rent_current", "total_sites", "vacant_sites", "occupancy_pct"))
+                           operating_source=op.source_of("rent_current", "total_sites", "vacant_sites", "occupancy_pct"),
+                           value=prices.get(str(p["id"])))
             best, best_loan = score(pf, None, rates, today), None
             for ln in by_park.get(str(p["id"]), []):
                 lf = LoanFacts(lender_kind=ln["lender_kind"],
@@ -765,6 +775,16 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
                 s = score(pf, lf, rates, today)
                 if s.total > best.total:
                     best, best_loan = s, ln
+            note = float(best_loan["note_rate"]) if best_loan and best_loan["note_rate"] else None
+            market = best.components.get("rate_shock", {}).get("new_rate")
+            km = None
+            if managed and p.get("lat") is not None and p.get("lon") is not None:
+                km = min(haversine_m(p["lat"], p["lon"], m["lat"], m["lon"]) for m in managed) / 1000
+            best.components["fit"] = acquisition_fit(
+                units=p["units"], state=p["state"], kind=p["kind"], note_rate=note, market_rate=market,
+                km_to_managed=km,
+                min_sites=box["min_sites"] if box else 50, max_sites=box["max_sites"] if box else 400,
+                states=list(box["states"]) if box else ["AZ"], kinds=list(box["kinds"]) if box else ["mhp", "rv", "mixed"])
             conn.execute("""insert into park_scores (park_id, score, components, primary_loan_id, computed_at)
                             values (%s,%s,%s,%s, now())
                             on conflict (park_id) do update set score=excluded.score, components=excluded.components,
@@ -781,6 +801,187 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
                 db.add_alert(conn, str(p["id"]), "maturity_window", f"{p['name']}: loan matures {m['p50']}",
                              m.get("why"), f"window:{best_loan['id'] if best_loan else p['id']}:{m['p50']}")
             n += 1
+            if n % 200 == 0:
+                conn.commit()
         conn.commit()
         stats.update(parks=n, score_jumps=jumps)
     return stats
+
+
+def store_rate_prints(conn, prints: list[tuple[str, date, float]]) -> dict:
+    with db.source_run(conn, "rates") as stats:
+        with conn.cursor() as cur:
+            for i in range(0, len(prints), 500):
+                cur.executemany(
+                    """insert into rate_prints (series, observed_on, value) values (%s, %s, %s)
+                       on conflict (series, observed_on) do update set value = excluded.value""",
+                    prints[i:i + 500])
+        conn.commit()
+        stats["prints"] = len(prints)
+    return stats
+
+
+def _treasury_lookup(rows: list[tuple[date, float]]):
+    rows = sorted(rows)
+    def on(d: date) -> float | None:
+        # Latest print on or before d.
+        lo, hi = 0, len(rows) - 1
+        best = None
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if rows[mid][0] <= d:
+                best = rows[mid][1]
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        return best
+    return on
+
+
+def measure_spreads(conn, as_of: date | None = None) -> dict:
+    """Median note rate minus the 5-year Treasury on the origination date, for CMBS and SBA loans."""
+    as_of = as_of or date.today()
+    with db.source_run(conn, "spreads") as stats:
+        curve = conn.execute(
+            "select observed_on, value from rate_prints where series = 'DGS5' order by observed_on"
+        ).fetchall()
+        if not curve:
+            stats.update(skipped="no DGS5 prints")
+            return stats
+        treasury = _treasury_lookup([(r["observed_on"], float(r["value"])) for r in curve])
+        loans = conn.execute("""
+            select l.source, coalesce(ld.kind::text, 'unknown') as lender_kind,
+                   l.note_rate, l.origination_date
+            from loans l left join lenders ld on ld.id = l.lender_id
+            where l.source in ('cmbs', 'sba')
+              and l.note_rate is not null and l.origination_date is not null""").fetchall()
+        rows = median_spreads(loans, treasury)
+        for r in rows:
+            conn.execute("""insert into market_spreads (source, lender_kind, median_spread, sample_size, as_of)
+                            values (%s, %s, %s, %s, %s)
+                            on conflict (source, lender_kind, as_of) do update set
+                              median_spread = excluded.median_spread, sample_size = excluded.sample_size""",
+                         (r["source"], r["lender_kind"], r["median_spread"], r["sample_size"], as_of))
+        conn.commit()
+        stats.update(groups=len(rows), usable=sum(1 for r in rows if r["usable"]))
+    return stats
+
+
+def spread_map(conn) -> dict[str, dict]:
+    rows = conn.execute("""
+        select distinct on (source, lender_kind) source, lender_kind, median_spread, sample_size
+        from market_spreads order by source, lender_kind, as_of desc""").fetchall()
+    return spread_for_model([dict(r) for r in rows])
+
+
+# Maricopa document codes verified against /documents/search on 2026-10-30.
+DISTRESS_CODES = ("NS", "LP")
+
+
+def prepare_distress(client: PoliteClient, days: int = 14, limit: int = 80) -> list[dict]:
+    """Download notice-of-sale and lis pendens documents before opening the database."""
+    rec = maricopa.Recorder(client)
+    end = date.today()
+    begin = end - timedelta(days=days)
+    out: list[dict] = []
+    for code in DISTRESS_CODES:
+        for row in rec.search_by_code(code, begin, end):
+            if len(out) >= limit:
+                return out
+            full = row
+            if not row.get("grantors") and not row.get("grantees"):
+                full = rec.document(row["recording_number"]) or row
+            out.append(full)
+    return out
+
+
+def ingest_distress_prepared(conn, docs: list[dict]) -> dict:
+    """Store the notices. Link one only when a single entity owner of one park is on the document.
+
+    A person's name collides with strangers, so those notices stay unlinked for review.
+    """
+    with db.source_run(conn, "maricopa_distress") as stats:
+        linked = unlinked = 0
+        for d in docs:
+            if d.get("doc_type") not in DISTRESS_TYPES:
+                continue
+            names = [norm_entity(x) for x in (d.get("grantors") or []) + (d.get("grantees") or []) if norm_entity(x)]
+            hits = []
+            if names:
+                hits = conn.execute("""
+                    select o.id, o.park_count, p.id as park_id
+                    from owners o join parks p on p.owner_id = o.id
+                    where o.entity_type not in ('individual', 'unknown')
+                      and o.name_norm = any(%s)""", (names,)).fetchall()
+            park_ids = {str(h["park_id"]) for h in hits if (h["park_count"] or 0) == 1}
+            d.setdefault("raw", {})["linked_by"] = "distress_code"
+            if len(park_ids) == 1:
+                d["park_id"] = next(iter(park_ids))
+                linked += 1
+            else:
+                d["park_id"] = None
+                unlinked += 1
+            db.upsert_recorded_document(conn, d)
+        conn.commit()
+        stats.update(documents=linked + unlinked, linked=linked, unlinked_for_review=unlinked)
+    return stats
+
+
+def parks_missing_flood(conn, limit: int) -> list[dict]:
+    return conn.execute(
+        """select id, lon, lat from parks
+           where flood_zone is null and lat is not null and lon is not null
+           limit %s""", (limit,)).fetchall()
+
+
+def prepare_flood(client: PoliteClient, parks: list[dict]) -> list[tuple[str, str]]:
+    out = []
+    for p in parks:
+        zone = fema.flood_zone(client, float(p["lon"]), float(p["lat"]))
+        out.append((str(p["id"]), zone or "none"))
+    return out
+
+
+def store_flood(conn, rows: list[tuple[str, str]]) -> dict:
+    with db.source_run(conn, "fema_flood") as stats:
+        for pid, zone in rows:
+            conn.execute("update parks set flood_zone = %s where id = %s", (zone, pid))
+        conn.commit()
+        stats["parks"] = len(rows)
+    return stats
+
+
+def maturity_holdout(conn, today: date | None = None) -> dict:
+    """How far the term prior lands from a maturity the filing already stated.
+
+    The reported date is not passed in. This is not a sale backtest: parcel history keeps
+    only the latest sale, so a past-date reconstruction of who sold is not available.
+    """
+    today = today or date.today()
+    rows = conn.execute("""
+        select l.maturity_date, l.origination_date, l.recording_date,
+               coalesce(ld.kind::text, 'unknown') as lender_kind
+        from loans l left join lenders ld on ld.id = l.lender_id
+        where l.maturity_date is not null
+          and (l.origination_date is not null or l.recording_date is not null)
+          and l.maturity_basis in ('reported', 'document')""").fetchall()
+    errors = []
+    for r in rows:
+        start = r["origination_date"] or r["recording_date"]
+        e = maturity.estimate(start, r["lender_kind"], start)
+        if not e.p50:
+            continue
+        months = (r["maturity_date"].year - e.p50.year) * 12 + r["maturity_date"].month - e.p50.month
+        errors.append(abs(months))
+    errors.sort()
+    n = len(errors)
+    if not n:
+        return {"n": 0}
+    mid = errors[n // 2] if n % 2 else (errors[n // 2 - 1] + errors[n // 2]) / 2
+    return {
+        "n": n,
+        "median_abs_months": mid,
+        "within_12": sum(1 for x in errors if x <= 12),
+        "within_24": sum(1 for x in errors if x <= 24),
+        "as_of": today.isoformat(),
+    }

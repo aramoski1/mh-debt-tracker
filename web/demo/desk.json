@@ -1,0 +1,25 @@
+{
+  "rate_prints": [
+    {"series": "DGS5", "observed_on": "2026-10-28", "value": 3.71},
+    {"series": "DGS7", "observed_on": "2026-10-28", "value": 3.84},
+    {"series": "DGS10", "observed_on": "2026-10-28", "value": 4.02},
+    {"series": "DPRIME", "observed_on": "2026-10-28", "value": 7.00},
+    {"series": "BAA10Y", "observed_on": "2026-10-28", "value": 1.55},
+    {"series": "SOFR", "observed_on": "2026-10-28", "value": 3.62}
+  ],
+  "market_spreads": [
+    {"source": "cmbs", "lender_kind": "cmbs_trust", "median_spread": 2.10, "sample_size": 18, "as_of": "2026-10-28"},
+    {"source": "sba", "lender_kind": "sba_lender", "median_spread": 2.85, "sample_size": 11, "as_of": "2026-10-28"}
+  ],
+  "buy_box": [
+    {"id": 1, "min_sites": 50, "max_sites": 400, "states": ["AZ"], "kinds": ["mhp", "rv", "mixed"]}
+  ],
+  "deals": [
+    {"park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "stage": "contacted", "next_action": "2026-11-06", "note": "Asked for the rent roll. Fictional demo park."}
+  ],
+  "portfolio": [],
+  "underwriting": [],
+  "source_runs": [
+    {"id": 1, "source": "rates", "status": "ok", "started_at": "2026-10-30T09:00:00Z", "finished_at": "2026-10-30T09:04:00Z", "stats": {"prints": 6}, "error": null}
+  ]
+}
