@@ -40,10 +40,12 @@ def source_run(conn: psycopg.Connection, source: str) -> Iterator[dict]:
         conn.commit()
     except Exception as exc:  # noqa: BLE001
         conn.rollback()
+        from .ingestlog import record
         conn.execute(
             "update source_runs set finished_at = now(), status = 'error', stats = %s, error = %s where id = %s",
             (_j(stats), repr(exc)[:2000], run_id),
         )
+        record(conn, source, str(exc), source, repr(exc)[:2000])
         conn.commit()
         raise
 

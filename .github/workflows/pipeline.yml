@@ -38,4 +38,5 @@ jobs:
           restore-keys: http-cache-
       - run: pip install -e .
       - run: mhdebt run ${{ inputs.skip_extract && '--skip-extract' || '' }}
+      - run: mhdebt jobs
 

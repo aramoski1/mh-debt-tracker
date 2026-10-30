@@ -107,6 +107,14 @@ def ingest_operating(file: Path = typer.Option(..., help="CSV or XLSX, one row p
 
 
 @app.command()
+def jobs(limit: int = typer.Option(10, help="How many due jobs to run")):
+    """Run due background jobs. Unknown kinds cannot be queued. Failures retry, then stop."""
+    from . import workqueue
+    with db.connect() as conn:
+        _out(workqueue.process_due(conn, limit))
+
+
+@app.command()
 def build():
     """Match published loans to parks, turn recorded documents into loans, classify lenders, geocode."""
     client = PoliteClient()
