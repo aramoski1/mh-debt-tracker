@@ -102,10 +102,10 @@ export default function Shell({ children, demo }: { children: React.ReactNode; d
                 href={item.href}
                 title={item.label}
                 onClick={() => setOpen(false)}
-                className={`flex h-8 items-center gap-2 rounded-sm px-2 text-sm ${on ? "bg-sunken font-medium text-fg" : "text-body hover:bg-sunken"}`}
+                aria-label={item.label}
+                className={`flex h-8 items-center gap-2 rounded-sm px-2 text-sm ${on ? "bg-sunken font-medium text-fg" : "text-body hover:bg-sunken"} ${collapsed ? "justify-center" : ""}`}
               >
-                <span className="grid h-5 w-5 shrink-0 place-items-center text-2xs text-muted">{item.label.slice(0, 1)}</span>
-                {!collapsed && item.label}
+                {collapsed ? <span aria-hidden="true" className="text-2xs text-muted">{item.label.slice(0, 1)}</span> : item.label}
               </Link>
             );
           })}

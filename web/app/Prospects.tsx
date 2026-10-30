@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { BASIS_LABEL, KIND_LABEL, LENDER_LABEL, type ParkRow } from "@/lib/types";
-import { money, monthYear, monthsFromNow, scoreTone } from "@/lib/format";
+import { KIND_LABEL, LENDER_LABEL, type ParkRow } from "@/lib/types";
+import { money, monthYear, monthsFromNow, scoreLabel, scoreTone } from "@/lib/format";
+import { Basis } from "@/components/ui/Bits";
 import ParkMap from "./ParkMap";
 
 function toCsv(rows: ParkRow[]) {
@@ -86,8 +87,8 @@ ${rows.map((r) => row(cols.map((c) => r[c]))).join("\n")}
                 <tr key={r.id} onMouseEnter={() => setHover(r.id)} onMouseLeave={() => setHover(null)}
                     className="border-t border-line align-top hover:bg-sunken">
                   <td className="px-3 py-2">
-                    <span className={`num inline-block w-9 rounded px-1 py-0.5 text-center font-semibold ${scoreTone(r.score)}`}>
-                      {r.score == null ? "–" : Math.round(r.score)}
+                    <span title={scoreLabel(r.score)} className={`num inline-block w-9 rounded-sm px-1 py-0.5 text-center font-semibold ${scoreTone(r.score)}`}>
+                      {r.score == null ? "—" : Math.round(r.score)}
                     </span>
                   </td>
                   <td className="px-3 py-2">
@@ -111,7 +112,12 @@ ${rows.map((r) => row(cols.map((c) => r[c]))).join("\n")}
                     <div className="text-xs text-muted">
                       {r.loan_status === "foreclosure" ? (
                         <span className="font-semibold text-accent">Foreclosure notice</span>
-                      ) : r.maturity_basis ? BASIS_LABEL[r.maturity_basis] + (m != null && m < 0 ? " · passed" : "") : ""}
+                      ) : (
+                        <>
+                          <Basis basis={r.maturity_basis} />
+                          {m != null && m < 0 ? " · passed" : ""}
+                        </>
+                      )}
                     </div>
                   </td>
                   <td className="px-3 py-2">

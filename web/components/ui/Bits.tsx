@@ -31,7 +31,7 @@ export function MetricStrip({ children, cols = "sm:grid-cols-4" }: { children: R
 
 export function Basis({ basis }: { basis: string | null | undefined }) {
   if (basis === "reported") return <span title="Figure reported on a filing">Reported</span>;
-  if (basis === "document") return <span title="Read from a recorded document">Document</span>;
+  if (basis === "document") return <span title="Read from a recorded document">From document</span>;
   if (basis === "estimated") return <span className="underline decoration-dotted underline-offset-2" title="Estimated. The range is on the park page.">Estimated</span>;
   if (!basis || basis === "unknown") return <span>—</span>;
   return <span>{basis}</span>;

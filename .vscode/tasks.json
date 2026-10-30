@@ -28,8 +28,8 @@
     {
       "label": "App: demo mode",
       "type": "shell",
-      "command": "cd web && NEXT_PUBLIC_SUPABASE_URL=demo NEXT_PUBLIC_SUPABASE_ANON_KEY=demo npm run dev",
-      "windows": { "command": "cd web; $env:NEXT_PUBLIC_SUPABASE_URL='demo'; $env:NEXT_PUBLIC_SUPABASE_ANON_KEY='demo'; npm run dev" },
+      "command": "cd web && NEXT_PUBLIC_SUPABASE_URL=demo NEXT_PUBLIC_SUPABASE_ANON_KEY=demo NEXT_DIST_DIR=.next-demo npm run dev",
+      "windows": { "command": "cd web; $env:NEXT_PUBLIC_SUPABASE_URL='demo'; $env:NEXT_PUBLIC_SUPABASE_ANON_KEY='demo'; $env:NEXT_DIST_DIR='.next-demo'; npm run dev" },
       "isBackground": true,
       "problemMatcher": []
     },
