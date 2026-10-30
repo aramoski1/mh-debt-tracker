@@ -13,7 +13,7 @@ const NAV = [
   { href: "/owners", label: "Owners" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/alerts", label: "Alerts" },
-  { href: "/freshness", label: "Sources" },
+  { href: "/admin", label: "Admin" },
 ];
 
 function active(path: string, href: string) {

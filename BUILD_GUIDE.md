@@ -74,7 +74,7 @@ Then tell Cursor which Python to use: Command Palette > **Python: Select Interpr
 **Check:**
 - In the terminal, `mhdebt --help` lists the commands.
 - **Tasks: Run Task > Test: pipeline** shows 32 passing and 1 skipped. The skipped one is the end-to-end database test, which runs once Postgres is available (Step 9).
-- **Tasks: Run Task > App: demo mode**, then open http://localhost:3000. You should see the prospects screen with fictional demo parks. The desk uses a left navigation rail. Ctrl+K or `/` opens the command palette. The theme toggle is in the top bar and is stored in the browser. Markets and Owners are counts from the parks already loaded. `/styleguide` is available only while `next dev` is running. Demo mode writes to `web/.next-demo` so it does not replace the signed-in app bundle.
+- **Tasks: Run Task > App: demo mode**, then open http://localhost:3000. You should see the prospects screen with fictional demo parks. The desk uses a left navigation rail. Ctrl+K or `/` opens the command palette. The theme toggle is in the top bar and is stored in the browser. Markets and Owners are counts from the parks already loaded. `/styleguide` is available only while `next dev` is running. Demo mode writes to `web/.next-demo` so it does not replace the signed-in app bundle. Apply `supabase/migrations/20261030000008_deal_stages.sql` before saving a deal in the new stages (In conversation, Underwriting, Due diligence). Existing stages still save without it.
 
 ### How to use Cursor's agent on this project
 

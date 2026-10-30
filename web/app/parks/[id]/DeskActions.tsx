@@ -2,14 +2,7 @@
 
 import { useState } from "react";
 
-const STAGES = [
-  ["target", "Target"],
-  ["contacted", "Contacted"],
-  ["loi", "LOI"],
-  ["under_contract", "Under contract"],
-  ["closed", "Closed"],
-  ["passed", "Passed"],
-];
+import { STAGES } from "@/lib/stages";
 
 export default function DeskActions({
   parkId, stage, nextAction, managed,

@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { monthsFromNow } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
+import { BarSeries } from "@/components/ui/Charts";
 import type { ParkRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -24,10 +25,20 @@ export default async function MarketsPage() {
     byCounty.set(key, cell);
   }
   const counties = [...byCounty.entries()].sort((a, b) => b[1].parks - a[1].parks);
+  const quarters = new Map<string, number>();
+  for (const row of rows) {
+    if (!row.maturity_date) continue;
+    const [year, month] = row.maturity_date.split("-").map(Number);
+    if (!year || !month) continue;
+    const key = `${year} Q${Math.ceil(month / 3)}`;
+    quarters.set(key, (quarters.get(key) ?? 0) + 1);
+  }
+  const bars = [...quarters.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([label, value]) => ({ label, value }));
 
   return (
     <div className="space-y-4">
       <PageHeader kicker="Markets" title="Arizona counties" lede="Counts come from the parks already on the desk. This is not a rent or population series." />
+      <BarSeries data={bars} unit="" source="Maturities by quarter, from the maturity date on each park already loaded." />
       <section className="overflow-x-auto rounded-md border border-line bg-panel">
         <table className="w-full">
           <thead className="bg-sunken text-left text-xs text-muted">

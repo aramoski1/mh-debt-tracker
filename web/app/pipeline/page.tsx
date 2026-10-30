@@ -2,14 +2,10 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { monthYear } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
+import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
 import BuyBoxForm from "./BuyBoxForm";
 
 export const dynamic = "force-dynamic";
-
-const STAGE: Record<string, string> = {
-  target: "Target", contacted: "Contacted", loi: "LOI",
-  under_contract: "Under contract", closed: "Closed", passed: "Passed",
-};
 
 type Deal = { park_id: string; stage: string; next_action: string | null; note: string | null };
 type Park = { id: string; name: string; city: string | null; score: number | null; maturity_date: string | null; owner_name: string | null };
@@ -34,8 +30,9 @@ export default async function PipelinePage() {
     <div className="space-y-4">
       <PageHeader kicker="Pipeline" title="Deals in motion" />
       <section className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
-        {Object.entries(STAGE).map(([key, label]) => {
-          const cards = list.filter((d) => d.stage === key);
+        {BOARD.map((key) => {
+          const label = STAGE_LABEL[key];
+          const cards = list.filter((d) => boardColumn(d.stage) === key);
           return (
             <div key={key} className="rounded-md border border-line bg-panel p-3">
               <p className="text-xs text-muted">{label} · {cards.length}</p>
@@ -58,7 +55,7 @@ export default async function PipelinePage() {
           {calls.map((d) => (
             <li key={d.park_id}>
               <Link href={`/parks/${d.park_id}`} className="font-medium hover:text-accent">{byId.get(d.park_id)?.name ?? "Park"}</Link>
-              <span className="text-muted"> · {d.next_action} · {STAGE[d.stage]}</span>
+              <span className="text-muted"> · {d.next_action} · {STAGE_LABEL[d.stage] ?? d.stage}</span>
             </li>
           ))}
         </ul>
@@ -83,7 +80,7 @@ export default async function PipelinePage() {
                     <Link href={`/parks/${d.park_id}`} className="font-medium hover:text-accent">{p?.name ?? d.park_id}</Link>
                     <div className="text-xs text-muted">{p?.city}{p?.owner_name ? ` · ${p.owner_name}` : ""}</div>
                   </td>
-                  <td className="px-4 py-2">{STAGE[d.stage] ?? d.stage}</td>
+                  <td className="px-4 py-2">{STAGE_LABEL[d.stage] ?? d.stage}</td>
                   <td className="num px-4 py-2">{d.next_action ?? "—"}</td>
                   <td className="num px-4 py-2 text-right">{p?.score == null ? "—" : Math.round(p.score)}</td>
                   <td className="num px-4 py-2">{monthYear(p?.maturity_date ?? null)}</td>

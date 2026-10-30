@@ -29,7 +29,14 @@ function toGeoJson(rows: ParkRow[]) {
         type: "Feature" as const,
         id: r.id,
         geometry: { type: "Point" as const, coordinates: [r.lon as number, r.lat as number] },
-        properties: { id: r.id, name: r.name, score: r.score ?? 0, units: r.units ?? 0 },
+        properties: {
+          id: r.id,
+          name: r.name,
+          score: r.score ?? 0,
+          units: r.units ?? 0,
+          lender: r.lender_name ?? r.lender_name_raw ?? "",
+          matures: r.maturity_date ?? "",
+        },
       })),
   };
 }
@@ -48,11 +55,32 @@ export default function ParkMap({ rows, highlight }: { rows: ParkRow[]; highligh
       const m = new maplibregl.Map({ container: el.current, style, center: [-111.9, 33.4], zoom: 6 });
       m.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
       m.on("load", () => {
-        m.addSource("parks", { type: "geojson", data: toGeoJson(rows), promoteId: "id" });
+        m.addSource("parks", { type: "geojson", data: toGeoJson(rows), promoteId: "id", cluster: true, clusterRadius: 48, clusterMaxZoom: 9 });
+        m.addLayer({
+          id: "clusters",
+          type: "circle",
+          source: "parks",
+          filter: ["has", "point_count"],
+          paint: {
+            "circle-color": "#e7e5e4",
+            "circle-radius": ["step", ["get", "point_count"], 14, 8, 18, 24, 24],
+            "circle-stroke-width": 1,
+            "circle-stroke-color": "#a8a29e",
+          },
+        });
+        m.addLayer({
+          id: "cluster-count",
+          type: "symbol",
+          source: "parks",
+          filter: ["has", "point_count"],
+          layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 11 },
+          paint: { "text-color": "#1c1917" },
+        });
         m.addLayer({
           id: "parks",
           type: "circle",
           source: "parks",
+          filter: ["!", ["has", "point_count"]],
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["get", "units"], 0, 4, 100, 6, 400, 11],
             "circle-color": ["step", ["get", "score"], "#a8a29e", 30, "#d97706", 45, "#c2410c", 60, "#991b1b"],
@@ -61,12 +89,36 @@ export default function ParkMap({ rows, highlight }: { rows: ParkRow[]; highligh
             "circle-opacity": 0.9,
           },
         });
+        const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 12 });
+        const text = (value: unknown) => String(value ?? "").replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch] ?? ch));
         m.on("click", "parks", (e) => {
           const id = e.features?.[0]?.properties?.id;
           if (id) window.location.href = `/parks/${id}`;
         });
-        m.on("mouseenter", "parks", () => (m.getCanvas().style.cursor = "pointer"));
-        m.on("mouseleave", "parks", () => (m.getCanvas().style.cursor = ""));
+        m.on("click", "clusters", (e) => {
+          const feature = e.features?.[0];
+          const source = m.getSource("parks") as GeoJSONSource;
+          const clusterId = feature?.properties?.cluster_id;
+          if (clusterId == null || feature?.geometry.type !== "Point") return;
+          source.getClusterExpansionZoom(clusterId).then((zoom) => {
+            if (feature.geometry.type !== "Point") return;
+            m.easeTo({ center: feature.geometry.coordinates as [number, number], zoom });
+          }).catch(() => undefined);
+        });
+        m.on("mousemove", "parks", (e) => {
+          const props = e.features?.[0]?.properties;
+          if (!props) return;
+          m.getCanvas().style.cursor = "pointer";
+          popup.setLngLat(e.lngLat).setHTML(
+            `<div style="font: 13px sans-serif; color: #1c1917"><strong>${text(props.name)}</strong><div>Score ${Math.round(Number(props.score) || 0)} · ${text(props.matures) || "no maturity"}</div><div>${text(props.lender) || "No lender"}</div></div>`,
+          ).addTo(m);
+        });
+        m.on("mouseleave", "parks", () => {
+          m.getCanvas().style.cursor = "";
+          popup.remove();
+        });
+        m.on("mouseenter", "clusters", () => (m.getCanvas().style.cursor = "pointer"));
+        m.on("mouseleave", "clusters", () => (m.getCanvas().style.cursor = ""));
         ready.current = true;
         fit(m, rows);
       });

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { money, pct } from "@/lib/format";
-import { scenario } from "@/lib/underwrite";
+import { money, pct, ratio } from "@/lib/format";
+import { payment, scenario } from "@/lib/underwrite";
 
 type Saved = {
   price?: number | null;
@@ -130,6 +130,51 @@ export default function UnderwritingDesk({
         <button type="button" onClick={save} className="rounded-sm bg-accent px-3 py-1.5 text-on-accent">Save case</button>
         {msg && <span className="text-xs text-muted">{msg}</span>}
       </div>
+      {active?.ok && (
+        <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line sm:grid-cols-3 lg:grid-cols-6">
+          {[
+            ["Price", money(Number(price))],
+            ["Cap rate", pct(Number(cap), 1)],
+            ["Cash-on-cash", pct(active.cashOnCash, 1)],
+            ["DSCR", ratio(active.noi && Number(rates[which]) ? (active.noi as number) / (payment(active.loan as number, Number(rates[which]), 30) * 12) : null)],
+            ["Equity", money(active.equity)],
+            ["5-year IRR", active.irr == null ? "—" : pct(active.irr, 1)],
+          ].map(([label, value]) => (
+            <div key={label} className="bg-panel px-3 py-2">
+              <p className="text-xs text-muted">{label}</p>
+              <p className="num text-base font-medium">{value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {active?.ok && (
+        <div className="mt-4 overflow-x-auto">
+          <p className="mb-2 text-xs text-muted">IRR by note rate and exit cap. Same rent, occupancy, expenses, and growth as the inputs above.</p>
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th className="px-2 py-1 text-left text-xs text-muted">Rate \ cap</th>
+                {[6, 7, 8, 9].map((capStep) => <th key={capStep} className="px-2 py-1 text-right text-xs text-muted">{capStep.toFixed(1)}%</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {[5, 6, 7, 8].map((rateStep) => (
+                <tr key={rateStep} className="border-t border-line">
+                  <th className="px-2 py-1 text-left font-medium">{rateStep.toFixed(2)}%</th>
+                  {[6, 7, 8, 9].map((capStep) => {
+                    const cell = scenario({
+                      price: Number(price), sites: Number(nSites), lotRent: Number(rent),
+                      occupancy: Number(occ) / 100, expense: Number(expense) / 100,
+                      capRate: capStep, growth: Number(growth) / 100, rate: rateStep,
+                    });
+                    return <td key={capStep} className="num px-2 py-1 text-right">{cell.ok && cell.irr != null ? pct(cell.irr, 1) : "—"}</td>;
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <div className="mt-4 border-t border-line pt-3">
         <h3 className="text-sm font-semibold">Draft for review</h3>
         <textarea readOnly value={letter} rows={8} className="mt-2 w-full rounded-sm border border-line p-2 text-sm" />

@@ -60,6 +60,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
       <div id="calls" className="relative z-10 scroll-mt-20">
         <CallList rows={rows} />
       </div>
+      <nav aria-label="Saved views" className="flex gap-2 overflow-x-auto text-sm">
+        {[
+          ["All Arizona", "/"],
+          ["50–200 sites · bank · 18 mo", "/?minUnits=50&maxUnits=200&lender=bank&window=18"],
+          ["Due in 12 months", "/?window=12"],
+          ["Known dates", "/?basis=known"],
+        ].map(([label, href]) => (
+          <a key={label} href={href} className="shrink-0 rounded-sm border border-line bg-panel px-2 py-1 hover:bg-sunken">{label}</a>
+        ))}
+      </nav>
       <Filters current={sp} />
       {error && <p className="rounded-sm border border-line bg-negative-soft p-3 text-accent">{error.message}</p>}
       <Prospects rows={rows} />

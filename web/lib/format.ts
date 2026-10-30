@@ -1,11 +1,16 @@
 export const money = (v: number | null | undefined) =>
   v == null
     ? "—"
-    : v >= 1_000_000
-      ? `$${(v / 1_000_000).toFixed(v >= 10_000_000 ? 0 : 1)}M`
-      : v >= 1_000
-        ? `$${Math.round(v / 1_000)}K`
-        : `$${Math.round(v)}`;
+    : Math.abs(v) >= 1_000_000
+      ? `$${(Math.abs(v) / 1_000_000).toFixed(Math.abs(v) >= 10_000_000 ? 0 : 1)}M`
+      : Math.abs(v) >= 1_000
+        ? `$${Math.round(Math.abs(v) / 1_000)}K`
+        : `$${Math.round(Math.abs(v))}`;
+
+export function signedMoney(v: number | null | undefined) {
+  if (v == null || Number.isNaN(v)) return "—";
+  return v < 0 ? `(${money(v)})` : money(v);
+}
 
 export const pct = (v: number | null | undefined, digits = 2) => (v == null ? "—" : `${Number(v).toFixed(digits)}%`);
 

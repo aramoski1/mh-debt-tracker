@@ -1,7 +1,8 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { isDemo } from "@/lib/supabase/demo";
-import { pct } from "@/lib/format";
+import { bps, pct } from "@/lib/format";
 import { Metric, MetricStrip, PageHeader } from "@/components/ui/Bits";
+import { LineSeries } from "@/components/ui/Charts";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,32 @@ export default async function RatesPage() {
   });
 
   const cmbs = spreadRows.find((row) => row.source === "cmbs") ?? null;
+  const allPrints = (prints ?? []) as Print[];
+  const levelOn = (series: string, daysAgo: number) => {
+    const now = latest.get(series);
+    if (!now) return null;
+    if (daysAgo === 0) return Number(now.value);
+    const target = new Date(`${now.observed_on}T00:00:00Z`);
+    target.setUTCDate(target.getUTCDate() - daysAgo);
+    const stamp = target.toISOString().slice(0, 10);
+    const row = allPrints.find((item) => item.series === series && item.observed_on <= stamp);
+    return row ? Number(row.value) : null;
+  };
+  const move = (series: string, daysAgo: number) => {
+    const now = levelOn(series, 0);
+    const then = levelOn(series, daysAgo);
+    return now == null || then == null ? null : now - then;
+  };
+  const curve = [
+    ["DGS5", "5-year"],
+    ["DGS7", "7-year"],
+    ["DGS10", "10-year"],
+  ].map(([series, label]) => ({
+    label,
+    today: levelOn(series, 0),
+    month: levelOn(series, 30),
+    year: levelOn(series, 365),
+  }));
   const primary = ["DGS5", "DGS10", "SOFR", "DPRIME", "AZ_UNEMP"] as const;
   const formatPrint = (series: string, value: number) =>
     series === "CPI_SHELTER" ? Number(value).toFixed(1) : series === "AZ_UNEMP" ? pct(value, 1) : pct(value);
@@ -60,7 +87,7 @@ export default async function RatesPage() {
       <MetricStrip cols="sm:grid-cols-3 lg:grid-cols-6">
         {primary.map((series) => {
           const row = latest.get(series);
-          return <Metric key={series} label={LABELS[series]} value={row ? formatPrint(series, Number(row.value)) : "—"} detail={row?.observed_on ?? "No print loaded"} />;
+          return <Metric key={series} label={LABELS[series]} value={row ? formatPrint(series, Number(row.value)) : "—"} detail={row ? `${row.observed_on} · day ${bps(move(series, 1))} · year ${bps(move(series, 365))}` : "No print loaded"} />;
         })}
         <Metric
           label="CMBS spread"
@@ -68,6 +95,12 @@ export default async function RatesPage() {
           detail={cmbs ? `${cmbs.sample_size} loans` : "No sample yet"}
         />
       </MetricStrip>
+      <LineSeries
+        data={curve}
+        lines={[{ key: "today", name: "Today" }, { key: "month", name: "1 month ago" }, { key: "year", name: "1 year ago" }]}
+        unit="%"
+        source="Treasury constant maturity from the prints already loaded. Each point is the latest print on or before that date."
+      />
       <details className="rounded-md border border-line bg-panel px-4 py-3">
         <summary className="cursor-pointer text-sm font-medium">All series</summary>
         <div className="mt-3 grid gap-px overflow-hidden rounded-sm border border-line bg-line sm:grid-cols-3">

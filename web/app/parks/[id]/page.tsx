@@ -2,9 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BASIS_LABEL, KIND_LABEL, LENDER_LABEL, type ParkRow, type ScoreComponent } from "@/lib/types";
-import { money, monthYear, pct, scoreTone } from "@/lib/format";
+import { money, monthYear, pct } from "@/lib/format";
 import { callLine } from "@/lib/brief";
 import { mergeOperating, occupancy, type Merged, type OperatingRow } from "@/lib/operating";
+import { Tabs } from "@/components/ui/Bits";
+import { ScorePill } from "@/components/ui/ScorePill";
+import { PrintButton } from "@/components/ui/PrintButton";
 import NoteForm from "./NoteForm";
 import OperatingForm from "./OperatingForm";
 import DeskActions from "./DeskActions";
@@ -133,11 +136,12 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             </p>
           ))}
         </div>
-        <div className="text-right">
-          <div className={`num inline-block rounded-sm px-3 py-1 text-2xl font-semibold ${scoreTone(p.score)}`}>
-            {p.score == null ? "–" : Math.round(p.score)}
+        <div className="flex items-start gap-3">
+          <PrintButton />
+          <div className="text-right">
+            <ScorePill score={p.score} />
+            <div className="mt-1 text-xs text-muted">Owner pressure</div>
           </div>
-          <div className="mt-1 text-xs tracking-wide text-muted">Owner pressure</div>
         </div>
       </div>
 
@@ -155,6 +159,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
 
       <DeskActions parkId={p.id} stage={deal?.stage ?? null} nextAction={deal?.next_action ?? null} managed={!!p.managed} />
 
+      <Tabs tabs={[
+        { id: "overview", label: "Overview", content: <div className="space-y-4">
       {comps.fit && (
         <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="font-semibold">Acquisition fit {Math.round(Number(comps.fit.points ?? 0))}</h2>
@@ -168,19 +174,6 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           </ul>
         </section>
       )}
-
-      <UnderwritingDesk
-        parkId={p.id}
-        parkName={p.name}
-        city={p.city}
-        saved={savedCase as { price?: number | null; cap_rate?: number | null; lot_rent?: number | null; occupancy_pct?: number | null; expense_pct?: number | null; rent_growth?: number | null; sites?: number | null } | null}
-        sites={p.units}
-        lotRent={op.rent_current ? Number(op.rent_current.value) : null}
-        occupancyPct={occupancy(op) != null ? Math.round((occupancy(op) as number) * 100) : null}
-        modelRate={comps.rate_shock?.new_rate != null ? Number(comps.rate_shock.new_rate) : null}
-        spreadBasis={comps.rate_shock?.spread_basis != null ? String(comps.rate_shock.spread_basis) : null}
-        noteRate={p.note_rate}
-      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-sm border border-line bg-panel p-4 lg:col-span-2">
@@ -243,6 +236,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         </details>
       </section>
 
+        </div> },
+        { id: "debt", label: "Debt", content: <>
       <section className="rounded-sm border border-line bg-panel">
         <h2 className="border-b border-line px-4 py-3 font-semibold">Loan history</h2>
         <table className="w-full">
@@ -287,6 +282,36 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         </table>
       </section>
 
+        </> },
+        { id: "underwriting", label: "Underwriting", content: (
+          <UnderwritingDesk
+            parkId={p.id}
+            parkName={p.name}
+            city={p.city}
+            saved={savedCase as { price?: number | null; cap_rate?: number | null; lot_rent?: number | null; occupancy_pct?: number | null; expense_pct?: number | null; rent_growth?: number | null; sites?: number | null } | null}
+            sites={p.units}
+            lotRent={op.rent_current ? Number(op.rent_current.value) : null}
+            occupancyPct={occupancy(op) != null ? Math.round((occupancy(op) as number) * 100) : null}
+            modelRate={comps.rate_shock?.new_rate != null ? Number(comps.rate_shock.new_rate) : null}
+            spreadBasis={comps.rate_shock?.spread_basis != null ? String(comps.rate_shock.spread_basis) : null}
+            noteRate={p.note_rate}
+          />
+        ) },
+        { id: "comps", label: "Comps", content: (
+          <section className="rounded-md border border-line bg-panel p-4 text-sm">
+            {sold ? (
+              <p className="num">Last assessor sale {sold.last_sale_date ?? "—"} for {money(Number(sold.last_sale_price))}{p.units ? ` · ${money(Number(sold.last_sale_price) / p.units)} per site` : ""}. This is the roll price, not a closed-deal comp.</p>
+            ) : <p className="text-muted">No assessor sale price is on the parcels linked to this park.</p>}
+          </section>
+        ) },
+        { id: "owner", label: "Owner", content: (
+          <section className="rounded-md border border-line bg-panel p-4 text-sm">
+            <p>{p.owner_name ?? "No owner name on the record."}</p>
+            <p className="text-muted">{[p.owner_city, p.owner_state].filter(Boolean).join(", ")}{p.owner_entity_type ? ` · ${p.owner_entity_type}` : ""}{p.owner_park_count && p.owner_park_count > 1 ? ` · ${p.owner_park_count} parks on this desk` : ""}</p>
+            {p.owner_id && <Link href={`/owners/${p.owner_id}`} className="mt-2 inline-block text-accent">Owner dossier</Link>}
+          </section>
+        ) },
+        { id: "records", label: "Documents and activity", content: <>
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="mb-3 font-semibold">Call notes</h2>
@@ -325,6 +350,9 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             ))}
             {!docs?.length && <li className="text-muted">None yet.</li>}
           </ul>
+          {(docs ?? []).filter((d) => d.pdf_url).slice(0, 1).map((d) => (
+            <iframe key={d.id} title={d.doc_type} src={d.pdf_url} className="mt-3 h-96 w-full rounded-sm border border-line" />
+          ))}
           {!!parcels?.length && (
             <p className="mt-4 text-xs text-muted">
               Parcels: {parcels.map((x) => `${x.apn} (${x.county})`).join(", ")}
@@ -335,6 +363,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           )}
         </section>
       </div>
+        </> },
+      ]} />
     </div>
   );
 }
