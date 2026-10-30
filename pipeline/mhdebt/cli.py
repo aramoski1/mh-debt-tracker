@@ -176,6 +176,14 @@ def ingest_flood(limit: int = 100):
         _out(jobs.store_flood(conn, rows))
 
 
+@ingest.command("water")
+def ingest_water(state: str = "AZ"):
+    """EPA drinking-water systems. A system is linked only when one park name is clearly the best match."""
+    systems = jobs.prepare_water(PoliteClient(), state)
+    with db.connect() as conn:
+        _out(jobs.ingest_water_prepared(conn, systems, state))
+
+
 @app.command()
 def run(skip_extract: bool = False):
     """Nightly: refresh every automatic source, then rebuild and rescore."""
@@ -196,6 +204,11 @@ def run(skip_extract: bool = False):
     except Exception as exc:  # noqa: BLE001
         logging.exception("distress download failed: %s", exc)
         distress = []
+    try:
+        water = jobs.prepare_water(client, "AZ") if "AZ" in states else []
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("water download failed: %s", exc)
+        water = []
     with db.connect() as conn:
         for step in (lambda: jobs.ingest_hifld(conn, client, states),
                      lambda: jobs.ingest_parcels(conn, client, "maricopa") if "AZ" in states else {},
@@ -205,7 +218,8 @@ def run(skip_extract: bool = False):
                      lambda: jobs.ingest_recorder_maricopa(conn, client) if "AZ" in states else {},
                      lambda: jobs.store_rate_prints(conn, prints) if prints else {},
                      lambda: jobs.measure_spreads(conn) if prints else {},
-                     lambda: jobs.ingest_distress_prepared(conn, distress) if distress else {}):
+                     lambda: jobs.ingest_distress_prepared(conn, distress) if distress else {},
+                     lambda: jobs.ingest_water_prepared(conn, water, "AZ") if water else {}):
             try:
                 _out(step())
             except Exception as exc:  # noqa: BLE001 - keep going; the run log records the failure
@@ -300,6 +314,14 @@ def probe_cmbs(limit: int = 3):
             typer.echo(f"  {f.company} {f.filed}: {len(loans)} park loans")
 
 
+@probe.command("epa")
+def probe_epa():
+    from .sources import epa
+
+    rows = epa.fetch_systems(PoliteClient(), "AZ")
+    typer.echo(f"{len(rows)} active Arizona water systems. First: {rows[0] if rows else None}")
+
+
 @probe.command("sofr")
 def probe_sofr():
     from .rates import SOFR_URL, parse_sofr
@@ -307,6 +329,28 @@ def probe_sofr():
     text = PoliteClient().get(SOFR_URL, params={"startDate": "10/01/2026", "endDate": "10/28/2026"}).text
     rows = parse_sofr(text)
     typer.echo(f"{len(rows)} SOFR prints in the sample window. Latest: {rows[0] if rows else None}")
+
+
+@probe.command("sofrai")
+def probe_sofrai():
+    from .rates import SOFRAI_URL, parse_sofrai
+
+    payload = PoliteClient().get(SOFRAI_URL, params={"startDate": "2026-10-27", "endDate": "2026-10-30"}).json()
+    rows = parse_sofrai(payload)
+    typer.echo(f"{len(rows)} average prints. Latest day: {[r for r in rows if r[1] == max(x[1] for x in rows)]}")
+
+
+@probe.command("treasury")
+def probe_treasury(year: int = 2026):
+    from .rates import TREASURY_CURVE_URL, parse_treasury_curve
+
+    xml = PoliteClient().get(TREASURY_CURVE_URL.format(year=year)).content
+    rows = parse_treasury_curve(xml)
+    latest = max((d for _, d, _ in rows), default=None)
+    typer.echo(f"{len(rows)} tenor-day prints in {year}. Latest {latest}:")
+    for series, d, value in rows:
+        if d == latest and series in ("TSY_5Y", "TSY_7Y", "TSY_10Y", "TSY_30Y"):
+            typer.echo(f"  {series} {value}")
 
 
 @probe.command("fred")

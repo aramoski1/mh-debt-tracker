@@ -18,8 +18,29 @@ from .http import PoliteClient
 from .spreads import MIN_SAMPLE
 
 FRED_URL = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS5"
-FRED_SERIES = ("DGS5", "DGS7", "DGS10", "DPRIME", "BAA10Y")
+FRED_SERIES = ("DGS5", "DGS7", "DGS10", "DPRIME", "BAA10Y", "DRTSCLCC")
 SOFR_URL = "https://markets.newyorkfed.org/api/rates/secured/sofr/search.csv"
+# Verified 2026-10-30. refRates[].average30day / average90day / average180day / index.
+SOFRAI_URL = "https://markets.newyorkfed.org/api/rates/secured/sofrai/search.json"
+# Verified 2026-10-30. Atom feed, one entry per business day, BC_* par yields in percent.
+TREASURY_CURVE_URL = (
+    "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml"
+    "?data=daily_treasury_yield_curve&field_tdr_date_value={year}"
+)
+# XML local names from the 2026 feed. BC_30YEARDISPLAY repeats BC_30YEAR and is not stored.
+TREASURY_FIELDS = {
+    "BC_1MONTH": "TSY_1M", "BC_1_5MONTH": "TSY_1_5M", "BC_2MONTH": "TSY_2M", "BC_3MONTH": "TSY_3M",
+    "BC_4MONTH": "TSY_4M", "BC_6MONTH": "TSY_6M", "BC_1YEAR": "TSY_1Y", "BC_2YEAR": "TSY_2Y",
+    "BC_3YEAR": "TSY_3Y", "BC_5YEAR": "TSY_5Y", "BC_7YEAR": "TSY_7Y", "BC_10YEAR": "TSY_10Y",
+    "BC_20YEAR": "TSY_20Y", "BC_30YEAR": "TSY_30Y",
+}
+SOFRAI_FIELDS = {
+    "average30day": "SOFR_AVG_30", "average90day": "SOFR_AVG_90",
+    "average180day": "SOFR_AVG_180", "index": "SOFR_INDEX",
+}
+# BLS public API v1, no key. CUUR0000SAH1 is the US city-average CPI for shelter, an index, not a lot rent.
+BLS_URL = "https://api.bls.gov/publicAPI/v1/timeseries/data/"
+BLS_SERIES = "CUUR0000SAH1"
 
 # Approximate annual averages of the 5-year Treasury yield (%), fallback only. Refresh from FRED when possible.
 FALLBACK_5Y = {
@@ -64,6 +85,66 @@ def parse_sofr(text: str) -> list[tuple[date, float]]:
     return out
 
 
+def parse_bls(payload: dict) -> list[tuple[date, float]]:
+    """BLS v1 JSON. Monthly periods are M01–M12. The annual M13 row is skipped."""
+    series = ((payload.get("Results") or {}).get("series") or [{}])[0].get("data") or []
+    out = []
+    for row in series:
+        period = str(row.get("period") or "")
+        if not period.startswith("M"):
+            continue
+        month = int(period[1:])
+        if not 1 <= month <= 12 or row.get("value") in (None, "", ".", "-"):
+            continue
+        try:
+            value = float(row["value"])
+        except (TypeError, ValueError):
+            continue
+        out.append((date(int(row["year"]), month, 1), value))
+    return out
+
+
+def parse_treasury_curve(xml: bytes) -> list[tuple[str, date, float]]:
+    """Daily par yields from Treasury's Atom XML. Missing prints are omitted."""
+    from lxml import etree
+
+    root = etree.fromstring(xml)
+    atom = "{http://www.w3.org/2005/Atom}"
+    meta = "{http://schemas.microsoft.com/ado/2007/08/dataservices/metadata}"
+    data = "{http://schemas.microsoft.com/ado/2007/08/dataservices}"
+    out: list[tuple[str, date, float]] = []
+    for entry in root.findall(f"{atom}entry"):
+        props = entry.find(f".//{meta}properties")
+        if props is None:
+            continue
+        raw_d = props.findtext(f"{data}NEW_DATE")
+        if not raw_d:
+            continue
+        observed = date.fromisoformat(raw_d[:10])
+        for xml_name, series in TREASURY_FIELDS.items():
+            raw = props.findtext(f"{data}{xml_name}")
+            if raw in (None, "", "."):
+                continue
+            out.append((series, observed, float(raw)))
+    return out
+
+
+def parse_sofrai(payload: dict) -> list[tuple[str, date, float]]:
+    """NY Fed SOFR averages and index. Each average is its own series, in percent except the index."""
+    out: list[tuple[str, date, float]] = []
+    for row in payload.get("refRates") or []:
+        raw_d = row.get("effectiveDate")
+        if not raw_d:
+            continue
+        observed = date.fromisoformat(str(raw_d)[:10])
+        for key, series in SOFRAI_FIELDS.items():
+            raw = row.get(key)
+            if raw in (None, ""):
+                continue
+            out.append((series, observed, float(raw)))
+    return out
+
+
 def fetch_prints(client: PoliteClient) -> list[tuple[str, date, float]]:
     """Download every series before a database connection is opened."""
     out: list[tuple[str, date, float]] = []
@@ -73,6 +154,27 @@ def fetch_prints(client: PoliteClient) -> list[tuple[str, date, float]]:
     text = client.get(SOFR_URL, params={"startDate": "04/02/2018", "endDate": date.today().strftime("%m/%d/%Y")},
                       cache_ttl=86400).text
     out.extend(("SOFR", d, v) for d, v in parse_sofr(text))
+    try:
+        year = date.today().year
+        resp = client.request("POST", BLS_URL, json={
+            "seriesid": [BLS_SERIES], "startyear": str(year - 2), "endyear": str(year),
+        }, cache_ttl=86400)
+        out.extend(("CPI_SHELTER", d, v) for d, v in parse_bls(resp.json()))
+    except Exception:  # noqa: BLE001 - a BLS miss should not drop the Treasury download
+        pass
+    year = date.today().year
+    try:
+        curve = client.get(TREASURY_CURVE_URL.format(year=year), cache_ttl=86400).content
+        out.extend(parse_treasury_curve(curve))
+    except Exception:  # noqa: BLE001 - FRED still has the 5/7/10-year if Treasury is down
+        pass
+    try:
+        payload = client.get(
+            SOFRAI_URL, params={"startDate": "2020-03-02", "endDate": date.today().isoformat()}, cache_ttl=86400,
+        ).json()
+        out.extend(parse_sofrai(payload))
+    except Exception:  # noqa: BLE001
+        pass
     return out
 
 

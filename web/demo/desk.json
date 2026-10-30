@@ -5,11 +5,23 @@
     {"series": "DGS10", "observed_on": "2026-10-28", "value": 4.02},
     {"series": "DPRIME", "observed_on": "2026-10-28", "value": 7.00},
     {"series": "BAA10Y", "observed_on": "2026-10-28", "value": 1.55},
-    {"series": "SOFR", "observed_on": "2026-10-28", "value": 3.62}
+    {"series": "SOFR", "observed_on": "2026-10-28", "value": 3.62},
+    {"series": "SOFR_AVG_30", "observed_on": "2026-10-30", "value": 3.70},
+    {"series": "SOFR_AVG_90", "observed_on": "2026-10-30", "value": 3.61},
+    {"series": "SOFR_AVG_180", "observed_on": "2026-10-30", "value": 3.55},
+    {"series": "TSY_5Y", "observed_on": "2026-10-29", "value": 3.80},
+    {"series": "TSY_7Y", "observed_on": "2026-10-29", "value": 3.91},
+    {"series": "TSY_10Y", "observed_on": "2026-10-29", "value": 4.05},
+    {"series": "DRTSCLCC", "observed_on": "2026-07-01", "value": 4.0},
+    {"series": "CPI_SHELTER", "observed_on": "2026-09-01", "value": 310.0}
   ],
   "market_spreads": [
     {"source": "cmbs", "lender_kind": "cmbs_trust", "median_spread": 2.10, "sample_size": 18, "as_of": "2026-10-28"},
     {"source": "sba", "lender_kind": "sba_lender", "median_spread": 2.85, "sample_size": 11, "as_of": "2026-10-28"}
+  ],
+  "loan_spreads": [
+    {"source": "cmbs", "lender_kind": "cmbs_trust", "tenor": "DGS10", "quarter": "2024Q2", "method": "matching_tenor", "median_spread": 1.90, "sample_size": 9, "as_of": "2026-10-28"},
+    {"source": "sba", "lender_kind": "sba_lender", "tenor": "DGS10", "quarter": "2022Q1", "method": "matching_tenor", "median_spread": 2.40, "sample_size": 6, "as_of": "2026-10-28"}
   ],
   "buy_box": [
     {"id": 1, "min_sites": 50, "max_sites": 400, "states": ["AZ"], "kinds": ["mhp", "rv", "mixed"]}
@@ -20,6 +32,12 @@
   "portfolio": [],
   "underwriting": [],
   "source_runs": [
-    {"id": 1, "source": "rates", "status": "ok", "started_at": "2026-10-30T09:00:00Z", "finished_at": "2026-10-30T09:04:00Z", "stats": {"prints": 6}, "error": null}
+    {"id": 1, "source": "rates", "status": "ok", "started_at": "2026-10-30T09:00:00Z", "finished_at": "2026-10-30T09:04:00Z", "stats": {"prints": 8}, "error": null}
+  ],
+  "parcels": [
+    {"park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "apn": "DEMO-APN", "county": "Maricopa", "last_sale_date": "2019-06-01", "last_sale_price": 1800000}
+  ],
+  "water_systems": [
+    {"pws_id": "AZDEMO001", "park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "name": "Paradise RV Resort", "county": "Maricopa", "serious_violator": false, "qtrs_with_violations": 0}
   ]
 }

@@ -23,9 +23,9 @@ from .normalize import nice_title, norm_entity
 from .rates import RateCurve, fetch_prints
 from .scoring import LoanFacts, ParkFacts, acquisition_fit, score
 from .sources import agency, edgar_cmbs, fdic, hifld, maricopa, pima, sba
-from .sources import fema
+from .sources import epa, fema
 from .sources.doc_types import CURE_TYPES, DISTRESS_TYPES, LOAN_TYPES
-from .spreads import median_spreads, spread_for_model
+from .spreads import median_spreads, spread_for_model, spreads_by_term
 
 log = logging.getLogger("mhdebt")
 
@@ -849,11 +849,22 @@ def measure_spreads(conn, as_of: date | None = None) -> dict:
             stats.update(skipped="no DGS5 prints")
             return stats
         treasury = _treasury_lookup([(r["observed_on"], float(r["value"])) for r in curve])
+        curves = {}
+        for series in ("DGS5", "DGS7", "DGS10"):
+            prints = conn.execute(
+                "select observed_on, value from rate_prints where series = %s order by observed_on", (series,)
+            ).fetchall()
+            curves[series] = _treasury_lookup([(r["observed_on"], float(r["value"])) for r in prints])
+
+        def rate_on(series: str, d: date) -> float | None:
+            lookup = curves.get(series)
+            return lookup(d) if lookup else None
+
         loans = conn.execute("""
             select l.source, coalesce(ld.kind::text, 'unknown') as lender_kind,
-                   l.note_rate, l.origination_date
+                   l.note_rate, l.origination_date, l.term_months
             from loans l left join lenders ld on ld.id = l.lender_id
-            where l.source in ('cmbs', 'sba')
+            where l.source in ('cmbs', 'sba', 'fannie', 'freddie')
               and l.note_rate is not null and l.origination_date is not null""").fetchall()
         rows = median_spreads(loans, treasury)
         for r in rows:
@@ -862,8 +873,18 @@ def measure_spreads(conn, as_of: date | None = None) -> dict:
                             on conflict (source, lender_kind, as_of) do update set
                               median_spread = excluded.median_spread, sample_size = excluded.sample_size""",
                          (r["source"], r["lender_kind"], r["median_spread"], r["sample_size"], as_of))
+        detailed = spreads_by_term(loans, rate_on)
+        for r in detailed:
+            conn.execute("""insert into loan_spreads
+                            (source, lender_kind, tenor, quarter, method, median_spread, sample_size, as_of)
+                            values (%s, %s, %s, %s, %s, %s, %s, %s)
+                            on conflict (source, lender_kind, tenor, quarter, method, as_of) do update set
+                              median_spread = excluded.median_spread, sample_size = excluded.sample_size""",
+                         (r["source"], r["lender_kind"], r["tenor"], r["quarter"], r["method"],
+                          r["median_spread"], r["sample_size"], as_of))
         conn.commit()
-        stats.update(groups=len(rows), usable=sum(1 for r in rows if r["usable"]))
+        stats.update(groups=len(rows), usable=sum(1 for r in rows if r["usable"]),
+                     term_quarters=len(detailed))
     return stats
 
 
@@ -948,6 +969,38 @@ def store_flood(conn, rows: list[tuple[str, str]]) -> dict:
             conn.execute("update parks set flood_zone = %s where id = %s", (zone, pid))
         conn.commit()
         stats["parks"] = len(rows)
+    return stats
+
+
+def prepare_water(client: PoliteClient, state: str = "AZ") -> list[dict]:
+    return epa.fetch_systems(client, state)
+
+
+def ingest_water_prepared(conn, systems: list[dict], state: str = "AZ") -> dict:
+    with db.source_run(conn, "epa_sdwa") as stats:
+        parks = conn.execute(
+            "select id, name, county from parks where state = %s", (state,)
+        ).fetchall()
+        linked_rows = epa.link_systems(systems, parks)
+        for row in linked_rows:
+            if not row["pws_id"]:
+                continue
+            conn.execute("""
+                insert into water_systems
+                  (pws_id, name, county, serious_violator, qtrs_with_violations, rules_violated_3yr,
+                   park_id, match_score, observed_on)
+                values (%s, %s, %s, %s, %s, %s, %s, %s, current_date)
+                on conflict (pws_id) do update set
+                  name = excluded.name, county = excluded.county,
+                  serious_violator = excluded.serious_violator,
+                  qtrs_with_violations = excluded.qtrs_with_violations,
+                  rules_violated_3yr = excluded.rules_violated_3yr,
+                  park_id = excluded.park_id, match_score = excluded.match_score,
+                  observed_on = current_date""",
+                (row["pws_id"], row["name"], row["county"], row["serious_violator"],
+                 row["qtrs_with_violations"], row["rules_violated_3yr"], row["park_id"], row["match_score"]))
+        conn.commit()
+        stats.update(systems=len(linked_rows), linked=sum(1 for r in linked_rows if r["park_id"]))
     return stats
 
 

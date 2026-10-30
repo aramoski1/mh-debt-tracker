@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<feed xml:base="https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml" xmlns:d="http://schemas.microsoft.com/ado/2007/08/dataservices" xmlns:m="http://schemas.microsoft.com/ado/2007/08/dataservices/metadata" xmlns="http://www.w3.org/2005/Atom">
+  <title type="text">DailyTreasuryYieldCurveRateData</title>
+  <entry>
+    <content type="application/xml">
+      <m:properties>
+        <d:NEW_DATE>2026-10-29T00:00:00</d:NEW_DATE>
+        <d:BC_5YEAR>4.78</d:BC_5YEAR>
+        <d:BC_7YEAR>4.87</d:BC_7YEAR>
+        <d:BC_10YEAR>4.98</d:BC_10YEAR>
+        <d:BC_30YEAR>5.32</d:BC_30YEAR>
+        <d:BC_30YEARDISPLAY>5.32</d:BC_30YEARDISPLAY>
+      </m:properties>
+    </content>
+  </entry>
+</feed>

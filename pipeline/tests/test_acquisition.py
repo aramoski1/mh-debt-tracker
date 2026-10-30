@@ -2,11 +2,11 @@ import json
 from datetime import date
 from pathlib import Path
 
-from mhdebt.rates import RateCurve, parse_fred, parse_sofr
+from mhdebt.rates import RateCurve, parse_fred, parse_sofrai, parse_sofr, parse_treasury_curve
 from mhdebt.scoring import LoanFacts, ParkFacts, acquisition_fit, score
 from mhdebt.sources import fema, maricopa
 from mhdebt.sources.doc_types import normalize_doc_type
-from mhdebt.spreads import median_spreads, spread_for_model
+from mhdebt.spreads import median_spreads, quarter_label, spread_for_model, spreads_by_term, tenor_for_term
 from mhdebt.underwrite import irr, scenario
 
 FIX = Path(__file__).parent / "fixtures"
@@ -34,6 +34,29 @@ def test_fema_point():
     payload = json.loads((FIX / "fema_flood_point.json").read_text())
     assert fema.parse_flood(payload) == "X"
     assert fema.parse_flood({"features": []}) is None
+
+
+def test_treasury_curve_and_sofr_averages():
+    curve = parse_treasury_curve((FIX / "treasury_yield_curve_sample.xml").read_bytes())
+    by = {series: value for series, _, value in curve}
+    assert by["TSY_5Y"] == 4.78 and by["TSY_10Y"] == 4.98
+    assert "TSY_30YEARDISPLAY" not in by
+    avgs = parse_sofrai(json.loads((FIX / "nyfed_sofrai_sample.json").read_text()))
+    assert ( "SOFR_AVG_30", date(2026, 10, 30), 3.89857) in avgs
+    assert ("SOFR_INDEX", date(2026, 10, 30), 1.2649531) in avgs
+
+
+def test_spread_uses_the_nearest_tenor_and_quarter():
+    assert tenor_for_term(None) == ("DGS5", "term_unknown_uses_5y")
+    assert tenor_for_term(120) == ("DGS10", "matching_tenor")
+    assert quarter_label(date(2024, 6, 1)) == "2024Q2"
+    loans = [{
+        "source": "cmbs", "lender_kind": "cmbs_trust", "note_rate": 6.5,
+        "origination_date": date(2024, 6, 1), "term_months": 120,
+    }]
+    rows = spreads_by_term(loans, lambda series, d: {"DGS10": 4.5}.get(series))
+    assert rows[0]["tenor"] == "DGS10" and rows[0]["quarter"] == "2024Q2"
+    assert rows[0]["median_spread"] == 2.0 and rows[0]["method"] == "matching_tenor"
 
 
 def test_measured_spread_needs_a_sample():
@@ -70,6 +93,40 @@ def test_fit_states_its_gaps():
 
 def test_irr_on_a_known_flow():
     assert irr([-100, 0, 121]) == 10.0
+
+
+def test_bls_and_water_match():
+    from mhdebt.rates import parse_bls
+    from mhdebt.sources.epa import link_systems, parse_system
+
+    rows = parse_bls({"Results": {"series": [{"data": [
+        {"year": "2026", "period": "M09", "value": "432.092"},
+        {"year": "2026", "period": "M08", "value": "-"},
+        {"year": "2026", "period": "M13", "value": "400"},
+    ]}]}})
+    assert rows == [(date(2026, 9, 1), 432.092)]
+    system = parse_system(json.loads((FIX / "epa_sdwa_system.json").read_text()))
+    assert system["pws_id"] == "AZ0415101" and system["serious_violator"] is False
+    linked = link_systems([system], [
+        {"id": "a", "name": "3 Dreamers RV Park", "county": "La Paz"},
+        {"id": "b", "name": "Saguaro Vista", "county": "La Paz"},
+    ])
+    assert linked[0]["park_id"] == "a"
+    ambiguous = link_systems([system], [
+        {"id": "a", "name": "3 Dreamers RV Park", "county": "La Paz"},
+        {"id": "b", "name": "3 Dreamers RV Park LLC", "county": "La Paz"},
+    ])
+    assert ambiguous[0]["park_id"] is None
+    false = link_systems([
+        {"pws_id": "X", "name": "APACHE NITROGEN PRODUCTS", "county": "Cochise",
+         "serious_violator": False, "qtrs_with_violations": 0, "rules_violated_3yr": 0},
+    ], [{"id": "p", "name": "Apache Mobile Park", "county": "Cochise"}])
+    assert false[0]["park_id"] is None
+    village = link_systems([
+        {"pws_id": "Y", "name": "Arizona Village", "county": "Pima",
+         "serious_violator": True, "qtrs_with_violations": 1, "rules_violated_3yr": 1},
+    ], [{"id": "p", "name": "Arizona Trailer Court", "county": "Pima"}])
+    assert village[0]["park_id"] is None
 
 
 def test_scenario_names_the_binding_constraint():

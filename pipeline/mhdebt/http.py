@@ -20,6 +20,9 @@ HOST_RPS: dict[str, float] = {
     "geocoding.geo.census.gov": 2.0,
     "api.fdic.gov": 4.0,
     "data.sba.gov": 1.0,
+    "home.treasury.gov": 1.0,
+    "markets.newyorkfed.org": 1.0,
+    "fred.stlouisfed.org": 1.0,
 }
 DEFAULT_RPS = 3.0
 

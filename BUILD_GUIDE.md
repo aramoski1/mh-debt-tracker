@@ -124,6 +124,10 @@ mhdebt probe pima           # PARCEL_USE values starting with 08
 mhdebt probe fdic           # confirms the call-report fields used for CRE concentration
 mhdebt probe sba            # lists the public 7(a) and 504 CSV snapshots the loader will download
 mhdebt probe cmbs --limit 3 # finds CMBS trusts and counts park loans in a few
+mhdebt probe fred           # latest FRED constant-maturity print (default DGS10)
+mhdebt probe sofr           # a short window of overnight SOFR
+mhdebt probe sofrai         # 30-, 90-, and 180-day SOFR averages
+mhdebt probe treasury       # this year's Treasury par yield curve
 ```
 
 What to look for:
@@ -312,7 +316,7 @@ Push to GitHub, then in the repo's **Settings > Secrets and variables > Actions*
 
 The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build` and `mhdebt model`. SBA, rates, a capped Maricopa distress pull, and 100 FEMA flood lookups are in the nightly run.
 
-Distress is `mhdebt ingest distress` (document codes NS and LP, default 14 days and 80 documents). Flood is `mhdebt ingest flood`. A notice is attached to a park only when a single entity owner of one park is on the document. Everyone else is stored for review and left off the park.
+Distress is `mhdebt ingest distress`. Flood is `mhdebt ingest flood`. Drinking-water systems are `mhdebt ingest water`. A notice is attached to a park only when a single entity owner of one park is on the document. A water system is attached only when one park name is clearly the best match.
 
 To run the database test locally, start any Postgres 16 and set `TEST_DATABASE_ADMIN_URL`, for example `postgresql://postgres:postgres@localhost:5432/postgres`.
 
