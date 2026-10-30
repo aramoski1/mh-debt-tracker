@@ -59,6 +59,11 @@ export async function POST(req: Request) {
     ([k, v]) => v != null && !["park_id", "source", "observed_on", "entered_by", "entered_by_name"].includes(k),
   );
   if (!filled) return NextResponse.json({ error: "Enter at least one figure" }, { status: 400 });
+  const tags: Record<string, string> = {};
+  for (const [key, value] of Object.entries(row)) {
+    if (value != null && !["park_id", "source", "observed_on", "entered_by", "entered_by_name"].includes(key)) tags[key] = "jack";
+  }
+  row.field_sources = tags;
   const total = row.total_sites as number | null;
   if (total != null && ((row.vacant_sites as number | null) ?? 0) + ((row.dev_sites as number | null) ?? 0) > total)
     return NextResponse.json({ error: "Vacant plus under-development sites exceed total sites" }, { status: 400 });

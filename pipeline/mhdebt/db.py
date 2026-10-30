@@ -11,6 +11,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
 from .config import settings
+from .fieldlock import apply_ingest
 from .normalize import entity_type, norm_entity, norm_park_name
 
 
@@ -82,21 +83,37 @@ def upsert_owner(conn, name: str, *, mailing: str | None = None, city: str | Non
     return str(row["id"])
 
 
+PARK_COLS = ["name", "address", "city", "state", "zip", "county", "lat", "lon", "kind", "units", "status", "website", "phone"]
+WRITER_TAG = {"hifld": "hifld", "cmbs": "edgar", "edgar": "edgar", "sba": "sba", "hud": "hud", "maricopa": "assessor", "pima": "assessor"}
+
+
 def upsert_park_by_source(conn, source: str, source_id: str, rec: dict) -> str:
     """Insert or update a park keyed by an external id stored in parks.sources[source]."""
-    existing = conn.execute("select id from parks where sources->>%s = %s", (source, source_id)).fetchone()
-    cols = ["name", "address", "city", "state", "zip", "county", "lat", "lon", "kind", "units", "status", "website", "phone"]
-    vals = {c: rec.get(c) for c in cols}
-    vals["name_norm"] = norm_park_name(rec.get("name"))
+    existing = conn.execute(
+        f"select id, {', '.join(PARK_COLS)}, field_sources from parks where sources->>%s = %s",
+        (source, source_id),
+    ).fetchone()
+    incoming = {c: rec.get(c) for c in PARK_COLS}
+    writer = WRITER_TAG.get(source, source if source in {"hifld", "jack"} else "web")
     if existing:
-        sets = ", ".join(f"{c} = coalesce(%({c})s, {c})" for c in [*cols, "name_norm"])
-        conn.execute(f"update parks set {sets}, updated_at = now() where id = %(id)s", {**vals, "id": existing["id"]})
+        merged, tags = apply_ingest(dict(existing), existing["field_sources"] or {}, incoming, writer)
+        merged["name_norm"] = norm_park_name(merged.get("name")) or existing.get("name_norm")
+        sets = ", ".join(f"{c} = %({c})s" for c in [*PARK_COLS, "name_norm"])
+        conn.execute(
+            f"update parks set {sets}, field_sources = %(field_sources)s, updated_at = now() where id = %(id)s",
+            {**merged, "field_sources": _j(tags), "id": existing["id"]},
+        )
         return str(existing["id"])
-    vals["sources"] = _j({source: source_id})
-    keys = [*cols, "name_norm", "sources"]
+    merged, tags = apply_ingest({}, {}, incoming, writer)
+    merged["name_norm"] = norm_park_name(merged.get("name"))
+    merged["sources"] = _j({source: source_id})
+    merged["kind"] = merged.get("kind") or "unknown"
+    merged["state"] = merged.get("state") or ""
+    merged["field_sources"] = _j(tags)
+    keys = [*PARK_COLS, "name_norm", "sources", "field_sources"]
     row = conn.execute(
         f"insert into parks ({', '.join(keys)}) values ({', '.join('%(' + k + ')s' for k in keys)}) returning id",
-        {**vals, "kind": vals["kind"] or "unknown", "state": vals["state"] or ""},
+        merged,
     ).fetchone()
     return str(row["id"])
 
@@ -154,11 +171,19 @@ LOAN_COLS = [
 
 
 def upsert_loan(conn, source: str, source_loan_id: str, rec: dict) -> str:
-    vals = {c: rec.get(c) for c in LOAN_COLS}
-    vals["maturity_basis"] = vals["maturity_basis"] or ("reported" if vals["maturity_date"] else "unknown")
+    incoming = {c: rec.get(c) for c in LOAN_COLS}
+    incoming["maturity_basis"] = incoming["maturity_basis"] or ("reported" if incoming["maturity_date"] else "unknown")
+    existing = conn.execute(
+        f"select {', '.join(LOAN_COLS)}, field_sources from loans where source = %s and source_loan_id = %s",
+        (source, source_loan_id),
+    ).fetchone()
+    writer = WRITER_TAG.get(source, "web")
+    merged, tags = apply_ingest(dict(existing) if existing else {}, (existing or {}).get("field_sources") or {}, incoming, writer)
+    vals = {c: merged.get(c) for c in LOAN_COLS}
     status = vals.pop("status")  # None means "leave the current status alone"
     vals["raw"] = _j(rec.get("raw"))
-    keys = [c for c in LOAN_COLS if c != "status"] + ["raw"]
+    vals["field_sources"] = _j(tags)
+    keys = [c for c in LOAN_COLS if c != "status"] + ["raw", "field_sources"]
     # Never overwrite a known park link or a better maturity basis with nulls.
     updates = ", ".join(
         f"{c} = coalesce(excluded.{c}, loans.{c})" for c in keys if c not in ("maturity_basis", "status")
