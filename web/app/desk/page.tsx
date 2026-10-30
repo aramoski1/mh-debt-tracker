@@ -1,4 +1,5 @@
 import { callLine, callTargets } from "@/lib/brief";
+import { RANK, rankToday, type TodayItem } from "@/lib/today";
 import { money, monthsFromNow } from "@/lib/format";
 import { applyProspectFilters } from "@/lib/prospects";
 import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
@@ -52,6 +53,30 @@ export default async function DeskPage() {
   }
   followups.sort((a, b) => a.when.localeCompare(b.when));
 
+  const ranked: TodayItem[] = [];
+  const seen = new Set<string>();
+  const push = (item: TodayItem) => {
+    if (seen.has(item.href + item.rank)) return;
+    seen.add(item.href + item.rank);
+    ranked.push(item);
+  };
+  for (const park of rows) {
+    const months = monthsFromNow(park.maturity_date);
+    if (park.loan_status === "foreclosure") {
+      push({ id: `${park.id}-trustee`, rank: RANK.trustee, title: park.name, why: callLine(park), href: `/parks/${park.id}` });
+    } else if ((park.lender_kind === "cmbs_trust" || park.lender_kind === "conduit_lender") && /delinq|special/i.test(park.loan_status ?? "")) {
+      push({ id: `${park.id}-servicing`, rank: RANK.servicing, title: park.name, why: callLine(park), href: `/parks/${park.id}` });
+    } else if ((park.maturity_basis === "reported" || park.maturity_basis === "document") && months != null && months >= 0 && months <= 6) {
+      push({ id: `${park.id}-m6`, rank: RANK.maturity6, title: park.name, why: callLine(park), href: `/parks/${park.id}` });
+    } else if (park.maturity_basis === "estimated" && months != null && months >= 0 && months <= 12) {
+      push({ id: `${park.id}-m12`, rank: RANK.maturity12, title: park.name, why: callLine(park), href: `/parks/${park.id}` });
+    }
+  }
+  for (const item of followups) {
+    push({ id: `${item.parkId}-due`, rank: item.why === "From a note" ? RANK.followup : RANK.deal, title: item.name, why: item.why, href: `/parks/${item.parkId}`, due: item.when });
+  }
+  const ordered = rankToday(ranked).slice(0, 12);
+
   const dueYear = rows.filter((park) => {
     const months = monthsFromNow(park.maturity_date);
     return months != null && months >= 0 && months <= 12;
@@ -74,6 +99,7 @@ export default async function DeskPage() {
   return (
     <DeskView
       today={today}
+      ranked={ordered}
       counts={{ parks: rows.length, dueYear, debt: money(debt), documented, foreclosure: distressAll.length }}
       followups={followups.slice(0, 12)}
       calls={callTargets(rows).map((park) => ({

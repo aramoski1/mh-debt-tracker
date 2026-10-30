@@ -14,6 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const demo = process.env.NEXT_PUBLIC_SUPABASE_URL === "demo";
   return (
     <html lang="en">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('desk-theme')==='dark')document.documentElement.dataset.theme='dark'}catch(e){}" }} />
+      </head>
       <body className={`${inter.variable} ${inter.className} min-h-screen text-sm antialiased`}>
         <Shell demo={demo}>{children}</Shell>
       </body>

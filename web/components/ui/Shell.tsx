@@ -5,10 +5,14 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { parseAsk } from "@/lib/ask";
+import { AskDesk } from "@/components/ui/AskDesk";
+import { guideFor } from "@/lib/guides";
 
 const NAV = [
   { href: "/desk", label: "Today" },
   { href: "/", label: "Prospects" },
+  { href: "/follow-ups", label: "Follow-ups" },
+  { href: "/week", label: "This week" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/rates", label: "Rate desk" },
   { href: "/markets", label: "Markets" },
@@ -17,6 +21,7 @@ const NAV = [
   { href: "/portfolio", label: "Portfolio" },
   { href: "/alerts", label: "Alerts" },
   { href: "/admin", label: "Admin" },
+  { href: "/how-it-works", label: "Help" },
 ];
 
 function active(path: string, href: string) {
@@ -31,6 +36,8 @@ export default function Shell({ children, demo }: { children: React.ReactNode; d
   const [collapsed, setCollapsed] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [palette, setPalette] = useState(false);
+  const [ask, setAsk] = useState(false);
+  const [help, setHelp] = useState(false);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -49,6 +56,10 @@ export default function Shell({ children, demo }: { children: React.ReactNode; d
         e.preventDefault();
         setPalette((v) => !v);
         setQuery("");
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setAsk((v) => !v);
       }
       if (e.key === "/" && !typing) {
         e.preventDefault();
@@ -134,12 +145,33 @@ export default function Shell({ children, demo }: { children: React.ReactNode; d
             <kbd className="ml-auto rounded-sm border border-line bg-panel px-1 text-2xs">Ctrl K</kbd>
           </button>
           {demo && <span className="rounded-sm bg-caution-soft px-2 py-0.5 text-xs text-gold">Demo data</span>}
+          <button type="button" onClick={() => setAsk(true)} className="h-8 rounded-sm border border-line px-2 text-xs">Ask</button>
+          <button type="button" onClick={() => setHelp(true)} className="h-8 rounded-sm border border-line px-2 text-xs" aria-label="How this page works">?</button>
           <button type="button" onClick={toggleTheme} className="ml-auto h-8 rounded-sm border border-line px-2 text-xs text-body" aria-pressed={theme === "dark"}>
             {theme === "dark" ? "Light" : "Dark"}
           </button>
         </header>
         <main className="mx-auto max-w-screen-2xl px-4 py-4">{children}</main>
       </div>
+      {ask && (
+        <div className="fixed inset-0 z-50 grid place-items-start bg-inverse/40 px-4 pt-[12vh]" onClick={() => setAsk(false)}>
+          <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+            <AskDesk />
+          </div>
+        </div>
+      )}
+      {help && (
+        <div className="fixed inset-0 z-50 grid place-items-start bg-inverse/40 px-4 pt-[12vh]" onClick={() => setHelp(false)}>
+          <div role="dialog" aria-label="Page guide" className="w-full max-w-lg rounded-lg border border-line bg-panel p-4 shadow-overlay" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-sm font-medium">{guideFor(path).title}</h2>
+            <p className="mt-2 text-sm">{guideFor(path).purpose}</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-muted">
+              {guideFor(path).steps.map((step) => <li key={step}>{step}</li>)}
+            </ol>
+            <a href="/how-it-works" className="mt-3 inline-block text-sm text-accent">All guides and honest limits</a>
+          </div>
+        </div>
+      )}
       {palette && (
         <div className="fixed inset-0 z-50 grid place-items-start bg-inverse/40 px-4 pt-[15vh]" onClick={() => setPalette(false)}>
           <div role="dialog" aria-label="Command palette" className="w-full max-w-lg rounded-lg border border-line bg-panel shadow-overlay" onClick={(e) => e.stopPropagation()}>

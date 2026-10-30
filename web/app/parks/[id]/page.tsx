@@ -8,8 +8,11 @@ import { mergeOperating, occupancy, type Merged, type OperatingRow } from "@/lib
 import { Tabs } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { PrintButton } from "@/components/ui/PrintButton";
-import { OutreachDraft } from "@/components/ui/OutreachDraft";
-import { outreachDraft } from "@/lib/outreach";
+import { outreachDrafts } from "@/lib/outreach";
+import { fitScore } from "@/lib/fit";
+import { cadenceDue, CADENCE_DAYS, tierFor } from "@/lib/cadence";
+import { BuyerDraft } from "@/components/ui/BuyerDraft";
+import { ParkDesk } from "./ParkDesk";
 import { verifyHref } from "@/lib/verify";
 import NoteForm from "./NoteForm";
 import OperatingForm from "./OperatingForm";
@@ -104,6 +107,24 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
     .filter((x) => x.last_sale_price)
     .sort((a, b) => String(b.last_sale_date ?? "").localeCompare(String(a.last_sale_date ?? "")))[0];
   const { data: water } = await supabase.from("water_systems").select("*").eq("park_id", id);
+  const [{ data: box }, { data: port }, { data: watch }, { data: quotes }, { data: defs }, { data: parkRow }, { data: rents }, { data: sales }] = await Promise.all([
+    supabase.from("buy_box").select("*").eq("id", 1).maybeSingle(),
+    supabase.from("portfolio").select("park_id"),
+    supabase.from("watches").select("last_checked_at").eq("park_id", id).maybeSingle(),
+    supabase.from("park_documents").select("id, title, url, page, field, value, quote, status").eq("park_id", id),
+    supabase.from("field_definitions").select("slug, label").eq("entity", "park"),
+    supabase.from("parks").select("custom_fields").eq("id", id).maybeSingle(),
+    supabase.from("rent_comps").select("id, submarket, lot_rent, source, observed_on").limit(12),
+    supabase.from("transactions").select("source_id, price, sites, price_per_site, sale_date, owner_name").eq("county", p.county).gte("price", 5000).limit(5),
+  ]);
+  const portIds = ((port ?? []) as { park_id: string }[]).map((row) => row.park_id).filter((pid) => pid !== id);
+  const { data: pins } = portIds.length
+    ? await supabase.from("park_overview").select("lat, lon, name").in("id", portIds)
+    : { data: [] };
+  const fit = fitScore(p, (box ?? {}) as { min_sites?: number; max_sites?: number; kinds?: string[]; counties?: string[] }, (pins ?? []) as { lat: number | null; lon: number | null }[]);
+  const nearby = ((pins ?? []) as { name?: string; lat: number | null; lon: number | null }[]).filter((pin) => pin.lat != null).map((pin) => pin.name).filter((name): name is string => Boolean(name));
+  const tier = tierFor({ inPipeline: Boolean(deal), score: p.score, inBox: fit.score >= 55 });
+  const due = cadenceDue(p.last_activity_at, tier);
 
   return (
     <div className="space-y-4">
@@ -147,6 +168,10 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           <div className="text-right">
             <ScorePill score={p.score} />
             <div className="mt-1 text-xs text-muted">Owner pressure</div>
+            <div className="mt-3 text-right">
+              <div className="num text-lg font-medium">{fit.score}</div>
+              <div className="text-xs text-muted">Acquisition fit</div>
+            </div>
           </div>
         </div>
       </div>
@@ -165,10 +190,40 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
 
       <DeskActions parkId={p.id} stage={deal?.stage ?? null} nextAction={deal?.next_action ?? null} managed={!!p.managed} />
 
-      <OutreachDraft {...outreachDraft(p)} />
+      <p className="text-xs text-muted">Tier {tier} · every {CADENCE_DAYS[tier]} days · {due ? "cadence is due" : "inside the cadence window"}.</p>
+      <BuyerDraft drafts={outreachDrafts(p, nearby)} parkId={p.id} />
+      <p className="text-xs"><a className="text-accent" href={`/api/calendar?park=${p.id}`}>Download maturity and deal dates</a></p>
 
       <Tabs tabs={[
         { id: "overview", label: "Overview", content: <div className="space-y-4">
+      <section className="rounded-sm border border-line bg-panel p-4">
+        <h2 className="font-semibold">Why the fit score is {fit.score}</h2>
+        <ul className="mt-2 space-y-1 text-sm">
+          {fit.drivers.map((driver) => (
+            <li key={driver.label} className="flex justify-between gap-4"><span>{driver.label}</span><span className="num text-muted">{driver.points}</span></li>
+          ))}
+        </ul>
+      </section>
+      {((sales ?? []) as { source_id: string; price: number | null; sites: number | null; price_per_site: number | null; sale_date: string | null }[]).length > 0 && (
+        <section className="rounded-sm border border-line bg-panel p-4">
+          <h2 className="font-semibold">Sale comps on the book</h2>
+          <p className="mt-1 text-xs text-muted">Assessor sales in {p.county}, at least $5,000, already loaded. This is not a new search.</p>
+          <ul className="mt-2 space-y-1 text-sm">
+            {((sales ?? []) as { source_id: string; price: number | null; sites: number | null; price_per_site: number | null; sale_date: string | null }[]).map((sale) => (
+              <li key={sale.source_id}>{sale.sale_date ?? "—"} · {money(sale.price)}{sale.price_per_site ? ` · ${money(sale.price_per_site)} per site` : ""}{sale.sites ? ` · ${sale.sites} sites` : ""}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <ParkDesk
+        parkId={p.id}
+        watching={Boolean(watch)}
+        checked={(watch as { last_checked_at?: string | null } | null)?.last_checked_at ?? null}
+        documents={(quotes ?? []) as { id: string; title: string; url: string | null; page: number | null; field: string | null; value: string | null; quote: string | null; status: string }[]}
+        fields={(defs ?? []) as { slug: string; label: string }[]}
+        values={((parkRow as { custom_fields?: Record<string, string> } | null)?.custom_fields) ?? {}}
+        rents={(rents ?? []) as { id: string; submarket: string; lot_rent: number | null; source: string; observed_on: string | null }[]}
+      />
       {comps.fit && (
         <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="font-semibold">Acquisition fit {Math.round(Number(comps.fit.points ?? 0))}</h2>
@@ -217,6 +272,21 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             <p className="mt-1 text-xs text-muted">Likely range {monthYear(p.p10_date)} to {monthYear(p.p90_date)}</p>
           )}
           {p.maturity_explanation && <p className="mt-2 text-xs text-muted">{p.maturity_explanation}</p>}
+          <div className="mt-4 border-t border-line pt-3">
+            <h3 className="text-xs font-medium text-muted">Sources for this park</h3>
+            <ul className="mt-2 space-y-1 text-xs">
+              <li>Loan: {p.loan_source ?? "none on the primary loan"} · maturity {p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "—"}</li>
+              {((parcels ?? []) as { apn?: string; county?: string }[]).slice(0, 3).map((parcel) => (
+                <li key={parcel.apn}>
+                  Parcel {parcel.apn} ({parcel.county})
+                  {String(parcel.county).toLowerCase() === "maricopa" && parcel.apn && verifyHref(`mcao:${parcel.apn}`) && (
+                    <> · <a className="text-accent" href={verifyHref(`mcao:${parcel.apn}`) ?? undefined} target="_blank" rel="noreferrer">Assessor</a></>
+                  )}
+                </li>
+              ))}
+              {!parcels?.length && <li>No parcel is linked yet.</li>}
+            </ul>
+          </div>
           <dl className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
             <dt className="text-muted">Lender</dt>
             <dd>{p.lender_name ?? p.lender_name_raw ?? "—"}</dd>

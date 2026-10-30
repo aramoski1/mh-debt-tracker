@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { money, monthYear } from "@/lib/format";
 import { Metric, MetricStrip } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
+import { Contacts } from "./Contacts";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,8 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
   const parks = (data ?? []) as Park[];
   if (!parks.length) notFound();
   const o = parks[0];
+  const { data: people } = await supabase.from("contacts").select("id, name, role, phone, email, mailing, source, verified").eq("owner_id", id);
+  const { data: notes } = await supabase.from("activities").select("id, kind, body, created_at, park_id").in("park_id", parks.map((park) => park.id)).order("created_at", { ascending: false }).limit(12);
   const sites = parks.reduce((sum, park) => sum + (park.units ?? 0), 0);
   const debt = parks.reduce((sum, park) => sum + Number(park.current_balance ?? park.original_amount ?? 0), 0);
   const next = parks.map((park) => park.maturity_date).filter(Boolean).sort()[0] ?? null;
@@ -34,6 +37,10 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
           {[o.owner_city, o.owner_state].filter(Boolean).join(", ")}
           {o.owner_entity_type ? ` · ${o.owner_entity_type}` : ""} · {parks.length} park{parks.length === 1 ? "" : "s"} in this desk
         </p>
+        <p className="mt-2 text-sm text-body">
+          Recorded debt on the book is {debt ? money(debt) : "—"}. Next maturity {monthYear(next)}.
+          {" "}<a className="text-accent" href="https://ecorp.azcc.gov/" target="_blank" rel="noreferrer">Look up this entity on the Arizona Corporation Commission</a>, then paste what you find into a note. This desk does not pull that site.
+        </p>
       </header>
       <MetricStrip>
         <Metric label="Parks" value={parks.length.toLocaleString()} />
@@ -41,6 +48,19 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
         <Metric label="Debt on file" value={money(debt)} />
         <Metric label="Next maturity" value={monthYear(next)} />
       </MetricStrip>
+      <Contacts ownerId={id} parkId={parks[0]?.id ?? null} rows={(people ?? []) as { id: string; name: string | null; role: string; phone: string | null; email: string | null; mailing: string | null; source: string; verified: boolean }[]} />
+      <section className="rounded-md border border-line bg-panel">
+        <h2 className="border-b border-line px-4 py-2 text-sm font-medium">Timeline</h2>
+        {((notes ?? []) as { id: string; kind: string; body: string; created_at: string }[]).length === 0 ? (
+          <p className="px-4 py-3 text-sm text-muted">No calls or notes on these parks yet. A purchase date shows on each park when the assessor has a sale.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {((notes ?? []) as { id: string; kind: string; body: string; created_at: string }[]).map((note) => (
+              <li key={note.id} className="px-4 py-2 text-sm"><span className="text-xs text-muted">{note.created_at.slice(0, 10)} · {note.kind}</span><p>{note.body}</p></li>
+            ))}
+          </ul>
+        )}
+      </section>
       <ul className="divide-y divide-line rounded-md border border-line bg-panel">
         {parks.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">

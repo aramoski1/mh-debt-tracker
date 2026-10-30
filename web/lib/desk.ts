@@ -1,6 +1,7 @@
 /** Which blocks the Today page shows. Stored in this browser. Missing keys stay visible. */
 
 export const DESK_MODULES = [
+  ["today", "Do these today"],
   ["kpis", "Counts"],
   ["ask", "Ask"],
   ["followups", "Follow-ups"],
@@ -19,4 +20,11 @@ export function resolveDesk(stored: Partial<Record<DeskModuleId, boolean>> | nul
     if (typeof stored[id] === "boolean") visible[id] = stored[id];
   }
   return visible;
+}
+
+export function resolveOrder(stored: string[] | null): DeskModuleId[] {
+  const known = DESK_MODULES.map(([id]) => id);
+  const ids = (stored ?? []).filter((id): id is DeskModuleId => (known as string[]).includes(id));
+  for (const id of known) if (!ids.includes(id)) ids.push(id);
+  return ids;
 }

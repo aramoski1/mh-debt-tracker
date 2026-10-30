@@ -1,0 +1,7 @@
+---
+description: Update the page guide and the copilot knowledge when a screen changes
+globs: web/app/**/*.tsx
+alwaysApply: false
+---
+
+When you add or rename a route, button, or filter, update `web/lib/guides.ts` and `web/lib/copilot-knowledge.ts` in the same change. The copilot knowledge must keep the list of things this desk does not have. A guide describes what the screen does in the language of buying and operating parks.

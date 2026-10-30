@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { parseAsk } from "@/lib/ask";
+import { FABRICATION_RULE } from "@/lib/copilot-knowledge";
 import { callLine } from "@/lib/brief";
 import { monthYear } from "@/lib/format";
 import { applyProspectFilters, narrowProspects } from "@/lib/prospects";
@@ -11,7 +12,7 @@ function fallback(rows: ParkRow[], intro: string) {
   if (!rows.length) return `${intro} Nothing on the desk matches.`;
   const lines = rows.slice(0, 8).map((park) => {
     const basis = park.maturity_basis ? BASIS_LABEL[park.maturity_basis] : "Unknown";
-    return `${park.name} in ${park.city ?? "—"} — score ${park.score == null ? "—" : Math.round(park.score)}, ${basis.toLowerCase()} maturity ${monthYear(park.maturity_date)}. ${callLine(park)}`;
+    return `${park.name} in ${park.city ?? "—"} — score ${park.score == null ? "—" : Math.round(park.score)}, ${basis.toLowerCase()} maturity ${monthYear(park.maturity_date)}. ${callLine(park)} /parks/${park.id}`;
   });
   return `${intro}\n\n${lines.join("\n\n")}`;
 }
@@ -42,7 +43,7 @@ async function narrate(question: string, rows: ParkRow[]) {
     system: [
       "You answer a broker at Cooper Cardinal who buys and refinances Arizona mobile-home and RV parks.",
       "Use only the JSON parks. If maturity_basis is estimated, call the date estimated. If it is reported or document, call it documented.",
-      "Never invent a maturity date, balance, rate, phone, email, or owner. If the JSON does not contain the fact, say it is not on the record.",
+      FABRICATION_RULE,
       "Do not mention Florida leases, Sunbiz, or CoStar.",
     ].join(" "),
     messages: [{ role: "user", content: `Question: ${question}\n\nParks:\n${JSON.stringify(packed)}` }],
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
     reply = fallback(rows, parsed.reply);
   }
   return NextResponse.json({
-    reply,
+    reply: `${reply}\n\nVerify every figure on the park page. This desk does not send mail.`,
     href: parsed.href,
     understood: parsed.understood,
     ignored: parsed.ignored,

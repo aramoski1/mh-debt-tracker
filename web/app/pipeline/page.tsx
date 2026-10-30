@@ -2,14 +2,19 @@ import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { money, monthYear } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
+import { forecast } from "@/lib/forecast";
 import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
+import { Board } from "./Board";
 import BuyBoxForm from "./BuyBoxForm";
 
 export const dynamic = "force-dynamic";
 
-type Deal = { park_id: string; stage: string; next_action: string | null; note: string | null };
+type Deal = {
+  park_id: string; stage: string; next_action: string | null; note: string | null;
+  price?: number | null; close_date?: string | null; diligence_date?: string | null; stage_changed_at?: string | null;
+};
 type Park = {
-  id: string; name: string; city: string | null; score: number | null; maturity_date: string | null;
+  id: string; name: string; city: string | null; units?: number | null; score: number | null; maturity_date: string | null;
   owner_name: string | null; current_balance: number | null; original_amount: number | null;
 };
 type Box = { min_sites: number; max_sites: number; states: string[]; kinds: string[] };
@@ -23,41 +28,42 @@ export default async function PipelinePage() {
   const list = (deals ?? []) as Deal[];
   const ids = list.map((d) => d.park_id);
   const { data: parks } = ids.length
-    ? await supabase.from("park_overview").select("id, name, city, score, maturity_date, owner_name, current_balance, original_amount").in("id", ids)
+    ? await supabase.from("park_overview").select("id, name, city, units, score, maturity_date, owner_name, current_balance, original_amount").in("id", ids)
     : { data: [] };
   const byId = new Map(((parks ?? []) as Park[]).map((p) => [p.id, p]));
   const today = new Date().toISOString().slice(0, 10);
   const calls = list.filter((d) => d.next_action && d.next_action <= today && d.stage !== "passed" && d.stage !== "closed");
+  const outlook = forecast(list.map((deal) => ({
+    stage: deal.stage,
+    price: deal.price ?? null,
+    sites: byId.get(deal.park_id)?.units ?? null,
+    close_date: deal.close_date ?? null,
+  })));
+  const stale = list.filter((deal) => {
+    if (!deal.stage_changed_at || deal.stage === "closed" || deal.stage === "passed") return false;
+    return Date.now() - new Date(deal.stage_changed_at).getTime() > 14 * 86_400_000;
+  });
 
   return (
     <div className="space-y-4">
-      <PageHeader kicker="Pipeline" title="Deals in motion" />
-      <section className="grid gap-2 md:grid-cols-3 xl:grid-cols-6">
-        {BOARD.map((key) => {
-          const label = STAGE_LABEL[key];
-          const cards = list.filter((d) => boardColumn(d.stage) === key);
+      <PageHeader kicker="Pipeline" title="Deals in motion" lede={`Probability-weighted price ${outlook.weighted ? money(outlook.weighted) : "—"}. ${outlook.won} won of ${outlook.decided} decided. ${stale.length} sitting more than 14 days.`} />
+      <Board columns={BOARD.map((key) => ({
+        id: key,
+        label: `${STAGE_LABEL[key] ?? key}${(() => {
+          const cards = list.filter((deal) => boardColumn(deal.stage) === key);
           const debt = cards.reduce((sum, deal) => {
             const park = byId.get(deal.park_id);
             return sum + Number(park?.current_balance ?? park?.original_amount ?? 0);
           }, 0);
-          return (
-            <div key={key} className="rounded-md border border-line bg-panel p-3">
-              <p className="text-xs text-muted">{label} · {cards.length}{debt ? ` · ${money(debt)}` : ""}</p>
-              <ul className="mt-2 space-y-2">
-                {cards.map((d) => (
-                  <li key={d.park_id}>
-                    <Link href={`/parks/${d.park_id}`} className="text-sm font-medium hover:text-accent">{byId.get(d.park_id)?.name ?? "Park"}</Link>
-                    {d.next_action && d.next_action < today && d.stage !== "closed" && d.stage !== "passed" && (
-                      <div className="text-xs text-accent">Overdue {d.next_action}</div>
-                    )}
-                  </li>
-                ))}
-                {!cards.length && <li className="text-xs text-muted">None</li>}
-              </ul>
-            </div>
-          );
-        })}
-      </section>
+          return debt ? ` · ${money(debt)}` : "";
+        })()}`,
+        cards: list.filter((deal) => boardColumn(deal.stage) === key).map((deal) => ({
+          parkId: deal.park_id,
+          name: byId.get(deal.park_id)?.name ?? "Park",
+          overdue: deal.next_action && deal.next_action < today && deal.stage !== "closed" && deal.stage !== "passed" ? deal.next_action : null,
+          stale: Boolean(deal.stage_changed_at) && Date.now() - new Date(deal.stage_changed_at as string).getTime() > 14 * 86_400_000,
+        })),
+      }))} />
       <section className="rounded-sm border border-line bg-panel p-4">
         <h2 className="mb-2 font-semibold">Call today</h2>
         {calls.length === 0 && <p className="text-muted">Nothing is due. Set a next action on a park.</p>}

@@ -1,0 +1,20 @@
+/** Kept in the same change as any user-visible screen. The copilot may not invent past this list. */
+
+export const COPILOT_KNOWLEDGE = `
+Cooper Cardinal buys and operates mobile home parks and RV parks. This desk is not a brokerage.
+Routes: /desk Today, / Prospects, /pipeline, /rates, /markets, /signals, /owners, /owners/[id], /portfolio, /alerts, /follow-ups, /week, /how-it-works, /onboarding, /loi/[id], /admin, /admin/audit, /admin/issues, /parks/[id].
+Buttons: Ask, ?, Customize (show, hide, drag), Save view, Watch, Mark managed, stage, next action, outreach templates, Mark as sent, document quote accept or reject, offer letter, calendar download.
+Ask turns a sentence into filters. Answer from the book only uses rows those filters return. Email drafts open the user's mail client. The desk does not send mail.
+`.trim();
+
+export const COPILOT_DOES_NOT_HAVE = [
+  "sending email or text",
+  "listing services, CoStar, Crexi, LoopNet, MHVillage",
+  "tenant leases or industrial specs",
+  "Arizona Corporation Commission automation",
+  "paid skip trace",
+  "invented maturity dates, balances, or emails",
+];
+
+export const FABRICATION_RULE =
+  "Every park, owner, loan, date, and dollar amount in an answer must come from the tool result. If it is not there, say it is not on the record. Estimated maturities must be called estimated.";

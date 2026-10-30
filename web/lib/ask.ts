@@ -214,6 +214,53 @@ export function parseAsk(raw: string): AskParse {
     understood.push("owner has at least two parks");
     text = text.replace(/\b(more than one park|multiple parks|portfolio owners?|two or more parks)\b/g, " ");
   }
+  if (/\beast valley\b/.test(text)) {
+    params.region = "east";
+    understood.push("East Valley");
+    text = text.replace(/\beast valley\b/g, " ");
+  }
+  next = take(text, /\brate shock(?:\s+over|\s+above|\s+of)?\s+(\d+)\s*(?:bps|bp)?\b/);
+  if (next.hit) {
+    params.shock = next.hit;
+    understood.push(`rate shock of at least ${next.hit} bps`);
+    text = next.text;
+  }
+  const gapMatch = /\brefi(?:nance)? gap(?:\s+over|\s+above)?\s+\$?(\d+(?:\.\d+)?)\s*(k|m)?\b/.exec(text);
+  if (gapMatch) {
+    const n = Number(gapMatch[1]);
+    const mult = gapMatch[2] === "m" ? 1_000_000 : gapMatch[2] === "k" ? 1_000 : 1;
+    params.gap = String(Math.round(n * mult));
+    understood.push(`refinance gap of at least ${params.gap}`);
+    text = text.replace(gapMatch[0], " ");
+  }
+  next = take(text, /\bheld\s+(\d+)\+?\s*years\b/);
+  if (next.hit) {
+    params.held = next.hit;
+    understood.push(`held at least ${next.hit} years`);
+    text = next.text;
+  }
+  next = take(text, /\bwithin\s+(\d+)\s*miles\b/);
+  if (next.hit) {
+    params.miles = next.hit;
+    understood.push(`within ${next.hit} miles of a park we run`);
+    text = next.text;
+  }
+  next = take(text, /\bnot contacted in\s+(\d+)\s*days\b/);
+  if (next.hit) {
+    params.staleDays = next.hit;
+    understood.push(`not contacted in ${next.hit} days`);
+    text = next.text;
+  }
+  if (/\bassumable\b/.test(text)) {
+    params.assumable = "1";
+    params.lender = params.lender ?? "agency";
+    understood.push("assumable agency loan");
+    text = text.replace(/\bassumable(\s+agency)?(\s+loan)?\b/g, " ");
+  }
+  if (/\blot rent\b/.test(text)) {
+    ignored.push({ term: "lot rent", reason: "Lot rent is not in the public data. Enter it on the park." });
+    text = text.replace(/\blot rent\b/g, " ");
+  }
 
   const leftover = text
     .replace(/[^a-z0-9\s]/g, " ")
