@@ -90,16 +90,16 @@ export default function UnderwritingDesk({
 
   const field = (label: string, value: string | number, set: (v: string) => void, step = "0.1") => (
     <label className="flex flex-col gap-1">
-      <span className="text-xs text-[#787d85]">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <input value={value} step={step} onChange={(e) => set(e.target.value)}
-             className="num h-8 rounded-sm border border-[#e2e2e2] px-2" />
+             className="num h-8 rounded-sm border border-line px-2" />
     </label>
   );
 
   return (
-    <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+    <section className="rounded-sm border border-line bg-panel p-4">
       <h2 className="font-semibold">Acquisition case</h2>
-      <p className="mb-3 mt-1 text-xs text-[#787d85]">
+      <p className="mb-3 mt-1 text-xs text-muted">
         {modelRate != null
           ? `The pressure score is using ${pct(modelRate)} (${spreadBasis === "measured" ? "a measured spread" : "an assumed spread"}). Type the rate you want to underwrite.`
           : "Type the rate you want to underwrite."}
@@ -116,23 +116,23 @@ export default function UnderwritingDesk({
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-4">
         {CASES.map(([k, label]) => (
-          <label key={k} className={`flex flex-col gap-1 rounded-sm border p-2 ${which === k ? "border-[#85152a]" : "border-[#e2e2e2]"}`}>
-            <span className="text-xs text-[#787d85]">{label}</span>
+          <label key={k} className={`flex flex-col gap-1 rounded-sm border p-2 ${which === k ? "border-accent" : "border-line"}`}>
+            <span className="text-xs text-muted">{label}</span>
             <input value={rates[k]} placeholder="Rate %" onChange={(e) => setRates({ ...rates, [k]: e.target.value })}
-                   onFocus={() => setWhich(k)} className="num h-8 rounded-sm border border-[#e2e2e2] px-2" />
-            <span className="num text-xs text-[#333539]">
+                   onFocus={() => setWhich(k)} className="num h-8 rounded-sm border border-line px-2" />
+            <span className="num text-xs text-body">
               {results[k]?.ok ? `${results[k]!.cashOnCash}% cash-on-cash · IRR ${results[k]!.irr ?? "—"}%` : "—"}
             </span>
           </label>
         ))}
       </div>
       <div className="mt-3 flex items-center gap-3">
-        <button type="button" onClick={save} className="rounded-sm bg-[#85152a] px-3 py-1.5 text-white">Save case</button>
-        {msg && <span className="text-xs text-[#787d85]">{msg}</span>}
+        <button type="button" onClick={save} className="rounded-sm bg-accent px-3 py-1.5 text-on-accent">Save case</button>
+        {msg && <span className="text-xs text-muted">{msg}</span>}
       </div>
-      <div className="mt-4 border-t border-[#e2e2e2] pt-3">
+      <div className="mt-4 border-t border-line pt-3">
         <h3 className="text-sm font-semibold">Draft for review</h3>
-        <textarea readOnly value={letter} rows={8} className="mt-2 w-full rounded-sm border border-[#e2e2e2] p-2 text-sm" />
+        <textarea readOnly value={letter} rows={8} className="mt-2 w-full rounded-sm border border-line p-2 text-sm" />
       </div>
     </section>
   );

@@ -19,23 +19,29 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto mt-10 max-w-sm overflow-hidden rounded-sm border border-[#e2e2e2] bg-white">
-      <div className="border-b-2 border-[#dd9933] bg-[#18191b] px-6 py-5 text-white">
-        <p className="text-[10px] font-medium tracking-[0.28em] text-white/70">COOPER CARDINAL</p>
-        <h1 className="text-lg font-medium">Debt Desk</h1>
-      </div>
-      <div className="p-6">
-      {sent ? (
-        <p>Check {email} for a sign-in link.</p>
-      ) : (
-        <form onSubmit={submit} className="space-y-3">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com"
-                 className="h-9 w-full rounded-sm border border-[#e2e2e2] px-2" />
-          <button className="h-9 w-full rounded-sm bg-[#85152a] font-medium text-white hover:bg-[#6e1023]">Email me a link</button>
-          {err && <p className="text-[#85152a]">{err}</p>}
-          <p className="text-xs text-[#787d85]">First time here creates your account. We’ll email you a sign-in link.</p>
-        </form>
-      )}
+    <div className="grid min-h-screen place-items-center bg-paper px-4">
+      <div className="w-full max-w-sm rounded-md border border-line bg-panel">
+        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+          <span className="grid h-8 w-8 place-items-center rounded-sm bg-inverse text-xs font-medium text-on-inverse">CC</span>
+          <div>
+            <p className="text-xs text-muted">Cooper Cardinal</p>
+            <h1 className="text-base font-medium">Debt desk</h1>
+          </div>
+        </div>
+        <div className="p-5">
+          {sent ? (
+            <p className="text-sm">Check {email} for a sign-in link.</p>
+          ) : (
+            <form onSubmit={submit} className="space-y-3">
+              <label className="block text-xs text-muted" htmlFor="email">Work email</label>
+              <input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                     className="h-9 w-full rounded-sm border border-line bg-panel px-2 text-sm" />
+              <button className="h-9 w-full rounded-sm bg-accent text-sm font-medium text-on-accent hover:bg-accent-hover">Email me a link</button>
+              {err && <p className="text-sm text-negative">{err}</p>}
+              <p className="text-xs text-muted">The first email creates your account.</p>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

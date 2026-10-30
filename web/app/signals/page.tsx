@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isDemo } from "@/lib/supabase/demo";
 import { money, monthYear, pct } from "@/lib/format";
+import { PageHeader, Tabs } from "@/components/ui/Bits";
 
 export const dynamic = "force-dynamic";
 
@@ -33,22 +34,14 @@ export default async function SignalsPage() {
   ]);
 
   return (
-    <div className="space-y-8">
-      <header>
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#85152a]">SIGNALS</p>
-        <h1 className="text-2xl font-medium">Filings, sales, and recorded owners</h1>
-        <p className="mt-1 max-w-3xl text-[#333539]">
-          FHA rows are mortgages whose own section-of-act category contains “mobile home.”
-          Form D rows are issuers whose name says MHC, mobile home, manufactured housing, or RV park. An offering is not a maturity date.
-          EDGAR and news rows are links. The filing and the article were not copied.
-          Sales are assessor prices already on a parcel. The owner is the name on that roll, not a beneficial-owner finding.
-        </p>
-        {isDemo() && <p className="mt-2 text-xs text-[#787d85]">The rows on this page are the fictional demo set.</p>}
-      </header>
-
+    <div className="space-y-4">
+      <PageHeader kicker="Signals" title="Filings, sales, and recorded owners" lede="Links and assessor rows already on file. An offering is not a maturity date. The owner is the name on the roll." />
+      {isDemo() && <p className="text-xs text-muted">The rows on this page are the fictional demo set.</p>}
+      <Tabs tabs={[
+        { id: "fha", label: "FHA", content: (
       <Section title="FHA mobile-home mortgages">
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Property</th>
               <th className="px-4 py-2 font-medium">Category</th>
@@ -60,10 +53,10 @@ export default async function SignalsPage() {
           </thead>
           <tbody>
             {((hud ?? []) as HudLoan[]).map((row) => (
-              <tr key={`${row.property_name_raw}-${row.maturity_date}`} className="border-t border-[#f4f4f4]">
+              <tr key={`${row.property_name_raw}-${row.maturity_date}`} className="border-t border-line">
                 <td className="px-4 py-2">
                   {row.property_name_raw}
-                  <span className="block text-xs text-[#787d85]">{[row.property_city_raw, row.property_state_raw].filter(Boolean).join(", ")} · {row.lender_name_raw}</span>
+                  <span className="block text-xs text-muted">{[row.property_city_raw, row.property_state_raw].filter(Boolean).join(", ")} · {row.lender_name_raw}</span>
                 </td>
                 <td className="px-4 py-2 text-xs">{row.raw?.soa}</td>
                 <td className="num px-4 py-2">{monthYear(row.maturity_date)}</td>
@@ -76,10 +69,11 @@ export default async function SignalsPage() {
           </tbody>
         </table>
       </Section>
-
+        )},
+        { id: "formd", label: "Form D", content: (
       <Section title="Form D park issuers">
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Issuer</th>
               <th className="px-4 py-2 font-medium">Filed</th>
@@ -89,10 +83,10 @@ export default async function SignalsPage() {
           </thead>
           <tbody>
             {((offerings ?? []) as Offering[]).map((row) => (
-              <tr key={row.accession} className="border-t border-[#f4f4f4]">
+              <tr key={row.accession} className="border-t border-line">
                 <td className="px-4 py-2">
-                  {row.url ? <a className="text-[#85152a]" href={row.url}>{row.issuer_name}</a> : row.issuer_name}
-                  <span className="block text-xs text-[#787d85]">{[row.city, row.state].filter(Boolean).join(", ")}</span>
+                  {row.url ? <a className="text-accent" href={row.url}>{row.issuer_name}</a> : row.issuer_name}
+                  <span className="block text-xs text-muted">{[row.city, row.state].filter(Boolean).join(", ")}</span>
                 </td>
                 <td className="num px-4 py-2">{row.filed_on}</td>
                 <td className="num px-4 py-2 text-right">{money(row.total_sold)}</td>
@@ -103,22 +97,24 @@ export default async function SignalsPage() {
           </tbody>
         </table>
       </Section>
-
+        )},
+        { id: "filings", label: "Filings", content: (
       <Section title="EDGAR hits and headlines">
-        <ul className="divide-y divide-[#f4f4f4]">
+        <ul className="divide-y divide-line">
           {((hits ?? []) as Hit[]).map((row) => (
             <li key={`${row.source}:${row.source_id}`} className="px-4 py-2">
-              {row.url ? <a className="text-[#85152a]" href={row.url}>{row.title}</a> : row.title}
-              <span className="block text-xs text-[#787d85]">{row.form} · {row.filed_on} · {row.source.replaceAll("_", " ")}</span>
+              {row.url ? <a className="text-accent" href={row.url}>{row.title}</a> : row.title}
+              <span className="block text-xs text-muted">{row.form} · {row.filed_on} · {row.source.replaceAll("_", " ")}</span>
             </li>
           ))}
-          {!hits?.length && <li className="px-4 py-6 text-[#787d85]">No filings or headlines stored.</li>}
+          {!hits?.length && <li className="px-4 py-6 text-muted">No filings or headlines stored.</li>}
         </ul>
       </Section>
-
+        )},
+        { id: "distress", label: "Distress", content: (
       <Section title="Recorder distress">
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Event</th>
               <th className="px-4 py-2 font-medium">Date</th>
@@ -128,8 +124,8 @@ export default async function SignalsPage() {
           </thead>
           <tbody>
             {((distress ?? []) as Distress[]).map((row) => (
-              <tr key={row.source_id + row.event_type} className="border-t border-[#f4f4f4]">
-                <td className="px-4 py-2">{row.title || row.event_type}<span className="block text-xs text-[#787d85]">{row.county}</span></td>
+              <tr key={row.source_id + row.event_type} className="border-t border-line">
+                <td className="px-4 py-2">{row.title || row.event_type}<span className="block text-xs text-muted">{row.county}</span></td>
                 <td className="num px-4 py-2">{row.event_date}</td>
                 <td className="num px-4 py-2 text-right">{money(row.amount)}</td>
                 <td className="px-4 py-2 text-xs">{row.park_id ? "Linked" : "Unlinked"}</td>
@@ -139,10 +135,11 @@ export default async function SignalsPage() {
           </tbody>
         </table>
       </Section>
-
+        )},
+        { id: "sales", label: "Sales", content: (
       <Section title="Assessor sale prices">
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Parcel</th>
               <th className="px-4 py-2 font-medium">Date</th>
@@ -153,8 +150,8 @@ export default async function SignalsPage() {
           </thead>
           <tbody>
             {((sales ?? []) as Sale[]).map((row) => (
-              <tr key={row.source_id} className="border-t border-[#f4f4f4]">
-                <td className="px-4 py-2">{row.apn}<span className="block text-xs text-[#787d85]">{row.county}</span></td>
+              <tr key={row.source_id} className="border-t border-line">
+                <td className="px-4 py-2">{row.apn}<span className="block text-xs text-muted">{row.county}</span></td>
                 <td className="num px-4 py-2">{row.sale_date}</td>
                 <td className="num px-4 py-2 text-right">{money(row.price)}</td>
                 <td className="num px-4 py-2 text-right">{row.price_per_site == null ? "—" : money(row.price_per_site)}</td>
@@ -165,28 +162,31 @@ export default async function SignalsPage() {
           </tbody>
         </table>
       </Section>
-
+        )},
+        { id: "owners", label: "Owners", content: (
       <Section title="Recorded owners">
-        <ul className="divide-y divide-[#f4f4f4]">
+        <ul className="divide-y divide-line">
           {((entities ?? []) as Entity[]).map((row) => (
-            <li key={row.id} className="px-4 py-2">{row.name}<span className="block text-xs text-[#787d85]">{row.kind.replaceAll("_", " ")}{row.zip ? ` · ${row.zip}` : ""}</span></li>
+            <li key={row.id} className="px-4 py-2">{row.name}<span className="block text-xs text-muted">{row.kind.replaceAll("_", " ")}{row.zip ? ` · ${row.zip}` : ""}</span></li>
           ))}
-          {!entities?.length && <li className="px-4 py-6 text-[#787d85]">No recorded owners grouped yet.</li>}
+          {!entities?.length && <li className="px-4 py-6 text-muted">No recorded owners grouped yet.</li>}
         </ul>
       </Section>
+        )},
+      ]} />
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section className="overflow-x-auto rounded-sm border border-[#e2e2e2] bg-white">
-      <h2 className="border-b border-[#e2e2e2] px-4 py-3 font-semibold">{title}</h2>
+    <section className="overflow-x-auto rounded-sm border border-line bg-panel">
+      <h2 className="border-b border-line px-4 py-3 font-semibold">{title}</h2>
       {children}
     </section>
   );
 }
 
 function Empty({ cols, label }: { cols: number; label: string }) {
-  return <tr><td colSpan={cols} className="px-4 py-6 text-[#787d85]">{label}</td></tr>;
+  return <tr><td colSpan={cols} className="px-4 py-6 text-muted">{label}</td></tr>;
 }

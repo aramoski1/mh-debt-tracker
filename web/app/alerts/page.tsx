@@ -15,23 +15,23 @@ export default async function Alerts() {
   const supabase = await supabaseServer();
   const { data } = await supabase.from("alerts").select("*, parks(name, city)").order("created_at", { ascending: false }).limit(300);
   return (
-    <section className="overflow-hidden rounded-sm border border-[#e2e2e2] bg-white">
-      <div className="border-b border-[#dd9933] bg-[#18191b] px-4 py-3 text-white">
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#dd9933]">SIGNALS</p>
+    <section className="overflow-hidden rounded-sm border border-line bg-panel">
+      <div className="border-b border-gold bg-inverse px-4 py-3 text-on-inverse">
+        <p className="text-2xs font-medium tracking-wide text-gold">Alerts</p>
         <h1 className="text-lg font-medium">Alerts</h1>
       </div>
       <ul>
         {(data ?? []).map((a) => (
-          <li key={a.id} className="flex gap-4 border-t border-[#f4f4f4] px-4 py-3 first:border-t-0">
-            <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-[#85152a]">{KIND[a.kind] ?? a.kind}</span>
+          <li key={a.id} className="flex gap-4 border-t border-line px-4 py-3 first:border-t-0">
+            <span className="w-24 shrink-0 text-xs uppercase tracking-wide text-accent">{KIND[a.kind] ?? a.kind}</span>
             <div className="flex-1">
-              {a.park_id ? <Link href={`/parks/${a.park_id}`} className="font-medium hover:text-[#85152a]">{a.title}</Link> : a.title}
-              {a.detail && <p className="text-xs text-[#787d85]">{a.detail}</p>}
+              {a.park_id ? <Link href={`/parks/${a.park_id}`} className="font-medium hover:text-accent">{a.title}</Link> : a.title}
+              {a.detail && <p className="text-xs text-muted">{a.detail}</p>}
             </div>
-            <span className="num text-xs text-[#787d85]">{new Date(a.created_at).toLocaleDateString()}</span>
+            <span className="num text-xs text-muted">{new Date(a.created_at).toLocaleDateString()}</span>
           </li>
         ))}
-        {!data?.length && <li className="px-4 py-8 text-center text-[#787d85]">Nothing new since the last scoring run.</li>}
+        {!data?.length && <li className="px-4 py-8 text-center text-muted">Nothing new since the last scoring run.</li>}
       </ul>
     </section>
   );

@@ -1,0 +1,68 @@
+/* Warm stone neutrals. Burgundy is the accent, used for actions and links, not for page fills.
+   Gold is only the mid score band. Red is distress and errors. */
+
+:root {
+  --fg: #1c1917;
+  --fg-body: #44403c;
+  --fg-muted: #78716c;
+  --bg: #f6f5f4;
+  --bg-panel: #ffffff;
+  --bg-sunken: #f0eeec;
+  --bg-inverse: #1c1917;
+  --fg-inverse: #fafaf9;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --accent: #7f1d2c;
+  --accent-hover: #641623;
+  --on-accent: #ffffff;
+  --gold: #92400e;
+  --negative: #9f1239;
+  --negative-soft: #fde8ec;
+  --caution-soft: #f8efd8;
+  --positive: #3f6212;
+  --positive-soft: #ecfccb;
+  --info: #1e3a5f;
+  --score-calm-bg: #f0eeec;
+  --score-calm-fg: #44403c;
+  --score-mid-bg: #f5edd6;
+  --score-mid-fg: #713f12;
+  --score-high-bg: #f3d7a1;
+  --score-high-fg: #451a03;
+  --score-severe-bg: #7f1d2c;
+  --score-severe-fg: #ffffff;
+  --shadow-overlay: 0 8px 24px rgb(28 25 23 / 0.12);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --fg: #f5f5f4;
+  --fg-body: #d6d3d1;
+  --fg-muted: #a8a29e;
+  --bg: #141413;
+  --bg-panel: #1c1b1a;
+  --bg-sunken: #262523;
+  --bg-inverse: #0c0c0b;
+  --fg-inverse: #fafaf9;
+  --border: #3f3d3b;
+  --border-strong: #57534e;
+  --accent: #f0c2c8;
+  --accent-hover: #f7dce0;
+  --on-accent: #1c1917;
+  --gold: #f5d08a;
+  --negative: #fda4af;
+  --negative-soft: #3f1d24;
+  --caution-soft: #3b2f1a;
+  --positive: #bef264;
+  --positive-soft: #1f2a12;
+  --info: #93c5fd;
+  --score-calm-bg: #292524;
+  --score-calm-fg: #d6d3d1;
+  --score-mid-bg: #44361a;
+  --score-mid-fg: #f5edd6;
+  --score-high-bg: #6b4e16;
+  --score-high-fg: #fff7ed;
+  --score-severe-bg: #f0c2c8;
+  --score-severe-fg: #1c1917;
+  --shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.4);
+  color-scheme: dark;
+}

@@ -46,56 +46,56 @@ export default function OperatingForm({ parkId }: { parkId: string }) {
     router.refresh();
   }
 
-  const input = "w-full rounded-sm border border-[#e2e2e2] px-2 py-1";
+  const input = "w-full rounded-sm border border-line px-2 py-1";
   return (
     <form onSubmit={submit} className="space-y-3">
       <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
         {NUMBERS.map(([k, label]) => (
-          <label key={k} className="text-xs text-[#787d85]">
+          <label key={k} className="text-xs text-muted">
             {label}
-            <input inputMode="decimal" value={v[k] ?? ""} onChange={set(k)} className={`num ${input} text-sm text-[#18191b]`} />
+            <input inputMode="decimal" value={v[k] ?? ""} onChange={set(k)} className={`num ${input} text-sm text-fg`} />
           </label>
         ))}
-        <label className="text-xs text-[#787d85]">
+        <label className="text-xs text-muted">
           Age restriction
-          <select value={v.age_restricted ?? ""} onChange={set("age_restricted")} className={`${input} text-sm text-[#18191b]`}>
+          <select value={v.age_restricted ?? ""} onChange={set("age_restricted")} className={`${input} text-sm text-fg`}>
             <option value="">—</option>
             <option value="55plus">55+</option>
             <option value="all">All ages</option>
           </select>
         </label>
-        <label className="text-xs text-[#787d85]">
+        <label className="text-xs text-muted">
           Land
-          <select value={v.land_tenure ?? ""} onChange={set("land_tenure")} className={`${input} text-sm text-[#18191b]`}>
+          <select value={v.land_tenure ?? ""} onChange={set("land_tenure")} className={`${input} text-sm text-fg`}>
             <option value="">—</option>
             <option value="owned">Owned</option>
             <option value="leased">Leased</option>
           </select>
         </label>
-        <label className="text-xs text-[#787d85]">
+        <label className="text-xs text-muted">
           Owned since
-          <input type="date" value={v.owned_since ?? ""} onChange={set("owned_since")} className={`${input} text-sm text-[#18191b]`} />
+          <input type="date" value={v.owned_since ?? ""} onChange={set("owned_since")} className={`${input} text-sm text-fg`} />
         </label>
-        <label className="text-xs text-[#787d85]">
+        <label className="text-xs text-muted">
           Figures as of
-          <input type="date" value={v.observed_on ?? ""} onChange={set("observed_on")} className={`${input} text-sm text-[#18191b]`} />
+          <input type="date" value={v.observed_on ?? ""} onChange={set("observed_on")} className={`${input} text-sm text-fg`} />
         </label>
       </div>
-      <label className="block text-xs text-[#787d85]">
+      <label className="block text-xs text-muted">
         Amenities and home mix (call prep, not scored)
-        <textarea rows={2} value={v.amenities ?? ""} onChange={set("amenities")} className={`${input} text-sm text-[#18191b]`}
+        <textarea rows={2} value={v.amenities ?? ""} onChange={set("amenities")} className={`${input} text-sm text-fg`}
                   placeholder="Pool, clubhouse, paved streets; homes mostly 1990s singlewides" />
       </label>
-      <label className="block text-xs text-[#787d85]">
+      <label className="block text-xs text-muted">
         Where these figures came from
-        <input value={v.notes ?? ""} onChange={set("notes")} className={`${input} text-sm text-[#18191b]`}
+        <input value={v.notes ?? ""} onChange={set("notes")} className={`${input} text-sm text-fg`}
                placeholder="e.g. owner on the phone, 10/29" />
       </label>
       <div className="flex items-center gap-3">
-        <button disabled={busy} className="rounded-sm bg-[#85152a] px-3 py-1.5 font-medium text-white hover:bg-[#6e1023] disabled:opacity-50">
+        <button disabled={busy} className="rounded-sm bg-accent px-3 py-1.5 font-medium text-on-accent hover:bg-accent-hover disabled:opacity-50">
           {busy ? "Saving…" : "Save figures"}
         </button>
-        {msg && <span className={msg.ok ? "text-xs text-[#787d85]" : "text-red-700"}>{msg.text}</span>}
+        {msg && <span className={msg.ok ? "text-xs text-muted" : "text-red-700"}>{msg.text}</span>}
       </div>
     </form>
   );

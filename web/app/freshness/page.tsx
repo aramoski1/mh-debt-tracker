@@ -14,11 +14,11 @@ export default async function FreshnessPage() {
   return (
     <div className="space-y-4">
       <header>
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#85152a]">FRESHNESS</p>
+        <p className="text-2xs font-medium tracking-wide text-accent">FRESHNESS</p>
         <h1 className="text-2xl font-medium">When each source last ran</h1>
       </header>
-      <table className="w-full rounded-sm border border-[#e2e2e2] bg-white">
-        <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+      <table className="w-full rounded-sm border border-line bg-panel">
+        <thead className="bg-sunken text-left text-xs text-muted">
           <tr>
             <th className="px-4 py-2 font-medium">Source</th>
             <th className="px-4 py-2 font-medium">Status</th>
@@ -28,14 +28,14 @@ export default async function FreshnessPage() {
         </thead>
         <tbody>
           {runs.map((r) => (
-            <tr key={r.id} className="border-t border-[#f4f4f4]">
+            <tr key={r.id} className="border-t border-line">
               <td className="px-4 py-2">{r.source}</td>
               <td className="px-4 py-2">{r.status}</td>
               <td className="num px-4 py-2">{r.started_at?.slice(0, 16).replace("T", " ")}</td>
-              <td className="px-4 py-2 text-xs text-[#787d85]">{r.error || JSON.stringify(r.stats ?? {})}</td>
+              <td className="px-4 py-2 text-xs text-muted">{r.error || JSON.stringify(r.stats ?? {})}</td>
             </tr>
           ))}
-          {!runs.length && <tr><td colSpan={4} className="px-4 py-6 text-[#787d85]">No runs recorded.</td></tr>}
+          {!runs.length && <tr><td colSpan={4} className="px-4 py-6 text-muted">No runs recorded.</td></tr>}
         </tbody>
       </table>
     </div>

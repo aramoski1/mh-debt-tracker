@@ -40,21 +40,21 @@ export default function DeskActions({
   };
 
   return (
-    <div className="flex flex-wrap items-end gap-3 rounded-sm border border-[#e2e2e2] bg-white p-4">
+    <div className="flex flex-wrap items-end gap-3 rounded-sm border border-line bg-panel p-4">
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[#787d85]">Stage</span>
-        <select value={s} onChange={(e) => saveDeal(e.target.value, when)} className="h-8 rounded-sm border border-[#e2e2e2] px-2">
+        <span className="text-xs text-muted">Stage</span>
+        <select value={s} onChange={(e) => saveDeal(e.target.value, when)} className="h-8 rounded-sm border border-line px-2">
           {STAGES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-[#787d85]">Next action</span>
-        <input type="date" value={when} onChange={(e) => saveDeal(s, e.target.value)} className="h-8 rounded-sm border border-[#e2e2e2] px-2" />
+        <span className="text-xs text-muted">Next action</span>
+        <input type="date" value={when} onChange={(e) => saveDeal(s, e.target.value)} className="h-8 rounded-sm border border-line px-2" />
       </label>
-      <button onClick={toggle} className="h-8 rounded-sm border border-[#18191b] px-3">
+      <button onClick={toggle} className="h-8 rounded-sm border border-line-strong px-3">
         {on ? "Managed" : "Mark managed"}
       </button>
-      {msg && <span className="text-xs text-[#787d85]">{msg}</span>}
+      {msg && <span className="text-xs text-muted">{msg}</span>}
     </div>
   );
 }

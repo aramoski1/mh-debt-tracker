@@ -1,9 +1,10 @@
 import { supabaseServer } from "@/lib/supabase/server";
-import { monthsFromNow } from "@/lib/format";
+import { monthsFromNow, money } from "@/lib/format";
 import type { ParkRow } from "@/lib/types";
 import Filters from "./Filters";
 import Prospects from "./Prospects";
 import CallList from "./CallList";
+import { Metric, MetricStrip } from "@/components/ui/Bits";
 
 export const dynamic = "force-dynamic";
 
@@ -46,27 +47,21 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   }).length;
   const documented = rows.filter((r) => r.maturity_basis === "reported" || r.maturity_basis === "document").length;
   const foreclosure = rows.filter((r) => r.loan_status === "foreclosure").length;
+  const debt = rows.reduce((sum, r) => sum + Number(r.current_balance ?? r.original_amount ?? 0), 0);
 
   return (
     <div className="space-y-4">
-      <section className="grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-[#e2e2e2] bg-[#e2e2e2] sm:grid-cols-4">
-        {[
-          ["Parks in view", rows.length],
-          ["Due within 12 months", dueYear],
-          ["Date from a document", documented],
-          ["Foreclosure on record", foreclosure],
-        ].map(([label, n]) => (
-          <div key={String(label)} className="bg-white px-4 py-3">
-            <p className="text-[10px] font-medium tracking-[0.18em] text-[#787d85]">{String(label).toUpperCase()}</p>
-            <p className="num mt-1 text-2xl font-medium text-[#18191b]">{n}</p>
-          </div>
-        ))}
-      </section>
+      <MetricStrip>
+        <Metric label="Parks in view" value={rows.length.toLocaleString()} />
+        <Metric label="Due within 12 months" value={dueYear.toLocaleString()} />
+        <Metric label="Balance in view" value={money(debt)} />
+        <Metric label="Date from a document" value={documented.toLocaleString()} detail={foreclosure ? `${foreclosure} foreclosure notices` : undefined} />
+      </MetricStrip>
       <div id="calls" className="relative z-10 scroll-mt-20">
         <CallList rows={rows} />
       </div>
       <Filters current={sp} />
-      {error && <p className="rounded-sm border border-[#e2e2e2] bg-[#f8e7ea] p-3 text-[#85152a]">{error.message}</p>}
+      {error && <p className="rounded-sm border border-line bg-negative-soft p-3 text-accent">{error.message}</p>}
       <Prospects rows={rows} />
     </div>
   );

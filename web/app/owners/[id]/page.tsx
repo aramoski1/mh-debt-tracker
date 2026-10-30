@@ -20,21 +20,21 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
   const o = parks[0];
   return (
     <div className="space-y-4">
-      <Link href="/" className="text-xs text-[#787d85] hover:text-[#85152a]">← Prospects</Link>
-      <header className="rounded-sm border border-[#e2e2e2] bg-white p-5">
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#85152a]">OWNER</p>
+      <Link href="/" className="text-xs text-muted hover:text-accent">← Prospects</Link>
+      <header className="rounded-sm border border-line bg-panel p-5">
+        <p className="text-2xs font-medium tracking-wide text-accent">OWNER</p>
         <h1 className="text-2xl font-medium">{o.owner_name}</h1>
-        <p className="text-[#333539]">
+        <p className="text-body">
           {[o.owner_city, o.owner_state].filter(Boolean).join(", ")}
           {o.owner_entity_type ? ` · ${o.owner_entity_type}` : ""} · {parks.length} park{parks.length === 1 ? "" : "s"} in this desk
         </p>
       </header>
-      <ul className="divide-y divide-[#e2e2e2] rounded-sm border border-[#e2e2e2] bg-white">
+      <ul className="divide-y divide-line rounded-sm border border-line bg-panel">
         {parks.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
-              <Link href={`/parks/${p.id}`} className="font-medium hover:text-[#85152a]">{p.name}</Link>
-              <div className="text-xs text-[#787d85]">{p.city}, {p.state}{p.units ? ` · ${p.units} sites` : ""} · matures {monthYear(p.maturity_date)}</div>
+              <Link href={`/parks/${p.id}`} className="font-medium hover:text-accent">{p.name}</Link>
+              <div className="text-xs text-muted">{p.city}, {p.state}{p.units ? ` · ${p.units} sites` : ""} · matures {monthYear(p.maturity_date)}</div>
             </div>
             <span className={`num rounded-sm px-2 py-0.5 font-semibold ${scoreTone(p.score)}`}>{p.score == null ? "–" : Math.round(p.score)}</span>
           </li>

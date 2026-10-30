@@ -29,16 +29,16 @@ function Detail({ c, k }: { c: ScoreComponent; k: string }) {
     if ((c.equity_needed as number) > 0) parts.push(`about ${money(c.equity_needed as number)} of new equity needed to refinance`);
   }
   if (c.why) parts.push(String(c.why));
-  return <p className="text-xs text-[#787d85]">{parts.join(". ") || "No signal."}</p>;
+  return <p className="text-xs text-muted">{parts.join(". ") || "No signal."}</p>;
 }
 
 function Fact({ label, f, show }: { label: string; f?: { source: string; on: string }; show: string | null }) {
   return (
     <>
-      <dt className="text-[#787d85]">{label}</dt>
+      <dt className="text-muted">{label}</dt>
       <dd>
         <span className="num">{show ?? "—"}</span>
-        {f && show && <span className="ml-1 text-xs text-[#787d85]">{f.source}, {f.on}</span>}
+        {f && show && <span className="ml-1 text-xs text-muted">{f.source}, {f.on}</span>}
       </dd>
     </>
   );
@@ -101,32 +101,32 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="space-y-4">
-      <Link href="/" className="text-xs tracking-wide text-[#787d85] hover:text-[#85152a]">← Prospects</Link>
+      <Link href="/" className="text-xs tracking-wide text-muted hover:text-accent">← Prospects</Link>
 
-      <div className="flex flex-wrap items-start justify-between gap-4 rounded-sm border border-[#e2e2e2] bg-white p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4 rounded-sm border border-line bg-panel p-5">
         <div>
-          <p className="text-[10px] font-medium tracking-[0.22em] text-[#85152a]">PARK</p>
+          <p className="text-2xs font-medium tracking-wide text-accent">PARK</p>
           <h1 className="text-2xl font-medium tracking-tight">{p.name}</h1>
-          <p className="mt-1 text-[#333539]">
+          <p className="mt-1 text-body">
             {[p.address, p.city, p.state, p.zip].filter(Boolean).join(", ")} · {KIND_LABEL[p.kind]}
             {p.units ? ` · ${p.units} sites` : ""}
           </p>
           <p className="mt-2">
-            <span className="text-[#787d85]">Owner </span>
+            <span className="text-muted">Owner </span>
             {p.owner_id ? (
-              <Link href={`/owners/${p.owner_id}`} className="font-medium hover:text-[#85152a]">{p.owner_name ?? "Unknown"}</Link>
+              <Link href={`/owners/${p.owner_id}`} className="font-medium hover:text-accent">{p.owner_name ?? "Unknown"}</Link>
             ) : (
               <span className="font-medium">{p.owner_name ?? "Unknown"}</span>
             )}
-            <span className="text-[#787d85]">
+            <span className="text-muted">
               {" "}· {[p.owner_city, p.owner_state].filter(Boolean).join(", ")}
               {p.owner_park_count && p.owner_park_count > 1 ? ` · owns ${p.owner_park_count} parks` : ""}
             </span>
           </p>
-          {p.phone && <a className="num mt-1 inline-block text-[#85152a]" href={`tel:${p.phone}`}>{p.phone}</a>}
-          {p.flood_zone && <p className="mt-1 text-xs text-[#787d85]">FEMA flood zone {p.flood_zone}</p>}
+          {p.phone && <a className="num mt-1 inline-block text-accent" href={`tel:${p.phone}`}>{p.phone}</a>}
+          {p.flood_zone && <p className="mt-1 text-xs text-muted">FEMA flood zone {p.flood_zone}</p>}
           {(water ?? []).map((w) => (
-            <p key={w.pws_id} className="mt-1 text-xs text-[#787d85]">
+            <p key={w.pws_id} className="mt-1 text-xs text-muted">
               EPA water system {w.name} ({w.pws_id})
               {w.serious_violator ? " · serious violator" : ""}
               {w.qtrs_with_violations ? ` · violations in ${w.qtrs_with_violations} recent quarters` : " · no recent violation quarters on the ECHO row"}
@@ -137,14 +137,14 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           <div className={`num inline-block rounded-sm px-3 py-1 text-2xl font-semibold ${scoreTone(p.score)}`}>
             {p.score == null ? "–" : Math.round(p.score)}
           </div>
-          <div className="mt-1 text-xs tracking-wide text-[#787d85]">Owner pressure</div>
+          <div className="mt-1 text-xs tracking-wide text-muted">Owner pressure</div>
         </div>
       </div>
 
-      <section className="rounded-sm border border-[#dd9933] bg-[#18191b] p-5 text-white">
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#dd9933]">BEFORE YOU CALL</p>
+      <section className="rounded-sm border border-gold bg-inverse p-5 text-on-inverse">
+        <p className="text-xs font-medium tracking-wide text-gold">Before you call</p>
         <p className="mt-2 max-w-3xl text-base leading-7">{callLine(p)}</p>
-        <p className="mt-2 text-xs text-white/60">
+        <p className="mt-2 text-xs text-on-inverse/70">
           {p.loan_status === "foreclosure"
             ? "The notice is in the county record. Confirm the sale date before you quote a payoff."
             : p.maturity_basis === "estimated"
@@ -156,13 +156,13 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
       <DeskActions parkId={p.id} stage={deal?.stage ?? null} nextAction={deal?.next_action ?? null} managed={!!p.managed} />
 
       {comps.fit && (
-        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+        <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="font-semibold">Acquisition fit {Math.round(Number(comps.fit.points ?? 0))}</h2>
           <ul className="mt-2 space-y-1 text-sm">
             {((comps.fit.parts as { key: string; points: number; max: number; why: string }[] | undefined) ?? []).map((part) => (
               <li key={part.key} className="flex justify-between gap-4">
                 <span>{part.why}</span>
-                <span className="num shrink-0 text-[#787d85]">{part.points}/{part.max}</span>
+                <span className="num shrink-0 text-muted">{part.points}/{part.max}</span>
               </li>
             ))}
           </ul>
@@ -183,7 +183,7 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
       />
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4 lg:col-span-2">
+        <section className="rounded-sm border border-line bg-panel p-4 lg:col-span-2">
           <h2 className="mb-3 font-semibold">Why it scores {p.score == null ? "–" : Math.round(p.score)}</h2>
           <div className="space-y-3">
             {Object.entries(COMPONENT_LABEL).map(([k, [label, max]]) => {
@@ -193,10 +193,10 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
                 <div key={k}>
                   <div className="flex items-center justify-between">
                     <span>{label}</span>
-                    <span className="num text-[#333539]">{Math.round(pts)} / {max}</span>
+                    <span className="num text-body">{Math.round(pts)} / {max}</span>
                   </div>
-                  <div className="my-1 h-1.5 rounded bg-[#f4f4f4]">
-                    <div className="h-1.5 rounded bg-[#85152a]" style={{ width: `${(pts / max) * 100}%` }} />
+                  <div className="my-1 h-1.5 rounded bg-sunken">
+                    <div className="h-1.5 rounded bg-accent" style={{ width: `${(pts / max) * 100}%` }} />
                   </div>
                   {c && <Detail c={c} k={k} />}
                 </div>
@@ -205,48 +205,48 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           </div>
         </section>
 
-        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+        <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="mb-3 font-semibold">Next maturity</h2>
           <div className="num text-2xl font-semibold">{monthYear(p.maturity_date)}</div>
-          <p className="text-[#333539]">{p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "No loan found"}</p>
+          <p className="text-body">{p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "No loan found"}</p>
           {p.loan_status === "foreclosure" && (
-            <p className="mt-2 rounded bg-[#f8e7ea] px-2 py-1 text-[#85152a]">A trustee sale notice or lis pendens has been recorded.</p>
+            <p className="mt-2 rounded bg-negative-soft px-2 py-1 text-accent">A trustee sale notice or lis pendens has been recorded.</p>
           )}
           {p.maturity_basis === "estimated" && p.p10_date && (
-            <p className="mt-1 text-xs text-[#787d85]">Likely range {monthYear(p.p10_date)} to {monthYear(p.p90_date)}</p>
+            <p className="mt-1 text-xs text-muted">Likely range {monthYear(p.p10_date)} to {monthYear(p.p90_date)}</p>
           )}
-          {p.maturity_explanation && <p className="mt-2 text-xs text-[#787d85]">{p.maturity_explanation}</p>}
+          {p.maturity_explanation && <p className="mt-2 text-xs text-muted">{p.maturity_explanation}</p>}
           <dl className="mt-4 grid grid-cols-2 gap-y-1 text-sm">
-            <dt className="text-[#787d85]">Lender</dt>
+            <dt className="text-muted">Lender</dt>
             <dd>{p.lender_name ?? p.lender_name_raw ?? "—"}</dd>
-            <dt className="text-[#787d85]">Type</dt>
+            <dt className="text-muted">Type</dt>
             <dd>{p.lender_kind ? LENDER_LABEL[p.lender_kind] : "—"}</dd>
-            <dt className="text-[#787d85]">Balance</dt>
+            <dt className="text-muted">Balance</dt>
             <dd className="num">{money(p.current_balance ?? p.original_amount)}</dd>
-            <dt className="text-[#787d85]">Rate</dt>
+            <dt className="text-muted">Rate</dt>
             <dd className="num">{pct(p.note_rate)}</dd>
           </dl>
         </section>
       </div>
 
-      <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+      <section className="rounded-sm border border-line bg-panel p-4">
         <h2 className="mb-1 font-semibold">Operating figures</h2>
-        <p className="mb-3 text-xs text-[#787d85]">
+        <p className="mb-3 text-xs text-muted">
           {hasOp
             ? "Rent and occupancy here replace the statewide estimate in the refinance gap."
             : `None yet. The refinance gap assumes ${p.state} market lot rent and 90% occupancy until rent and vacancy are entered.`}
         </p>
         {hasOp && <OperatingFacts m={op} />}
         <details className="mt-3">
-          <summary className="cursor-pointer text-[#85152a]">{hasOp ? "Update figures" : "Enter figures"}</summary>
+          <summary className="cursor-pointer text-accent">{hasOp ? "Update figures" : "Enter figures"}</summary>
           <div className="mt-3"><OperatingForm parkId={p.id} /></div>
         </details>
       </section>
 
-      <section className="rounded-sm border border-[#e2e2e2] bg-white">
-        <h2 className="border-b border-[#e2e2e2] px-4 py-3 font-semibold">Loan history</h2>
+      <section className="rounded-sm border border-line bg-panel">
+        <h2 className="border-b border-line px-4 py-3 font-semibold">Loan history</h2>
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Recorded</th>
               <th className="px-4 py-2 font-medium">Source</th>
@@ -260,14 +260,14 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             {(loans ?? []).map((l) => {
               const est = Array.isArray(l.maturity_estimates) ? l.maturity_estimates[0] : l.maturity_estimates;
               return (
-                <tr key={l.id} className="border-t border-[#f4f4f4]">
+                <tr key={l.id} className="border-t border-line">
                   <td className="num px-4 py-2">{l.recording_date ?? l.origination_date ?? "—"}</td>
-                  <td className="px-4 py-2 uppercase text-[#787d85]">{l.source}</td>
+                  <td className="px-4 py-2 uppercase text-muted">{l.source}</td>
                   <td className="px-4 py-2">{l.lenders?.name ?? l.lender_name_raw ?? "—"}</td>
                   <td className="num px-4 py-2 text-right">{money(l.current_balance ?? l.original_amount)}</td>
                   <td className="num px-4 py-2">
                     {monthYear(l.maturity_date ?? est?.likely_date ?? est?.p50_date)}{" "}
-                    <span className="text-xs text-[#787d85]">
+                    <span className="text-xs text-muted">
                       {BASIS_LABEL[l.maturity_date ? l.maturity_basis : est?.basis ?? "unknown"]}
                     </span>
                   </td>
@@ -281,52 +281,52 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
               );
             })}
             {!loans?.length && (
-              <tr><td colSpan={6} className="px-4 py-6 text-center text-[#787d85]">No recorded loans found. The park may be owned free and clear.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-center text-muted">No recorded loans found. The park may be owned free and clear.</td></tr>
             )}
           </tbody>
         </table>
       </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+        <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="mb-3 font-semibold">Call notes</h2>
           <NoteForm parkId={p.id} />
           <ul className="mt-4 space-y-3">
             {(notes ?? []).map((n) => (
-              <li key={n.id} className="border-t border-[#f4f4f4] pt-3">
-                <div className="text-xs text-[#787d85]">
+              <li key={n.id} className="border-t border-line pt-3">
+                <div className="text-xs text-muted">
                   {new Date(n.created_at).toLocaleDateString()} · {n.author_name ?? "Team"} · {n.outcome?.replace("_", " ") ?? n.kind}
                   {n.next_follow_up ? ` · follow up ${n.next_follow_up}` : ""}
                 </div>
                 <p className="mt-1 whitespace-pre-wrap">{n.body}</p>
-                {n.extracted?.motivation && <p className="mt-1 text-xs text-[#787d85]">Motivation: {n.extracted.motivation}</p>}
+                {n.extracted?.motivation && <p className="mt-1 text-xs text-muted">Motivation: {n.extracted.motivation}</p>}
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="rounded-sm border border-[#e2e2e2] bg-white p-4">
+        <section className="rounded-sm border border-line bg-panel p-4">
           <h2 className="mb-3 font-semibold">Recorded documents</h2>
           <ul className="space-y-2">
             {(docs ?? []).map((d) => (
-              <li key={d.id} className="flex justify-between gap-3 border-t border-[#f4f4f4] pt-2">
+              <li key={d.id} className="flex justify-between gap-3 border-t border-line pt-2">
                 <div>
                   <div className="capitalize">{d.doc_type.replaceAll("_", " ")}</div>
-                  <div className="text-xs text-[#787d85]">
+                  <div className="text-xs text-muted">
                     {d.county} #{d.recording_number}
                     {d.extracted?.maturity_date ? ` · states maturity ${d.extracted.maturity_date}` : ""}
                   </div>
                 </div>
                 <div className="num text-right">
                   <div>{d.recording_date}</div>
-                  {d.pdf_url && <a className="text-xs text-[#787d85] underline" href={d.pdf_url} target="_blank">View</a>}
+                  {d.pdf_url && <a className="text-xs text-muted underline" href={d.pdf_url} target="_blank">View</a>}
                 </div>
               </li>
             ))}
-            {!docs?.length && <li className="text-[#787d85]">None yet.</li>}
+            {!docs?.length && <li className="text-muted">None yet.</li>}
           </ul>
           {!!parcels?.length && (
-            <p className="mt-4 text-xs text-[#787d85]">
+            <p className="mt-4 text-xs text-muted">
               Parcels: {parcels.map((x) => `${x.apn} (${x.county})`).join(", ")}
               {sold ? ` · last sold ${sold.last_sale_date ?? ""} for ${money(Number(sold.last_sale_price))}` : ""}
               {sold && p.units ? ` · ${money(Number(sold.last_sale_price) / p.units)} per site` : ""}

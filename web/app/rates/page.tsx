@@ -1,6 +1,7 @@
 import { supabaseServer } from "@/lib/supabase/server";
 import { isDemo } from "@/lib/supabase/demo";
 import { pct } from "@/lib/format";
+import { Metric, MetricStrip, PageHeader } from "@/components/ui/Bits";
 
 export const dynamic = "force-dynamic";
 
@@ -43,38 +44,49 @@ export default async function RatesPage() {
     return true;
   });
 
+  const cmbs = spreadRows.find((row) => row.source === "cmbs") ?? null;
+  const primary = ["DGS5", "DGS10", "SOFR", "DPRIME", "AZ_UNEMP"] as const;
+  const formatPrint = (series: string, value: number) =>
+    series === "CPI_SHELTER" ? Number(value).toFixed(1) : series === "AZ_UNEMP" ? pct(value, 1) : pct(value);
+
   return (
     <div className="space-y-4">
-      <header>
-        <p className="text-[10px] font-medium tracking-[0.22em] text-[#85152a]">RATE DESK</p>
-        <h1 className="text-2xl font-medium">What money costs</h1>
-        <p className="mt-1 max-w-3xl text-[#333539]">
-          Treasury, SOFR, the shelter CPI, and the Fed's CRE lending survey are the published series.
-          Shelter CPI is an index, not a lot rent. Arizona unemployment is the statewide rate, not a park figure.
-          The CRE figure is the net percent of banks tightening standards.
-          The rollup spread is the median of note rate minus the 5-year Treasury on the origination date.
-          The term table uses the nearest of the 5-, 7-, and 10-year Treasury when the loan has a term, and says so when it does not.
-          CMBS and SBA loans already in the database are the sample. Agency rows stay empty until a Fannie or Freddie file is imported.
-          The model uses a spread only when that lender type has at least 8 loans.
-        </p>
-        {isDemo() && <p className="mt-2 text-xs text-[#787d85]">The figures on this page are the fictional demo set.</p>}
-      </header>
-      <div className="grid gap-px overflow-hidden rounded-sm border border-[#e2e2e2] bg-[#e2e2e2] sm:grid-cols-3">
-        {Object.entries(LABELS).map(([series, label]) => {
+      <PageHeader
+        kicker="Rate desk"
+        title="What money costs"
+        lede="The model uses the 5-year Treasury plus a measured spread when that lender type has at least 8 loans. Arizona unemployment is statewide, not a park rate."
+      />
+      {isDemo() && <p className="text-xs text-muted">The figures on this page are the fictional demo set.</p>}
+      <MetricStrip cols="sm:grid-cols-3 lg:grid-cols-6">
+        {primary.map((series) => {
           const row = latest.get(series);
-          return (
-            <div key={series} className="bg-white px-4 py-3">
-              <p className="text-[10px] font-medium tracking-[0.16em] text-[#787d85]">{label.toUpperCase()}</p>
-              <p className="num mt-1 text-2xl">{row ? (series === "CPI_SHELTER" ? Number(row.value).toFixed(1) : series === "AZ_UNEMP" ? pct(Number(row.value), 1) : pct(Number(row.value))) : "—"}</p>
-              <p className="text-xs text-[#787d85]">{row ? row.observed_on : "No print loaded"}</p>
-            </div>
-          );
+          return <Metric key={series} label={LABELS[series]} value={row ? formatPrint(series, Number(row.value)) : "—"} detail={row?.observed_on ?? "No print loaded"} />;
         })}
-      </div>
-      <section className="overflow-x-auto rounded-sm border border-[#e2e2e2] bg-white">
-        <h2 className="border-b border-[#e2e2e2] px-4 py-3 font-semibold">Measured spreads</h2>
+        <Metric
+          label="CMBS spread"
+          value={cmbs ? pct(Number(cmbs.median_spread)) : "—"}
+          detail={cmbs ? `${cmbs.sample_size} loans` : "No sample yet"}
+        />
+      </MetricStrip>
+      <details className="rounded-md border border-line bg-panel px-4 py-3">
+        <summary className="cursor-pointer text-sm font-medium">All series</summary>
+        <div className="mt-3 grid gap-px overflow-hidden rounded-sm border border-line bg-line sm:grid-cols-3">
+          {Object.entries(LABELS).map(([series, label]) => {
+            const row = latest.get(series);
+            return (
+              <div key={series} className="bg-panel px-4 py-3">
+                <p className="text-xs text-muted">{label}</p>
+                <p className="num mt-1 text-lg">{row ? formatPrint(series, Number(row.value)) : "—"}</p>
+                <p className="text-xs text-muted">{row ? row.observed_on : "No print loaded"}</p>
+              </div>
+            );
+          })}
+        </div>
+      </details>
+      <section className="overflow-x-auto rounded-sm border border-line bg-panel">
+        <h2 className="border-b border-line px-4 py-3 font-semibold">Measured spreads</h2>
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Source</th>
               <th className="px-4 py-2 font-medium">Lender type</th>
@@ -86,7 +98,7 @@ export default async function RatesPage() {
           </thead>
           <tbody>
             {spreadRows.map((r) => (
-              <tr key={`${r.source}-${r.lender_kind}`} className="border-t border-[#f4f4f4]">
+              <tr key={`${r.source}-${r.lender_kind}`} className="border-t border-line">
                 <td className="px-4 py-2 uppercase">{r.source}</td>
                 <td className="px-4 py-2">{r.lender_kind.replaceAll("_", " ")}</td>
                 <td className="num px-4 py-2 text-right">{Number(r.median_spread).toFixed(2)} pts</td>
@@ -96,15 +108,15 @@ export default async function RatesPage() {
               </tr>
             ))}
             {!spreadRows.length && (
-              <tr><td colSpan={6} className="px-4 py-6 text-[#787d85]">No spreads yet. Run mhdebt rates after loans are loaded.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-6 text-muted">No spreads yet. Run mhdebt rates after loans are loaded.</td></tr>
             )}
           </tbody>
         </table>
       </section>
-      <section className="overflow-x-auto rounded-sm border border-[#e2e2e2] bg-white">
-        <h2 className="border-b border-[#e2e2e2] px-4 py-3 font-semibold">Spreads by term and quarter</h2>
+      <section className="overflow-x-auto rounded-sm border border-line bg-panel">
+        <h2 className="border-b border-line px-4 py-3 font-semibold">Spreads by term and quarter</h2>
         <table className="w-full">
-          <thead className="bg-[#f7f7f8] text-left text-xs text-[#787d85]">
+          <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
               <th className="px-4 py-2 font-medium">Source</th>
               <th className="px-4 py-2 font-medium">Lender type</th>
@@ -117,7 +129,7 @@ export default async function RatesPage() {
           </thead>
           <tbody>
             {((termSpreads ?? []) as TermSpread[]).map((r) => (
-              <tr key={`${r.source}-${r.lender_kind}-${r.tenor}-${r.quarter}-${r.method}`} className="border-t border-[#f4f4f4]">
+              <tr key={`${r.source}-${r.lender_kind}-${r.tenor}-${r.quarter}-${r.method}`} className="border-t border-line">
                 <td className="px-4 py-2 uppercase">{r.source}</td>
                 <td className="px-4 py-2">{r.lender_kind.replaceAll("_", " ")}</td>
                 <td className="px-4 py-2">{r.tenor}</td>
@@ -128,7 +140,7 @@ export default async function RatesPage() {
               </tr>
             ))}
             {!termSpreads?.length && (
-              <tr><td colSpan={7} className="px-4 py-6 text-[#787d85]">No term splits yet. Run mhdebt rates.</td></tr>
+              <tr><td colSpan={7} className="px-4 py-6 text-muted">No term splits yet. Run mhdebt rates.</td></tr>
             )}
           </tbody>
         </table>

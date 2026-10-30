@@ -23,9 +23,43 @@ export function monthsFromNow(d: string | null | undefined) {
 }
 
 export function scoreTone(s: number | null | undefined) {
-  if (s == null) return "bg-[#f4f4f4] text-[#787d85]";
-  if (s >= 60) return "bg-[#85152a] text-white";
-  if (s >= 45) return "bg-[#dd9933] text-[#18191b]";
-  if (s >= 30) return "bg-[#f8e7c8] text-[#47161f]";
-  return "bg-[#f4f4f4] text-[#333539]";
+  if (s == null) return "bg-score-calm text-on-score-calm";
+  if (s >= 60) return "bg-score-severe text-on-score-severe";
+  if (s >= 45) return "bg-score-high text-on-score-high";
+  if (s >= 30) return "bg-score-mid text-on-score-mid";
+  return "bg-score-calm text-on-score-calm";
+}
+
+export function scoreLabel(s: number | null | undefined) {
+  if (s == null) return "No score";
+  if (s >= 60) return "Severe";
+  if (s >= 45) return "High";
+  if (s >= 30) return "Elevated";
+  return "Calm";
+}
+
+export function fullDate(d: string | null | undefined) {
+  if (!d) return "—";
+  const [y, m, day] = d.split("-").map(Number);
+  if (!y || !m || !day) return monthYear(d);
+  return `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]} ${day}, ${y}`;
+}
+
+export function relativeWhen(d: string | null | undefined) {
+  const months = monthsFromNow(d);
+  if (months == null) return null;
+  if (months < 0) return `${Math.abs(months)} mo ago`;
+  if (months === 0) return "this month";
+  return `in ${months} mo`;
+}
+
+export function bps(points: number | null | undefined) {
+  if (points == null || Number.isNaN(points)) return "—";
+  const n = Math.round(Number(points) * 100);
+  return `${n > 0 ? "+" : ""}${n} bps`;
+}
+
+export function ratio(v: number | null | undefined) {
+  if (v == null || Number.isNaN(v)) return "—";
+  return `${Number(v).toFixed(2)}x`;
 }
