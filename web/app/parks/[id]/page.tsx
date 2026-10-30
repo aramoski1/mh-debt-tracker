@@ -10,6 +10,7 @@ import { ScorePill } from "@/components/ui/ScorePill";
 import { PrintButton } from "@/components/ui/PrintButton";
 import { OutreachDraft } from "@/components/ui/OutreachDraft";
 import { outreachDraft } from "@/lib/outreach";
+import { verifyHref } from "@/lib/verify";
 import NoteForm from "./NoteForm";
 import OperatingForm from "./OperatingForm";
 import DeskActions from "./DeskActions";
@@ -352,6 +353,9 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
                 <div className="num text-right">
                   <div>{d.recording_date}</div>
                   {d.pdf_url && <a className="text-xs text-muted underline" href={d.pdf_url} target="_blank">View</a>}
+                  {d.county === "maricopa" && verifyHref(`mcrec:${d.recording_number}`) && (
+                    <a className="block text-xs text-accent" href={verifyHref(`mcrec:${d.recording_number}`) ?? undefined} target="_blank" rel="noreferrer">Recorder</a>
+                  )}
                 </div>
               </li>
             ))}
