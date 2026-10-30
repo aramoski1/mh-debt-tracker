@@ -14,6 +14,9 @@ const Select = ({ name, value, options }: { name: string; value?: string; option
 export default function Filters({ current }: { current: SP }) {
   return (
     <form className="flex flex-wrap items-end gap-2 rounded-sm border border-line bg-panel p-3">
+      {current.city && <input type="hidden" name="city" value={current.city} />}
+      {current.owner && <input type="hidden" name="owner" value={current.owner} />}
+      {current.minParks && <input type="hidden" name="minParks" value={current.minParks} />}
       <label className="flex flex-col gap-1">
         <span className="text-xs tracking-wide text-muted">Search</span>
         <input id="desk-search" name="q" defaultValue={current.q} placeholder="Park, owner or city"
@@ -52,11 +55,24 @@ export default function Filters({ current }: { current: SP }) {
         <Select name="basis" value={current.basis} options={[["", "Known or estimated"], ["known", "Known dates only"]]} />
       </label>
       <label className="flex flex-col gap-1">
+        <span className="text-xs tracking-wide text-muted">County</span>
+        <input name="county" defaultValue={current.county} placeholder="Maricopa" className="h-8 w-28 rounded-sm border border-line px-2" />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-xs tracking-wide text-muted">Notice</span>
+        <Select name="status" value={current.status} options={[["", "Any"], ["foreclosure", "Foreclosure"]]} />
+      </label>
+      <label className="flex flex-col gap-1">
         <span className="text-xs tracking-wide text-muted">Min score</span>
         <input name="minScore" defaultValue={current.minScore} className="h-8 w-16 rounded-sm border border-line px-2" />
       </label>
       <button className="h-8 rounded-sm bg-accent px-4 font-medium text-on-accent hover:bg-accent-hover">Apply</button>
       <a href="/" className="h-8 px-2 leading-8 text-muted hover:text-fg">Reset</a>
+      {(current.city || current.owner || current.minParks) && (
+        <p className="w-full text-xs text-muted">
+          {[current.city && `City ${current.city}`, current.owner === "out" && "Owner outside Arizona", current.minParks && `Owner has at least ${current.minParks} parks`].filter(Boolean).join(" · ")}
+        </p>
+      )}
     </form>
   );
 }

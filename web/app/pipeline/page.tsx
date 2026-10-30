@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
-import { monthYear } from "@/lib/format";
+import { money, monthYear } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
 import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
 import BuyBoxForm from "./BuyBoxForm";
@@ -8,7 +8,10 @@ import BuyBoxForm from "./BuyBoxForm";
 export const dynamic = "force-dynamic";
 
 type Deal = { park_id: string; stage: string; next_action: string | null; note: string | null };
-type Park = { id: string; name: string; city: string | null; score: number | null; maturity_date: string | null; owner_name: string | null };
+type Park = {
+  id: string; name: string; city: string | null; score: number | null; maturity_date: string | null;
+  owner_name: string | null; current_balance: number | null; original_amount: number | null;
+};
 type Box = { min_sites: number; max_sites: number; states: string[]; kinds: string[] };
 
 export default async function PipelinePage() {
@@ -20,7 +23,7 @@ export default async function PipelinePage() {
   const list = (deals ?? []) as Deal[];
   const ids = list.map((d) => d.park_id);
   const { data: parks } = ids.length
-    ? await supabase.from("park_overview").select("id, name, city, score, maturity_date, owner_name").in("id", ids)
+    ? await supabase.from("park_overview").select("id, name, city, score, maturity_date, owner_name, current_balance, original_amount").in("id", ids)
     : { data: [] };
   const byId = new Map(((parks ?? []) as Park[]).map((p) => [p.id, p]));
   const today = new Date().toISOString().slice(0, 10);
@@ -33,13 +36,20 @@ export default async function PipelinePage() {
         {BOARD.map((key) => {
           const label = STAGE_LABEL[key];
           const cards = list.filter((d) => boardColumn(d.stage) === key);
+          const debt = cards.reduce((sum, deal) => {
+            const park = byId.get(deal.park_id);
+            return sum + Number(park?.current_balance ?? park?.original_amount ?? 0);
+          }, 0);
           return (
             <div key={key} className="rounded-md border border-line bg-panel p-3">
-              <p className="text-xs text-muted">{label} · {cards.length}</p>
+              <p className="text-xs text-muted">{label} · {cards.length}{debt ? ` · ${money(debt)}` : ""}</p>
               <ul className="mt-2 space-y-2">
                 {cards.map((d) => (
                   <li key={d.park_id}>
                     <Link href={`/parks/${d.park_id}`} className="text-sm font-medium hover:text-accent">{byId.get(d.park_id)?.name ?? "Park"}</Link>
+                    {d.next_action && d.next_action < today && d.stage !== "closed" && d.stage !== "passed" && (
+                      <div className="text-xs text-accent">Overdue {d.next_action}</div>
+                    )}
                   </li>
                 ))}
                 {!cards.length && <li className="text-xs text-muted">None</li>}

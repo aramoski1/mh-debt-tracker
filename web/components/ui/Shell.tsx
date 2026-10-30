@@ -4,7 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { parseAsk } from "@/lib/ask";
+
 const NAV = [
+  { href: "/desk", label: "Today" },
   { href: "/", label: "Prospects" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/rates", label: "Rate desk" },
@@ -61,7 +64,14 @@ export default function Shell({ children, demo }: { children: React.ReactNode; d
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     const pages = NAV.filter((item) => !q || item.label.toLowerCase().includes(q));
-    const search = q ? [{ href: `/?q=${encodeURIComponent(query.trim())}`, label: `Search prospects for “${query.trim()}”` }] : [];
+    const asked = q ? parseAsk(query.trim()) : null;
+    const search = asked?.intent === "search" && asked.understood.length
+      ? [{ href: asked.href, label: asked.understood.join(" · ") }]
+      : asked?.intent === "howto" || asked?.intent === "cannot"
+        ? [{ href: "/desk", label: asked.reply.slice(0, 80) }]
+        : q
+          ? [{ href: `/?q=${encodeURIComponent(query.trim())}`, label: `Search prospects for “${query.trim()}”` }]
+          : [];
     return [...search, ...pages];
   }, [query]);
 

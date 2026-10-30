@@ -3,6 +3,14 @@ import { callLine, callTargets } from "@/lib/brief";
 import { monthYear, scoreTone } from "@/lib/format";
 import type { ParkRow } from "@/lib/types";
 
+function contacted(iso: string | null | undefined) {
+  if (!iso) return "Never logged";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (Number.isNaN(days) || days < 0) return "Never logged";
+  if (days === 0) return "Logged today";
+  return `Logged ${days}d ago`;
+}
+
 export default function CallList({ rows }: { rows: ParkRow[] }) {
   const targets = callTargets(rows);
   return (
@@ -29,6 +37,7 @@ export default function CallList({ rows }: { rows: ParkRow[] }) {
                     {r.name}
                   </Link>
                   <span className="text-xs text-muted">{r.city}</span>
+                  <span className="text-xs text-muted">{contacted(r.last_activity_at)}</span>
                   {r.phone && <a className="num text-xs text-accent" href={`tel:${r.phone}`}>{r.phone}</a>}
                 </div>
                 <p className="mt-0.5 text-xs leading-5 text-body">{callLine(r)}</p>

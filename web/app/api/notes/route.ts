@@ -56,8 +56,9 @@ export async function POST(req: Request) {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
-  const { parkId, body } = (await req.json()) as { parkId?: string; body?: string };
+  const { parkId, body, kind } = (await req.json()) as { parkId?: string; body?: string; kind?: string };
   if (!parkId || !body?.trim()) return NextResponse.json({ error: "Missing note" }, { status: 400 });
+  const activityKind = kind === "email" || kind === "visit" || kind === "note" || kind === "call" ? kind : "call";
 
   let facts: Facts | null = null;
   try {
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
     park_id: parkId,
     author_id: user.id,
     author_name: user.email,
-    kind: "call",
+    kind: activityKind,
     body,
     outcome: facts?.outcome ?? null,
     next_follow_up: isoDate(facts?.next_follow_up),

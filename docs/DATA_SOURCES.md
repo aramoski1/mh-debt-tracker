@@ -100,6 +100,23 @@ Target geography is Arizona. Maricopa and Pima are the counties with parcel load
 
 Maricopa is the only recorder with a public document API in this file. Pima is a manual export. Yuma, Pinal, Yavapai, Mohave, La Paz, Navajo, Cochise, Coconino, Gila, Graham, Santa Cruz, and Apache have parks on the HIFLD list and no loan feed. Each county's assessor GIS, treasurer, and recorder gets its own row here after a probe. They are not rejected. They are not started. Building twelve counties before Maricopa distress and a measured spread is the wrong order.
 
+## What Beacon uses, and what transferred
+
+Beacon (the South Florida broker CRM) does not have a national park file. A property and its owner come from the county property appraiser, chosen by city:
+
+| Beacon source | Geography | What the roll returns |
+| --- | --- | --- |
+| Miami-Dade property appraiser (MDPA) | Miami-Dade | Folio, situs, owner name, mailing address |
+| Broward BCPA | Broward | Same |
+| Palm Beach PBCPA | Palm Beach | Same |
+| MassGIS | Massachusetts | Same, one statewide service |
+
+Sunbiz is then used to turn a Florida LLC into officers. CoStar arrives only as a spreadsheet the broker uploads. Listing search uses Brave, Serper, or Jina and is not a system of record. None of those counties, and not Sunbiz, cover an Arizona park.
+
+This desk already follows the same pattern where Arizona publishes it: HIFLD for the park list, the Maricopa and Pima assessors for owner, situs, and last sale, and the Maricopa recorder for the loan. Pinal's mobile-home filter returned no parcels, the statewide AZGEO layer has no owner, and the Arizona Corporation Commission disallows automated collection, so those stay unloaded. Listing sites stay out for the same reason as CoStar.
+
+What did transfer is the desk around that data: a Today page, a sentence that becomes the filters already on Prospects, a copilot that may only speak from those rows, saved views in the browser, and a pipeline balance. The copilot is refused when asked to send mail or to invent a date.
+
 ## What shipped from this list
 
 1. SOFR, FRED DGS5/DGS7/DGS10, prime, the Baa spread, the CRE lending survey (`DRTSCLCC`, 6.7 on 2026-07-01), and the BLS shelter CPI (index 432.092 in September 2026) are stored. The survey and the CPI are shown on the rate desk. Neither one changes a loan rate or a lot rent.

@@ -8,6 +8,8 @@ import { mergeOperating, occupancy, type Merged, type OperatingRow } from "@/lib
 import { Tabs } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { PrintButton } from "@/components/ui/PrintButton";
+import { OutreachDraft } from "@/components/ui/OutreachDraft";
+import { outreachDraft } from "@/lib/outreach";
 import NoteForm from "./NoteForm";
 import OperatingForm from "./OperatingForm";
 import DeskActions from "./DeskActions";
@@ -127,6 +129,9 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             </span>
           </p>
           {p.phone && <a className="num mt-1 inline-block text-accent" href={`tel:${p.phone}`}>{p.phone}</a>}
+          {(p.email || p.owner_email) && (
+            <a className="mt-1 block text-sm text-accent" href={`mailto:${p.email || p.owner_email}`}>{p.email || p.owner_email}</a>
+          )}
           {p.flood_zone && <p className="mt-1 text-xs text-muted">FEMA flood zone {p.flood_zone}</p>}
           {(water ?? []).map((w) => (
             <p key={w.pws_id} className="mt-1 text-xs text-muted">
@@ -158,6 +163,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
       </section>
 
       <DeskActions parkId={p.id} stage={deal?.stage ?? null} nextAction={deal?.next_action ?? null} managed={!!p.managed} />
+
+      <OutreachDraft {...outreachDraft(p)} />
 
       <Tabs tabs={[
         { id: "overview", label: "Overview", content: <div className="space-y-4">
