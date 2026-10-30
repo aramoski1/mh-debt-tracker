@@ -94,6 +94,10 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
   const comps = p.score_components ?? {};
   const op = mergeOperating((opRows ?? []) as OperatingRow[]);
   const hasOp = Object.keys(op).length > 0;
+  const sold = ((parcels ?? []) as { last_sale_price?: number | null; last_sale_date?: string | null }[])
+    .filter((x) => x.last_sale_price)
+    .sort((a, b) => String(b.last_sale_date ?? "").localeCompare(String(a.last_sale_date ?? "")))[0];
+  const { data: water } = await supabase.from("water_systems").select("*").eq("park_id", id);
 
   return (
     <div className="space-y-4">
@@ -121,6 +125,13 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           </p>
           {p.phone && <a className="num mt-1 inline-block text-[#85152a]" href={`tel:${p.phone}`}>{p.phone}</a>}
           {p.flood_zone && <p className="mt-1 text-xs text-[#787d85]">FEMA flood zone {p.flood_zone}</p>}
+          {(water ?? []).map((w) => (
+            <p key={w.pws_id} className="mt-1 text-xs text-[#787d85]">
+              EPA water system {w.name} ({w.pws_id})
+              {w.serious_violator ? " · serious violator" : ""}
+              {w.qtrs_with_violations ? ` · violations in ${w.qtrs_with_violations} recent quarters` : " · no recent violation quarters on the ECHO row"}
+            </p>
+          ))}
         </div>
         <div className="text-right">
           <div className={`num inline-block rounded-sm px-3 py-1 text-2xl font-semibold ${scoreTone(p.score)}`}>
@@ -317,7 +328,9 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           {!!parcels?.length && (
             <p className="mt-4 text-xs text-[#787d85]">
               Parcels: {parcels.map((x) => `${x.apn} (${x.county})`).join(", ")}
-              {parcels[0].last_sale_date ? ` · last sold ${parcels[0].last_sale_date}` : ""}
+              {sold ? ` · last sold ${sold.last_sale_date ?? ""} for ${money(Number(sold.last_sale_price))}` : ""}
+              {sold && p.units ? ` · ${money(Number(sold.last_sale_price) / p.units)} per site` : ""}
+              {sold ? " · assessor sale price" : parcels[0].last_sale_date ? ` · last sold ${parcels[0].last_sale_date}` : ""}
             </p>
           )}
         </section>

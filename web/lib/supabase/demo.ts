@@ -4,7 +4,10 @@ import data from "@/demo/data.json";
 import desk from "@/demo/desk.json";
 
 type Row = Record<string, unknown>;
-const tables: Record<string, Row[]> = { ...(data as unknown as Record<string, Row[]>), ...(desk as unknown as Record<string, Row[]>) };
+const base = data as unknown as Record<string, Row[]>;
+const extra = desk as unknown as Record<string, Row[]>;
+const tables: Record<string, Row[]> = { ...base };
+for (const [key, rows] of Object.entries(extra)) tables[key] = [...(tables[key] ?? []), ...rows];
 const written: Record<string, Row[]> = {};
 const dropped = new Set<string>();
 

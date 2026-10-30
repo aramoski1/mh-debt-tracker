@@ -23,6 +23,11 @@ HOST_RPS: dict[str, float] = {
     "home.treasury.gov": 1.0,
     "markets.newyorkfed.org": 1.0,
     "fred.stlouisfed.org": 1.0,
+    "www.hud.gov": 1.0,
+    "news.google.com": 1.0,
+    "api.bls.gov": 1.0,
+    "rogue.casagrandeaz.gov": 1.0,
+    "azgeo.az.gov": 1.0,
 }
 DEFAULT_RPS = 3.0
 

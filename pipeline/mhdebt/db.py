@@ -229,3 +229,31 @@ def add_alert(conn, park_id: str | None, kind: str, title: str, detail: str | No
 
 def iso(d: date | None) -> str | None:
     return d.isoformat() if d else None
+
+
+def upsert_filing_hit(conn, rec: dict) -> None:
+    conn.execute(
+        """insert into filing_hits (source, source_id, title, url, filed_on, form, snippet)
+           values (%(source)s, %(source_id)s, %(title)s, %(url)s, %(filed_on)s, %(form)s, %(snippet)s)
+           on conflict (source, source_id) do update set
+             title = excluded.title, url = excluded.url, filed_on = excluded.filed_on,
+             form = excluded.form, snippet = excluded.snippet""",
+        rec,
+    )
+
+
+def upsert_offering(conn, rec: dict) -> None:
+    conn.execute(
+        """insert into form_d_offerings (
+             accession, issuer_name, city, state, entity_type, industry_group, filed_on, sale_date,
+             is_equity, is_debt, total_offering, total_sold, url)
+           values (%(accession)s, %(issuer_name)s, %(city)s, %(state)s, %(entity_type)s, %(industry_group)s,
+                   %(filed_on)s, %(sale_date)s, %(is_equity)s, %(is_debt)s, %(total_offering)s, %(total_sold)s, %(url)s)
+           on conflict (accession) do update set
+             issuer_name = excluded.issuer_name, city = excluded.city, state = excluded.state,
+             entity_type = excluded.entity_type, industry_group = excluded.industry_group,
+             filed_on = excluded.filed_on, sale_date = excluded.sale_date,
+             is_equity = excluded.is_equity, is_debt = excluded.is_debt,
+             total_offering = excluded.total_offering, total_sold = excluded.total_sold, url = excluded.url""",
+        rec,
+    )

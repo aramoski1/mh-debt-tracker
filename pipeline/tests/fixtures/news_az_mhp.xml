@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Arizona mobile home park</title>
+    <item>
+      <title>Apache Junction park listed for sale</title>
+      <link>https://news.example/park-listed</link>
+      <pubDate>Fri, 30 Oct 2026 15:00:00 GMT</pubDate>
+      <source>Example News</source>
+    </item>
+    <item>
+      <title>Headline with no link</title>
+    </item>
+  </channel>
+</rss>

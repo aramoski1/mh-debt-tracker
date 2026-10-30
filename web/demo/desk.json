@@ -13,7 +13,8 @@
     {"series": "TSY_7Y", "observed_on": "2026-10-29", "value": 3.91},
     {"series": "TSY_10Y", "observed_on": "2026-10-29", "value": 4.05},
     {"series": "DRTSCLCC", "observed_on": "2026-07-01", "value": 4.0},
-    {"series": "CPI_SHELTER", "observed_on": "2026-09-01", "value": 310.0}
+    {"series": "CPI_SHELTER", "observed_on": "2026-09-01", "value": 310.0},
+    {"series": "AZ_UNEMP", "observed_on": "2026-09-01", "value": 4.2}
   ],
   "market_spreads": [
     {"source": "cmbs", "lender_kind": "cmbs_trust", "median_spread": 2.10, "sample_size": 18, "as_of": "2026-10-28"},
@@ -39,5 +40,27 @@
   ],
   "water_systems": [
     {"pws_id": "AZDEMO001", "park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "name": "Paradise RV Resort", "county": "Maricopa", "serious_violator": false, "qtrs_with_violations": 0}
+  ],
+  "loans": [
+    {"source": "hud", "source_loan_id": "DEMO-HUD", "property_name_raw": "Saguaro Courts", "property_city_raw": "Yuma", "property_state_raw": "AZ", "maturity_date": "2034-06-01", "note_rate": 4.5, "original_amount": 2500000, "current_balance": 2100000, "status": "active", "lender_name_raw": "Fictional FHA Lender", "park_id": null, "raw": {"soa": "207 MOBILE HOME COURTS"}}
+  ],
+  "form_d_offerings": [
+    {"accession": "0000000000-26-000099", "issuer_name": "Saguaro MHC Partners LLC", "city": "PHOENIX", "state": "AZ", "filed_on": "2026-09-18", "total_sold": 1250000, "is_equity": true, "is_debt": false, "url": "https://www.sec.gov/Archives/edgar/data/0/000000000026000099/0000000000-26-000099-index.html"}
+  ],
+  "filing_hits": [
+    {"source": "edgar_efts", "source_id": "demo-10k", "title": "SUN COMMUNITIES INC (fictional demo hit)", "url": "https://www.sec.gov/Archives/edgar/data/912593/000091259326000086/0000912593-26-000086-index.html", "filed_on": "2026-02-25", "form": "10-K", "snippet": "Filing index only"},
+    {"source": "google_news", "source_id": "demo-news", "title": "Apache Junction park listed for sale", "url": "https://news.google.com/search?q=Arizona+mobile+home+park", "filed_on": "2026-10-30", "form": "rss", "snippet": "Example News"}
+  ],
+  "distress_events": [
+    {"source": "recorder", "source_id": "demo-ns", "event_type": "trustee_sale_notice", "park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "county": "Maricopa", "event_date": "2026-10-12", "amount": 640000, "title": "trustee_sale_notice Maricopa DEMO", "url": null}
+  ],
+  "transactions": [
+    {"source": "assessor", "source_id": "Maricopa:DEMO-APN", "park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "county": "Maricopa", "apn": "DEMO-APN", "sale_date": "2019-06-01", "price": 1800000, "sites": 24, "price_per_site": 75000, "owner_name": "Paradise Partners LLC"}
+  ],
+  "entities": [
+    {"id": "361f7696-4c68-44f1-a94d-9d7d5b0931ce", "name": "Paradise Partners LLC", "name_norm": "PARADISE PARTNERS LLC", "zip": "60601", "kind": "recorded_owner", "source": "parcel"}
+  ],
+  "entity_links": [
+    {"entity_id": "361f7696-4c68-44f1-a94d-9d7d5b0931ce", "park_id": "45d5112a-cefd-4b95-83dc-f24d6b13e37f", "role": "recorded_owner", "source": "parcel"}
   ]
 }

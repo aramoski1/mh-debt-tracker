@@ -128,6 +128,12 @@ mhdebt probe fred           # latest FRED constant-maturity print (default DGS10
 mhdebt probe sofr           # a short window of overnight SOFR
 mhdebt probe sofrai         # 30-, 90-, and 180-day SOFR averages
 mhdebt probe treasury       # this year's Treasury par yield curve
+mhdebt probe hud            # FHA rows whose category contains "mobile home"
+mhdebt probe form-d         # latest Form D quarter, park issuers only
+mhdebt probe edgar          # one page of EDGAR search hits, as links
+mhdebt probe news           # Google News headlines, not the articles
+mhdebt probe pinal          # confirms the Mobile use filter is empty before any load
+mhdebt probe azgeo          # state parcel fields; owner and use code are absent
 ```
 
 What to look for:

@@ -1,0 +1,17 @@
+{
+  "hits": {
+    "total": {"value": 1538},
+    "hits": [
+      {
+        "_id": "0000912593-26-000086:sui-20251231.htm",
+        "_source": {
+          "adsh": "0000912593-26-000086",
+          "ciks": ["0000912593"],
+          "display_names": ["SUN COMMUNITIES INC  (SUI)  (CIK 0000912593)"],
+          "file_date": "2026-02-25",
+          "form": "10-K"
+        }
+      }
+    ]
+  }
+}

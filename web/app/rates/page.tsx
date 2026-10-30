@@ -19,6 +19,7 @@ const LABELS: Record<string, string> = {
   TSY_10Y: "Treasury par 10-year",
   DRTSCLCC: "Banks tightening CRE",
   CPI_SHELTER: "Shelter CPI index",
+  AZ_UNEMP: "Arizona unemployment",
 };
 
 type Print = { series: string; observed_on: string; value: number };
@@ -49,7 +50,8 @@ export default async function RatesPage() {
         <h1 className="text-2xl font-medium">What money costs</h1>
         <p className="mt-1 max-w-3xl text-[#333539]">
           Treasury, SOFR, the shelter CPI, and the Fed's CRE lending survey are the published series.
-          Shelter CPI is an index, not a lot rent. The CRE figure is the net percent of banks tightening standards.
+          Shelter CPI is an index, not a lot rent. Arizona unemployment is the statewide rate, not a park figure.
+          The CRE figure is the net percent of banks tightening standards.
           The rollup spread is the median of note rate minus the 5-year Treasury on the origination date.
           The term table uses the nearest of the 5-, 7-, and 10-year Treasury when the loan has a term, and says so when it does not.
           CMBS and SBA loans already in the database are the sample. Agency rows stay empty until a Fannie or Freddie file is imported.
@@ -63,7 +65,7 @@ export default async function RatesPage() {
           return (
             <div key={series} className="bg-white px-4 py-3">
               <p className="text-[10px] font-medium tracking-[0.16em] text-[#787d85]">{label.toUpperCase()}</p>
-              <p className="num mt-1 text-2xl">{row ? (series === "CPI_SHELTER" ? Number(row.value).toFixed(1) : pct(Number(row.value))) : "—"}</p>
+              <p className="num mt-1 text-2xl">{row ? (series === "CPI_SHELTER" ? Number(row.value).toFixed(1) : series === "AZ_UNEMP" ? pct(Number(row.value), 1) : pct(Number(row.value))) : "—"}</p>
               <p className="text-xs text-[#787d85]">{row ? row.observed_on : "No print loaded"}</p>
             </div>
           );

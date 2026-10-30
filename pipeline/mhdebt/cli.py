@@ -209,6 +209,26 @@ def run(skip_extract: bool = False):
     except Exception as exc:  # noqa: BLE001
         logging.exception("water download failed: %s", exc)
         water = []
+    try:
+        hud_rows = jobs.prepare_hud(client)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("hud download failed: %s", exc)
+        hud_rows = []
+    try:
+        offerings = jobs.prepare_form_d(client)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("form d download failed: %s", exc)
+        offerings = []
+    try:
+        filings = jobs.prepare_edgar(client)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("edgar search failed: %s", exc)
+        filings = []
+    try:
+        headlines = jobs.prepare_news(client)
+    except Exception as exc:  # noqa: BLE001
+        logging.exception("news download failed: %s", exc)
+        headlines = []
     with db.connect() as conn:
         for step in (lambda: jobs.ingest_hifld(conn, client, states),
                      lambda: jobs.ingest_parcels(conn, client, "maricopa") if "AZ" in states else {},
@@ -219,7 +239,14 @@ def run(skip_extract: bool = False):
                      lambda: jobs.store_rate_prints(conn, prints) if prints else {},
                      lambda: jobs.measure_spreads(conn) if prints else {},
                      lambda: jobs.ingest_distress_prepared(conn, distress) if distress else {},
-                     lambda: jobs.ingest_water_prepared(conn, water, "AZ") if water else {}):
+                     lambda: jobs.ingest_water_prepared(conn, water, "AZ") if water else {},
+                     lambda: jobs.ingest_hud_prepared(conn, hud_rows) if hud_rows else {},
+                     lambda: jobs.ingest_offerings_prepared(conn, offerings) if offerings else {},
+                     lambda: jobs.ingest_filings_prepared(conn, filings, "edgar_efts") if filings else {},
+                     lambda: jobs.ingest_filings_prepared(conn, headlines, "google_news") if headlines else {},
+                     lambda: jobs.ingest_exhibits(conn, client),
+                     lambda: jobs.ingest_8k_exhibits(conn, client),
+                     lambda: jobs.refresh_signals(conn) if "AZ" in states else {}):
             try:
                 _out(step())
             except Exception as exc:  # noqa: BLE001 - keep going; the run log records the failure
@@ -376,6 +403,134 @@ def probe_distress(code: str = "NS"):
 
     rows = maricopa.Recorder(PoliteClient()).search_by_code(code, date(2026, 10, 1), date(2026, 10, 15), page_size=2)
     typer.echo(f"{len(rows)} rows. First: {rows[0] if rows else None}")
+
+
+@ingest.command("hud")
+def ingest_hud():
+    """FHA mortgages whose section-of-act category contains 'mobile home'."""
+    rows = jobs.prepare_hud(PoliteClient())
+    with db.connect() as conn:
+        _out(jobs.ingest_hud_prepared(conn, rows))
+
+
+@ingest.command("form-d")
+def ingest_form_d():
+    """Latest Form D quarter, kept only when the issuer name is a park."""
+    rows = jobs.prepare_form_d(PoliteClient())
+    with db.connect() as conn:
+        _out(jobs.ingest_offerings_prepared(conn, rows))
+
+
+@ingest.command("edgar")
+def ingest_edgar():
+    """One page of EDGAR search hits for the fixed park queries. Filing text is not downloaded."""
+    rows = jobs.prepare_edgar(PoliteClient())
+    with db.connect() as conn:
+        _out(jobs.ingest_filings_prepared(conn, rows, "edgar_efts"))
+
+
+@ingest.command("news")
+def ingest_news():
+    """Google News RSS headlines. Article pages are not fetched."""
+    rows = jobs.prepare_news(PoliteClient())
+    with db.connect() as conn:
+        _out(jobs.ingest_filings_prepared(conn, rows, "google_news"))
+
+
+@ingest.command("exhibits")
+def ingest_exhibits(limit: int = 8):
+    """EX-99 links from the next ABS-EE indexes and from 8-Ks already in the search hits."""
+    client = PoliteClient()
+    with db.connect() as conn:
+        _out(jobs.ingest_exhibits(conn, client, limit))
+        _out(jobs.ingest_8k_exhibits(conn, client, limit))
+
+
+@ingest.command("signals")
+def ingest_signals():
+    """Rebuild distress, assessor sales, and recorded owners from rows already stored."""
+    with db.connect() as conn:
+        _out(jobs.refresh_signals(conn))
+
+
+@probe.command("hud")
+def probe_hud():
+    from .sources import hud_fha
+
+    rows = jobs.prepare_hud(PoliteClient())
+    az = [r for r in rows if (r.get("property_state_raw") or "").upper() == "AZ"]
+    typer.echo(f"{len(rows)} mobile-home rows ({sum(1 for r in rows if r.get('status') == 'active')} active). Arizona: {len(az)}")
+    sample = (az or rows)[:3]
+    for row in sample:
+        typer.echo(f"  {row.get('property_name_raw')}  {row.get('property_state_raw')}  "
+                   f"{(row.get('raw') or {}).get('soa')}  maturity {row.get('maturity_date')}")
+    typer.echo(f"Active workbook: {hud_fha.ACTIVE_URL}")
+
+
+@probe.command("form-d")
+def probe_form_d():
+    from .sources import form_d
+
+    client = PoliteClient()
+    url = form_d.latest_zip_url(client.get(form_d.PAGE_URL).text)
+    typer.echo(f"latest zip: {url}")
+    rows = jobs.prepare_form_d(client)
+    typer.echo(f"{len(rows)} park issuers")
+    for row in rows[:8]:
+        typer.echo(f"  {row['filed_on']}  {row['state']}  {row['issuer_name']}")
+
+
+@probe.command("edgar")
+def probe_edgar():
+    from .sources import edgar_search
+
+    payload = PoliteClient().get(
+        edgar_search.EFTS_URL, params=edgar_search.search_params(edgar_search.QUERIES[0]) | {"size": 2},
+    ).json()
+    hits = edgar_search.parse_hits(payload)
+    total = ((payload.get("hits") or {}).get("total") or {}).get("value")
+    typer.echo(f"total reported {total}; parsed {len(hits)}")
+    for hit in hits:
+        typer.echo(f"  {hit['filed_on']}  {hit['form']}  {hit['title']}")
+        typer.echo(f"    {hit['url']}")
+
+
+@probe.command("news")
+def probe_news():
+    rows = jobs.prepare_news(PoliteClient())
+    typer.echo(f"{len(rows)} headlines")
+    for row in rows[:5]:
+        typer.echo(f"  {row['filed_on']}  {row['title']}")
+
+
+@probe.command("pinal")
+def probe_pinal():
+    """The Casa Grande mirror of Pinal parcels. A Mobile filter returned no rows on 2026-10-30."""
+    url = ("https://rogue.casagrandeaz.gov/arcgis/rest/services/Pinal_County/"
+           "Pinal_County_Parcels/MapServer/0/query")
+    data = PoliteClient().get(url, params={
+        "where": "Assessing_Use_Description LIKE '%Mobile%'",
+        "outFields": "Assessing_Use_Code,Assessing_Use_Description",
+        "returnGeometry": "false", "resultRecordCount": 5, "f": "json",
+    }).json()
+    feats = data.get("features") or []
+    typer.echo(f"{len(feats)} features for Assessing_Use_Description LIKE '%Mobile%'")
+    if data.get("error"):
+        typer.echo(data["error"])
+    typer.echo("No park use code was identified, so Pinal parcels are not loaded.")
+
+
+@probe.command("azgeo")
+def probe_azgeo():
+    """State parcel layer. The probed fields are APN, address, and place name."""
+    url = ("https://azgeo.az.gov/arcgis/rest/services/TerraSystems/AZParcelFeatures/FeatureServer/0/query")
+    data = PoliteClient().get(url, params={
+        "where": "1=1", "outFields": "*", "returnGeometry": "false", "resultRecordCount": 1, "f": "json",
+    }).json()
+    feats = data.get("features") or []
+    keys = sorted((feats[0].get("attributes") or {}).keys()) if feats else []
+    typer.echo(f"fields: {keys or data.get('error')}")
+    typer.echo("No owner and no use code, so the layer is not loaded.")
 
 
 if __name__ == "__main__":

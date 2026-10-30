@@ -41,6 +41,8 @@ SOFRAI_FIELDS = {
 # BLS public API v1, no key. CUUR0000SAH1 is the US city-average CPI for shelter, an index, not a lot rent.
 BLS_URL = "https://api.bls.gov/publicAPI/v1/timeseries/data/"
 BLS_SERIES = "CUUR0000SAH1"
+# Arizona statewide unemployment rate, seasonally adjusted. Probed 2026-10-30: 4.9 in September 2026.
+BLS_AZ_UNEMPLOYMENT = "LASST040000000000003"
 
 # Approximate annual averages of the 5-year Treasury yield (%), fallback only. Refresh from FRED when possible.
 FALLBACK_5Y = {
@@ -154,15 +156,21 @@ def fetch_prints(client: PoliteClient) -> list[tuple[str, date, float]]:
     text = client.get(SOFR_URL, params={"startDate": "04/02/2018", "endDate": date.today().strftime("%m/%d/%Y")},
                       cache_ttl=86400).text
     out.extend(("SOFR", d, v) for d, v in parse_sofr(text))
+    year = date.today().year
     try:
-        year = date.today().year
         resp = client.request("POST", BLS_URL, json={
             "seriesid": [BLS_SERIES], "startyear": str(year - 2), "endyear": str(year),
         }, cache_ttl=86400)
         out.extend(("CPI_SHELTER", d, v) for d, v in parse_bls(resp.json()))
     except Exception:  # noqa: BLE001 - a BLS miss should not drop the Treasury download
         pass
-    year = date.today().year
+    try:
+        resp = client.request("POST", BLS_URL, json={
+            "seriesid": [BLS_AZ_UNEMPLOYMENT], "startyear": str(year - 2), "endyear": str(year),
+        }, cache_ttl=86400)
+        out.extend(("AZ_UNEMP", d, v) for d, v in parse_bls(resp.json()))
+    except Exception:  # noqa: BLE001 - unemployment is context, not an index the model uses
+        pass
     try:
         curve = client.get(TREASURY_CURVE_URL.format(year=year), cache_ttl=86400).content
         out.extend(parse_treasury_curve(curve))

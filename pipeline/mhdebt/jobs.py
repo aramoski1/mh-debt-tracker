@@ -22,7 +22,7 @@ from .match import Candidate, Probe, best_match, haversine_m, nearest, similarit
 from .normalize import nice_title, norm_entity
 from .rates import RateCurve, fetch_prints
 from .scoring import LoanFacts, ParkFacts, acquisition_fit, score
-from .sources import agency, edgar_cmbs, fdic, hifld, maricopa, pima, sba
+from .sources import agency, edgar_cmbs, edgar_search, exhibits, fdic, form_d, hifld, hud_fha, maricopa, news, pima, sba
 from .sources import epa, fema
 from .sources.doc_types import CURE_TYPES, DISTRESS_TYPES, LOAN_TYPES
 from .spreads import median_spreads, spread_for_model, spreads_by_term
@@ -1038,3 +1038,196 @@ def maturity_holdout(conn, today: date | None = None) -> dict:
         "within_24": sum(1 for x in errors if x <= 24),
         "as_of": today.isoformat(),
     }
+
+
+# ---------------------------------------------------------------------------
+# FHA loans, Form D, EDGAR hits, headlines, and figures derived from stored rows
+# ---------------------------------------------------------------------------
+
+def prepare_hud(client: PoliteClient) -> list[dict]:
+    active = hud_fha.parse_workbook(client.get(hud_fha.ACTIVE_URL, cache_ttl=86400).content, "active")
+    terminated = hud_fha.parse_workbook(client.get(hud_fha.TERMINATED_URL, cache_ttl=86400).content, "paid_off")
+    # A project that is still in the active workbook stays active if it also appears as terminated.
+    terminated_ids = {row["source_loan_id"] for row in terminated}
+    active_ids = {row["source_loan_id"] for row in active}
+    return [row for row in terminated if row["source_loan_id"] not in active_ids] + active
+
+
+def ingest_hud_prepared(conn, rows: list[dict]) -> dict:
+    with db.source_run(conn, "hud_fha") as stats:
+        for rec in rows:
+            sid = rec.pop("source_loan_id")
+            holder = rec.get("lender_name_raw")
+            if holder:
+                rec["lender_id"] = db.upsert_lender(conn, holder, "agency_lender", classified_by="hud_fha")
+            db.upsert_loan(conn, "hud", sid, rec)
+        conn.commit()
+        stats.update(loans=len(rows), active=sum(1 for r in rows if r.get("status") == "active"))
+    return stats
+
+
+def prepare_form_d(client: PoliteClient) -> list[dict]:
+    page = client.get(form_d.PAGE_URL, cache_ttl=86400).text
+    url = form_d.latest_zip_url(page)
+    if not url:
+        return []
+    return form_d.parse_zip(client.get(url, cache_ttl=86400).content)
+
+
+def ingest_offerings_prepared(conn, rows: list[dict]) -> dict:
+    with db.source_run(conn, "form_d") as stats:
+        for rec in rows:
+            db.upsert_offering(conn, rec)
+        conn.commit()
+        stats.update(offerings=len(rows))
+    return stats
+
+
+def prepare_edgar(client: PoliteClient) -> list[dict]:
+    found = []
+    seen = set()
+    for query in edgar_search.QUERIES:
+        payload = client.get(edgar_search.EFTS_URL, params=edgar_search.search_params(query), cache_ttl=86400).json()
+        for hit in edgar_search.parse_hits(payload):
+            if hit["source_id"] in seen:
+                continue
+            seen.add(hit["source_id"])
+            found.append(hit)
+    return found
+
+
+def prepare_news(client: PoliteClient) -> list[dict]:
+    xml = client.get(news.NEWS_URL, params={"q": news.QUERY, "hl": "en-US", "gl": "US", "ceid": "US:en"},
+                     cache_ttl=3600).content
+    return news.parse_rss(xml)
+
+
+def ingest_filings_prepared(conn, rows: list[dict], source: str) -> dict:
+    with db.source_run(conn, source) as stats:
+        for rec in rows:
+            db.upsert_filing_hit(conn, rec)
+        conn.commit()
+        stats.update(hits=len(rows))
+    return stats
+
+
+def ingest_exhibits(conn, client: PoliteClient, limit: int = 8) -> dict:
+    with db.source_run(conn, "edgar_exhibits") as stats:
+        state = db.get_state(conn, "edgar_exhibits")
+        hits, nxt, total = exhibits.fetch_page(client, int(state.get("offset") or 0), limit)
+        for rec in hits:
+            db.upsert_filing_hit(conn, rec)
+        db.set_state(conn, "edgar_exhibits", {"offset": nxt, "filings_in_quarter": total})
+        conn.commit()
+        stats.update(exhibits=len(hits), next_offset=nxt, filings_in_quarter=total)
+    return stats
+
+
+def ingest_8k_exhibits(conn, client: PoliteClient, limit: int = 12) -> dict:
+    """EX-99 links from 8-K indexes already found by the EDGAR search. The exhibit file is not downloaded."""
+    with db.source_run(conn, "edgar_8k_exhibits") as stats:
+        state = db.get_state(conn, "edgar_8k_exhibits")
+        offset = int(state.get("offset") or 0)
+        rows = conn.execute(
+            """select source_id, url, title, filed_on from filing_hits
+               where source = 'edgar_efts' and form = '8-K' and url is not null
+               order by filed_on desc"""
+        ).fetchall()
+        if not rows:
+            stats.update(exhibits=0, filings=0)
+            return stats
+        if offset >= len(rows) or offset < 0:
+            offset = 0
+        batch = rows[offset:offset + limit]
+        n = 0
+        for row in batch:
+            folder = row["url"].rsplit("/", 1)[0]
+            try:
+                index = client.get(f"{folder}/index.json", cache_ttl=30 * 86400).json()
+            except Exception:  # noqa: BLE001 - one missing index should not stop the page
+                continue
+            for link in exhibits.exhibit_links(index, folder):
+                db.upsert_filing_hit(conn, {
+                    "source": "edgar_exhibit",
+                    "source_id": f"{row['source_id']}:{link['name']}",
+                    "title": f"{row['title'] or '8-K'} {link['name']}",
+                    "url": link["url"],
+                    "filed_on": row["filed_on"],
+                    "form": "8-K",
+                    "snippet": "Exhibit link only. The exhibit file was not downloaded.",
+                })
+                n += 1
+        db.set_state(conn, "edgar_8k_exhibits", {"offset": offset + len(batch), "filings": len(rows)})
+        conn.commit()
+        stats.update(exhibits=n, scanned=len(batch), filings=len(rows))
+    return stats
+
+
+def refresh_signals(conn) -> dict:
+    """Distress, assessor sales, and recorded owners from rows already in the database."""
+    with db.source_run(conn, "signals") as stats:
+        types = sorted(DISTRESS_TYPES)
+        conn.execute("delete from distress_events where source = 'recorder'")
+        distress = conn.execute(
+            """insert into distress_events (source, source_id, event_type, park_id, county, event_date, amount, title, url)
+               select 'recorder', id::text, doc_type, park_id, county, recording_date, amount,
+                      doc_type || ' ' || county || ' ' || recording_number, pdf_url
+               from recorded_documents
+               where doc_type = any(%s)
+               returning 1""",
+            (types,),
+        ).rowcount
+        conn.execute("delete from transactions where source = 'assessor'")
+        sales = conn.execute(
+            """insert into transactions (source, source_id, park_id, county, apn, sale_date, price, sites, price_per_site, owner_name)
+               select 'assessor', parcels.county || ':' || parcels.apn, parcels.park_id, parcels.county, parcels.apn,
+                      parcels.last_sale_date, parcels.last_sale_price, parks.units,
+                      case when parks.units > 0 then parcels.last_sale_price / parks.units else null end,
+                      parcels.owner_name
+               from parcels
+               left join parks on parks.id = parcels.park_id
+               where parcels.last_sale_price is not null and parcels.last_sale_price > 0
+               returning 1"""
+        ).rowcount
+        owners = conn.execute(
+            """select park_id::text, owner_name, coalesce(owner_zip, '') as owner_zip
+               from parcels
+               where park_id is not null and owner_name is not null and btrim(owner_name) <> ''"""
+        ).fetchall()
+        pairs: list[tuple[str, str]] = []
+        seen_entities = 0
+        for row in owners:
+            name_norm = norm_entity(row["owner_name"])
+            if not name_norm:
+                continue
+            entity = conn.execute(
+                """insert into entities (name, name_norm, zip, kind, source)
+                   values (%s, %s, %s, 'recorded_owner', 'parcel')
+                   on conflict (name_norm, zip, source) do update set name = excluded.name
+                   returning id""",
+                (row["owner_name"].strip(), name_norm, row["owner_zip"]),
+            ).fetchone()
+            pairs.append((str(entity["id"]), row["park_id"]))
+            seen_entities += 1
+        if pairs:
+            eids, pids = zip(*{(e, p) for e, p in pairs})
+            conn.execute(
+                """delete from entity_links el
+                   where el.source = 'parcel' and el.role = 'recorded_owner'
+                     and not exists (
+                       select 1 from unnest(%s::uuid[], %s::uuid[]) as keep(entity_id, park_id)
+                       where keep.entity_id = el.entity_id and keep.park_id = el.park_id
+                     )""",
+                (list(eids), list(pids)),
+            )
+            conn.execute(
+                """insert into entity_links (entity_id, park_id, role, source)
+                   select * from unnest(%s::uuid[], %s::uuid[], %s::text[], %s::text[])
+                   on conflict (entity_id, park_id, role) do nothing""",
+                (list(eids), list(pids), ["recorded_owner"] * len(eids), ["parcel"] * len(eids)),
+            )
+        else:
+            conn.execute("delete from entity_links where source = 'parcel' and role = 'recorded_owner'")
+        conn.commit()
+        stats.update(distress=distress, transactions=sales, owner_links=len(set(pairs)))
+    return stats
