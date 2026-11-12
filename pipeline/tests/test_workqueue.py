@@ -29,3 +29,24 @@ def test_success_clears_the_error():
 def test_unknown_kind_is_refused():
     with pytest.raises(UnknownJob):
         enqueue(None, "enrich_property", {})
+
+
+def test_jobs_command_does_not_hide_the_ingest_module():
+    import mhdebt.cli as cli
+    import mhdebt.jobs as jobs
+
+    assert cli.jobs is jobs
+    assert callable(jobs.prepare_sba)
+    assert any(cmd.name == "jobs" for cmd in cli.app.registered_commands)
+
+
+def test_run_stops_before_downloads_when_the_database_url_is_missing(monkeypatch):
+    from dataclasses import replace
+
+    import typer
+
+    import mhdebt.cli as cli
+
+    monkeypatch.setattr(cli, "settings", replace(cli.settings, database_url=""))
+    with pytest.raises(typer.BadParameter, match="DATABASE_URL"):
+        cli.run()

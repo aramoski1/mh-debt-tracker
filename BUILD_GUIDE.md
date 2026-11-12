@@ -318,7 +318,7 @@ Push to GitHub, then in the repo's **Settings > Secrets and variables > Actions*
 - Secrets: `DATABASE_URL`, `ANTHROPIC_API_KEY`
 - Variables: `SEC_USER_AGENT` (for example `Vertical Frame research alec@verticalframe.ai`), `TARGET_STATES` (`AZ`), `MAX_DOCS_PER_RUN`, `MARICOPA_RECORDER_SEARCH_URL`
 
-`.github/workflows/pipeline.yml` runs `mhdebt run` every night at 2:17 AM Arizona time and can be run by hand from the Actions tab. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
+`.github/workflows/pipeline.yml` runs `mhdebt run` every night at 2:17 AM Arizona time and can be run by hand from the Actions tab. If the `DATABASE_URL` secret is empty, that run stops before it downloads anything and the parks stay as they were. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
 
 The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build` and `mhdebt model`. SBA, rates, a capped Maricopa distress pull, and 100 FEMA flood lookups are in the nightly run.
 

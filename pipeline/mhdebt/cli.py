@@ -106,8 +106,10 @@ def ingest_operating(file: Path = typer.Option(..., help="CSV or XLSX, one row p
         _out(jobs.ingest_operating_file(conn, file, source.strip().lower(), _states(states), when))
 
 
-@app.command()
-def jobs(limit: int = typer.Option(10, help="How many due jobs to run")):
+# The function is not named jobs: that name is the ingest module, and a function
+# with the same name hides it from `mhdebt run`.
+@app.command("jobs")
+def run_jobs(limit: int = typer.Option(10, help="How many due jobs to run")):
     """Run due background jobs. Unknown kinds cannot be queued. Failures retry, then stop."""
     from . import workqueue
     with db.connect() as conn:
@@ -195,6 +197,8 @@ def ingest_water(state: str = "AZ"):
 @app.command()
 def run(skip_extract: bool = False):
     """Nightly: refresh every automatic source, then rebuild and rescore."""
+    if not settings.database_url:
+        raise typer.BadParameter("DATABASE_URL is not set")
     client = PoliteClient()
     states = settings.target_states
     try:
