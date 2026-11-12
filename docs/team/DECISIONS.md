@@ -2,6 +2,8 @@
 
 Newest first. Each cycle report lists: shipped, cut (and why), blocked (and on what), coverage before vs after, open defects by severity, and next.
 
+2026-11-12 — Code review approved the blank-field insert. A second run now keeps `name_norm` when a name such as "LLC" normalizes to empty, so that update does not write NULL and roll back the batch. A row with no name still cannot be stored, because `parks.name` is not null. That remains a minor defect.
+
 2026-11-12 — Acquisitions-lead approved fixing the nightly park insert before the numbers audit. A new park with a blank phone or website raises `query parameter missing: phone, website`, the open batch rolls back, and the rest of that HIFLD or operating import does not run. Benefit: the park list the desk is built on keeps loading. Use: every nightly run. Trust: main CI, two database tests failed, 71 others passed. Simpler: bind null for every park column the merge leaves blank. No screen change and no migration. PR #1 (`team/numbers-audit`) stays open: its CI is red, and `supabase/migrations/20261111000013_nullable_score.sql` has not been applied to the live project.
 
 2026-11-11 — Docs stay current with the code. `BUILD_GUIDE.md`, `README.md`, `PROJECT_CONTEXT.md`, and `COVERAGE.md` are updated in the same change as the behavior they describe. The nightly secrets and the buyer framing are corrected in those files.

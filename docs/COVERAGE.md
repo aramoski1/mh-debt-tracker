@@ -1,6 +1,6 @@
 # Coverage after the public-source pass (2026-10-30)
 
-This is what the desk now loads, and what was looked at and left out. Counts are from the load on 2026-10-30. A later `mhdebt run` refreshes them. A park with a blank phone, website, or other park field is stored with that field empty. The blank does not drop the park or stop the rest of the file.
+This is what the desk now loads, and what was looked at and left out. Counts are from the load on 2026-10-30. A later `mhdebt run` refreshes them. A park with a blank phone, website, or other nullable park field is stored with that field empty. The blank does not drop the park or stop the rest of the file. The park name is required.
 
 ## Loaded
 

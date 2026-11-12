@@ -94,17 +94,26 @@ def bind_columns(row: dict, keys: list[str]) -> dict:
     return {key: row.get(key) for key in keys}
 
 
+def next_name_norm(name: object, stored: str | None) -> str:
+    """Keep the stored normalized name when the new name normalizes to nothing.
+
+    parks.name_norm is not null. A name such as "LLC" normalizes to "", and
+    writing NULL on the next run would roll back the open batch.
+    """
+    return norm_park_name(name) or stored or ""
+
+
 def upsert_park_by_source(conn, source: str, source_id: str, rec: dict) -> str:
     """Insert or update a park keyed by an external id stored in parks.sources[source]."""
     existing = conn.execute(
-        f"select id, {', '.join(PARK_COLS)}, field_sources from parks where sources->>%s = %s",
+        f"select id, name_norm, {', '.join(PARK_COLS)}, field_sources from parks where sources->>%s = %s",
         (source, source_id),
     ).fetchone()
     incoming = {c: rec.get(c) for c in PARK_COLS}
     writer = WRITER_TAG.get(source, source if source in {"hifld", "jack"} else "web")
     if existing:
         merged, tags = apply_ingest(dict(existing), existing["field_sources"] or {}, incoming, writer)
-        merged["name_norm"] = norm_park_name(merged.get("name")) or existing.get("name_norm")
+        merged["name_norm"] = next_name_norm(merged.get("name"), existing.get("name_norm"))
         sets = ", ".join(f"{c} = %({c})s" for c in [*PARK_COLS, "name_norm"])
         conn.execute(
             f"update parks set {sets}, field_sources = %(field_sources)s, updated_at = now() where id = %(id)s",
@@ -112,7 +121,7 @@ def upsert_park_by_source(conn, source: str, source_id: str, rec: dict) -> str:
         )
         return str(existing["id"])
     merged, tags = apply_ingest({}, {}, incoming, writer)
-    merged["name_norm"] = norm_park_name(merged.get("name"))
+    merged["name_norm"] = next_name_norm(merged.get("name"), None)
     merged["sources"] = _j({source: source_id})
     merged["kind"] = merged.get("kind") or "unknown"
     merged["state"] = merged.get("state") or ""

@@ -27,3 +27,11 @@ def test_new_park_insert_binds_every_blank_column():
     assert set(PARK_COLS) <= set(params)
     assert "phone" not in tags
     assert "website" not in tags
+
+
+def test_second_run_keeps_name_norm_when_the_name_normalizes_empty():
+    from mhdebt.db import next_name_norm
+
+    assert next_name_norm("LLC", "") == ""
+    assert next_name_norm("LLC", "SUNRISE") == "SUNRISE"
+    assert next_name_norm("Sunrise Mobile Home Park", "OLD") == "SUNRISE"
