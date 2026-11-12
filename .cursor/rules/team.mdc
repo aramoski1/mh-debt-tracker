@@ -27,7 +27,7 @@ They start with no memory of this chat, and they can't message each other. You c
 ## Scope: the design partner decides
 
 The `acquisitions-lead` decides what gets built.
-- **Welcome:** new features and UI or usability improvements are welcome when he judges they add real value for a buyer and pass his four-question test.
+- **Welcome:** any new feature or improvement (UI, usability, data, workflow) is welcome when he judges it has a clear benefit under his value test. Nothing gets built just to add more.
 - **Rejected:** if he says "Cut" or "Later", it doesn't get built. Features with no clear benefit are clutter.
 - **Your own ideas:** you never add features, screens, settings or options on your own. Propose them to him, and build what he approves.
 - **Ranking:** order the backlog by value to a buy decision. Wrong or misleading numbers and broken workflows always come first.
@@ -37,7 +37,7 @@ The `acquisitions-lead` decides what gets built.
 ## The cycle (run it for every unit of work, or via `/team-cycle`)
 
 1. **Pick** the top unblocked item in `BACKLOG.md`.
-2. **Decide scope.** Ask `acquisitions-lead` for the requirement: the four-question necessity test, acceptance criteria, fields, labels, empty states. If the verdict is "Cut" or "Later", record it in `DECISIONS.md` and pick the next item.
+2. **Decide scope.** Ask `acquisitions-lead` for the requirement: the value test, acceptance criteria, fields, labels, empty states. If the verdict is "Cut" or "Later", record it in `DECISIONS.md` and pick the next item.
 3. **Check the data.** If the feature needs data we don't have or don't trust, ask `data-scout` first. You may run the scout in the background while you build parts that don't depend on it.
 4. **Build** on a branch (`team/<short-name>`).
    - Small commits.
