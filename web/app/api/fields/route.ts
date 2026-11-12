@@ -10,7 +10,8 @@ export async function POST(req: Request) {
   const { data } = await supabase.from("parks").select("custom_fields").eq("id", body.parkId).maybeSingle();
   const current = ((data as { custom_fields?: Record<string, string> } | null)?.custom_fields) ?? {};
   const next = { ...current, [body.slug]: String(body.value ?? "") };
-  const { error } = await supabase.from("parks").update({ custom_fields: next }).eq("id", body.parkId);
+  const { data: saved, error } = await supabase.from("parks").update({ custom_fields: next }).eq("id", body.parkId).select("id");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!saved || saved.length === 0) return NextResponse.json({ error: "Field was not saved" }, { status: 409 });
   return NextResponse.json({ ok: true });
 }

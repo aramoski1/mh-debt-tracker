@@ -1,8 +1,10 @@
 """Fill-only merge with provenance locks.
 
 A nightly ingest may fill an empty field. It may replace an estimate or a web
-tag with a recorded source. It never overwrites a value tagged jack, document,
-or a recorded source, and it never clears a value.
+tag with a recorded source. The same writer may replace its own earlier value,
+so a later CMBS tape can refresh a balance that tape wrote. It never overwrites
+a value tagged by a different lock (jack, document, or another recorded source),
+and it never clears a value.
 """
 from __future__ import annotations
 
@@ -36,11 +38,12 @@ def apply_ingest(
             continue
         tag = tags.get(key)
         prior = current.get(key)
-        if tag in LOCKED:
+        same_writer = tag == writer
+        if tag in LOCKED and not same_writer:
             continue
-        if has_value(prior) and writer in WEAK:
+        if has_value(prior) and writer in WEAK and not same_writer:
             continue
-        if has_value(prior) and tag not in WEAK and tag is not None:
+        if has_value(prior) and tag not in WEAK and tag is not None and not same_writer:
             continue
         if has_value(prior) and tag is None:
             # Untagged filled values predate this column. Treat them as recorded.
