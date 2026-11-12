@@ -1,0 +1,18 @@
+---
+description: Keep the build guide and every other doc current in the same change
+alwaysApply: true
+---
+
+# Docs stay current
+
+A change is not done while a doc still describes the old behavior. Update the docs in the same change as the code.
+
+- `BUILD_GUIDE.md` is the build plan. Setup steps, commands, secrets, and "what to build next" match the code.
+- `README.md` and `docs/PROJECT_CONTEXT.md` match the product, the routes, and what is actually running.
+- `docs/COVERAGE.md` matches what is loaded and which setup steps are still open.
+- `web/lib/guides.ts` and `web/lib/copilot-knowledge.ts` match routes, buttons, and limits.
+- `docs/team/DECISIONS.md` records a decision that changes how the desk works.
+
+Write the current behavior. Remove a step that is finished. Do not leave "add this secret" after the secret is set, or "not built" after the screen exists. Cooper Cardinal buys and operates parks. It is not a brokerage.
+
+Do not invent a date, a count, or a source to make a doc look complete. If a number comes from a specific load, keep the date on that number.

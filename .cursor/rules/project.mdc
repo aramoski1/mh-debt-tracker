@@ -13,7 +13,7 @@ Finds mobile home and RV parks whose loans are coming due, estimates when, and s
   - `sources/` one module per data source; `jobs.py` orchestrates; `match.py` entity resolution; `lenders.py` lender typing;
     `maturity.py` exact/estimated maturities; `scoring.py` the score; `docai.py` Claude document reading.
 - `web/` — Next.js 15 App Router + Supabase (@supabase/ssr) + MapLibre + Tailwind 4. Demo mode when `NEXT_PUBLIC_SUPABASE_URL=demo`.
-- `BUILD_GUIDE.md` — the step-by-step setup. Keep it accurate when behavior changes.
+- `BUILD_GUIDE.md` — the step-by-step setup. Keep it, and the other docs in `.cursor/rules/docs.mdc`, accurate in the same change.
 
 ## Rules
 - Every job in `jobs.py` must be idempotent: safe to re-run nightly without duplicating rows. Use the upsert helpers in `db.py`.

@@ -63,7 +63,7 @@ The `acquisitions-lead` decides what gets built.
    - Migrations are new files with RLS.
    - Demo data is fictional.
    - Provenance shows on every number.
-   - Update `BUILD_GUIDE.md`, the page guides and the copilot knowledge in the same commit.
+   - Update `BUILD_GUIDE.md`, `README.md`, `docs/PROJECT_CONTEXT.md`, `docs/COVERAGE.md`, the page guides, and the copilot knowledge in the same commit. A doc that still describes the old behavior means the item is not done.
 4. **Check yourself first:**
    - `cd pipeline && pytest`
    - `cd web && npm run typecheck`

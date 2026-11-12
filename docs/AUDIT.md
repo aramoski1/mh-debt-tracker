@@ -1,8 +1,8 @@
 # Audit: from a call list to an acquisition engine
 
-Date: 2026-10-30. Counts are from the live database that morning, Arizona only. The demo app was clicked through at `http://localhost:3010` (prospects, a 12-month / score-40 filter, a park page, alerts). Pipeline tests: 39 passed, 2 skipped. Nothing below is a proposal to invent a field.
+Date: 2026-10-30. This file is the snapshot from that morning, not the current product. Later behavior is in `BUILD_GUIDE.md` and `docs/PROJECT_CONTEXT.md`. Counts below are from the live database that morning, Arizona only. The demo app was clicked through at `http://localhost:3010` (prospects, a 12-month / score-40 filter, a park page, alerts). Pipeline tests that morning: 39 passed, 2 skipped. Nothing below is a proposal to invent a field.
 
-The product today ranks owner pressure for a broker. Cooper Cardinal is buying and operating parks. Those are different jobs. The list can tell you who might be uncomfortable. It cannot tell you what to pay, how you would finance it, or whether it sits next to a park you already run.
+The desk that morning ranked owner pressure and did not yet price a park, judge fit against the parks Cooper Cardinal already runs, or draft a buyer email. Cooper Cardinal buys and operates parks for its own portfolio.
 
 ## 1. Data coverage
 

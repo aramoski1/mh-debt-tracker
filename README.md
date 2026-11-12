@@ -1,6 +1,6 @@
 # Park Debt Tracker
 
-Finds mobile home and RV parks whose loans are coming due, estimates when, and scores how much pressure each owner is under, so a brokerage can call the right owners 12 to 24 months before a refinance forces a decision. Built on free public data; Arizona first.
+Finds mobile home and RV parks whose loans are coming due, estimates when, and scores how much pressure each owner is under, so Cooper Cardinal can pursue the right parks for its own portfolio. Built on free public data; Arizona first.
 
 - `pipeline/`: Python ingestion and modeling (`mhdebt` CLI), runs nightly on GitHub Actions
 - `supabase/`: Postgres schema with row-level security

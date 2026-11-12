@@ -73,8 +73,8 @@ Then tell Cursor which Python to use: Command Palette > **Python: Select Interpr
 
 **Check:**
 - In the terminal, `mhdebt --help` lists the commands.
-- **Tasks: Run Task > Test: pipeline** shows 32 passing and 1 skipped. The skipped one is the end-to-end database test, which runs once Postgres is available (Step 9).
-- **Tasks: Run Task > App: demo mode**, then open http://localhost:3000. You should see the prospects screen with fictional demo parks. The desk uses a left navigation rail. Ctrl+K or `/` opens the command palette. The theme toggle is in the top bar and is stored in the browser. Markets and Owners are counts from the parks already loaded. `/styleguide` is available only while `next dev` is running. Demo mode writes to `web/.next-demo` so it does not replace the signed-in app bundle. Apply `supabase/migrations/20261030000008_deal_stages.sql` before saving a deal in the new stages (In conversation, Underwriting, Due diligence). Existing stages still save without it. `20261030000009_overview_email.sql` adds the owner's email to the desk view so a draft can open in the broker's own mail client. `20261030000010_field_sources.sql` records where each park and loan field came from. A nightly ingest fills blanks and may replace an estimate, and it does not overwrite a value Jack entered. Admin → Park audit lists placeholder names, government owners, missing owners, and loans with no maturity. Admin → Data issues lists failed source runs. `mhdebt jobs` drains the queue; a kind with no handler cannot be queued, and a failure retries twice before it stops. A Maricopa recording number links to the recorder document the pipeline already fetches. Today (`/desk`) ranks a trustee sale ahead of a reminder, and Customize can hide or drag those blocks. The layout is stored on the account. Ask understands rate shock, refinance gap, years held, East Valley, and days since a call. Follow-ups, This week, How it works, and onboarding are in the nav. A park page shows acquisition fit, a watch flag, document quotes, your fields, and buyer drafts that do not send mail. Apply `20261030000011_ops.sql` and `20261030000012_buyer_desk.sql` for the error log, the job queue, watches, contacts, and saved views.
+- **Tasks: Run Task > Test: pipeline** passes. The database tests stay skipped until `TEST_DATABASE_ADMIN_URL` points at a Postgres 16 (Step 9).
+- **Tasks: Run Task > App: demo mode**, then open http://localhost:3000. You should see the prospects screen with fictional demo parks. The desk uses a left navigation rail. Ctrl+K or `/` opens the command palette. The theme toggle is in the top bar and is stored in the browser. Markets and Owners are counts from the parks already loaded. `/styleguide` is available only while `next dev` is running. Demo mode writes to `web/.next-demo` so it does not replace the signed-in app bundle. Apply `supabase/migrations/20261030000008_deal_stages.sql` before saving a deal in the new stages (In conversation, Underwriting, Due diligence). Existing stages still save without it. `20261030000009_overview_email.sql` adds the owner's email to the desk view so a draft can open in the principal's own mail client. `20261030000010_field_sources.sql` records where each park and loan field came from. A nightly ingest fills blanks and may replace an estimate, and it does not overwrite a value Jack entered. Admin → Park audit lists placeholder names, government owners, missing owners, and loans with no maturity. Admin → Data issues lists failed source runs. `mhdebt jobs` drains the queue; a kind with no handler cannot be queued, and a failure retries twice before it stops. A Maricopa recording number links to the recorder document the pipeline already fetches. Today (`/desk`) ranks a trustee sale ahead of a reminder, and Customize can hide or drag those blocks. The layout is stored on the account. Ask understands rate shock, refinance gap, years held, East Valley, and days since a call. Follow-ups, This week, How it works, and onboarding are in the nav. A park page shows acquisition fit, a watch flag, document quotes, your fields, and buyer drafts that do not send mail. Apply `20261030000011_ops.sql` and `20261030000012_buyer_desk.sql` for the error log, the job queue, watches, contacts, and saved views.
 
 ### How to use Cursor's agent on this project
 
@@ -286,7 +286,7 @@ County loan statuses (active, released, refinanced, foreclosure, paid off) are r
 
 All the assumptions are named constants at the top of `rates.py`, `maturity.py` and `scoring.py`. Tune them with Jack's banking contacts (typical local terms and spreads) and with Cooper Cardinal's own rent rolls (lot rents by market).
 
-**Check:** the top of `mhdebt top` should be parks a broker would agree are worth a call. Pick five, open their documents, and sanity-check the story the score tells.
+**Check:** the top of `mhdebt top` should be parks worth a call. Pick five, open their documents, and sanity-check the story the score tells.
 
 ---
 
@@ -306,7 +306,7 @@ What the team gets:
 
 - **Prospects**: map plus ranked list, filterable by state, park type, site count, maturity window, lender type and whether the date is known or estimated. Filters live in the URL, so a saved view is just a bookmark. Export to CSV for call sessions.
 - **Park page**: the score broken into its five parts with the reason for each, the next maturity with its likely range, every recorded loan and its status, the recorded documents with links to the PDFs, and call notes.
-- **Call notes**: a broker types or dictates a note. Claude pulls out the outcome, follow-up date, lender, maturity, rate, balance and motivation and saves them with the note.
+- **Call notes**: Jack types or dictates a note. Claude pulls out the outcome, follow-up date, lender, maturity, rate, balance and motivation and saves them with the note.
 - **Alerts**: new loans recorded on tracked parks, foreclosure notices, loans entering their last 12 months, and score jumps of 15+ points.
 
 ---
@@ -318,7 +318,7 @@ Push to GitHub, then in the repo's **Settings > Secrets and variables > Actions*
 - Secrets: `DATABASE_URL`, `ANTHROPIC_API_KEY`
 - Variables: `SEC_USER_AGENT` (for example `Vertical Frame research alec@verticalframe.ai`), `TARGET_STATES` (`AZ`), `MAX_DOCS_PER_RUN`, `MARICOPA_RECORDER_SEARCH_URL`
 
-`.github/workflows/pipeline.yml` runs `mhdebt run` every night at 2:17 AM Arizona time and can be run by hand from the Actions tab. If the `DATABASE_URL` secret is empty, that run stops before it downloads anything and the parks stay as they were. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
+`.github/workflows/pipeline.yml` runs `mhdebt run`, then `mhdebt jobs`, every night at 2:17 AM Arizona time (09:17 UTC). GitHub may start a scheduled run later than that. It can also be run by hand from the Actions tab. As of November 11, 2026 the Actions secrets `DATABASE_URL` and `ANTHROPIC_API_KEY` are set. If `DATABASE_URL` is empty, the run stops before it downloads anything and the parks stay as they were. With the Anthropic secret set, the run reads up to `MAX_DOCS_PER_RUN` pending loan documents before it rescores. FRED needs no key. If the `SEC_USER_AGENT` variable is blank, the workflow uses the contact string already in the file. `ci.yml` runs the tests, including the full database test against a real Postgres, on every push.
 
 The manual sources (Fannie, Freddie, and Pima recorder exports) only change monthly: download them on the first of the month and run the `ingest` commands, then `mhdebt build` and `mhdebt model`. SBA, rates, a capped Maricopa distress pull, and 100 FEMA flood lookups are in the nightly run.
 
@@ -339,9 +339,8 @@ To run the database test locally, start any Postgres 16 and set `TEST_DATABASE_A
 ## What to build next
 
 - **More counties and states**: each county is a new `sources/<county>.py` with a parcel function and a recorder function. Pinal, Yavapai, Mohave and Yuma cover most of the rest of Arizona.
-- **Owner contacts**: the Arizona Business Center (which replaced eCorp in January 2026) lists each LLC's statutory agent and members; there's no API, so this is a manual lookup or a paid data provider.
-- **Call list generator**: a morning list per broker ranked by score, freshness of the signal, and time since last contact.
-- **Learning weights**: once there are a few hundred call outcomes in `activities`, fit the score weights to which calls actually turned into listings.
+- **Owner contacts**: the Arizona Business Center lists each LLC's statutory agent and members. There is no API, so this stays a manual lookup. Do not scrape it.
+- **Learning weights**: once there are a few hundred call outcomes in `activities`, fit the score weights to which calls turned into deals. The morning list already exists at `/desk`.
 
 ## Known limits
 

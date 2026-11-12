@@ -1,6 +1,6 @@
 # Project context: Park Debt Tracker for Cooper Cardinal
 
-Paste this at the start of a new chat. It covers the client, the product, the code, the data, what works and what doesn't, as of October 30, 2026.
+Paste this at the start of a new chat. It covers the client, the product, the code, the data, what works and what doesn't, as of November 11, 2026.
 
 ---
 
@@ -16,19 +16,19 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 
 ## 2. Stack and where the code lives
 
-- **Repo:** `github.com/aramoski1/mh-debt-tracker` (private). Main branch, about 12 commits.
-- **Database:** Supabase project `park-debt-tracker` (ref `mlwseriuekgimfzqxzsd`, us-west-1). Migrations live in `supabase/migrations/`, and row-level security is on for every table.
+- **Repo:** `github.com/aramoski1/mh-debt-tracker` (private). Main branch.
+- **Database:** Supabase project `park-debt-tracker` (ref `mlwseriuekgimfzqxzsd`, us-west-1). Migrations live in `supabase/migrations/`, and row-level security is on for every table. The migrations through `20261030000012_buyer_desk.sql` are applied on that project.
 - **Pipeline:** Python 3.11, in `pipeline/mhdebt/`.
-  - The CLI is `mhdebt`: `ingest`, `build`, `extract`, `model`, `run`, `top`, `probe`, `holdout`.
-  - Every web request goes through `PoliteClient`, which handles per-host rate limits, retries and a cache.
-  - A nightly GitHub Action (`.github/workflows/pipeline.yml`) runs at 09:17 UTC. CI tests run against a Postgres service.
+  - The CLI is `mhdebt`: `ingest`, `build`, `extract`, `model`, `run`, `jobs`, `top`, `probe`, `holdout`, `rates`.
+  - Outbound pipeline requests go through `PoliteClient`, which handles per-host rate limits, retries, and a cache.
+  - A nightly GitHub Action (`.github/workflows/pipeline.yml`) is scheduled for 09:17 UTC, which is 2:17 AM Arizona. GitHub may start it later. It runs `mhdebt run`, then `mhdebt jobs`. An empty `DATABASE_URL` stops the run before any download. With `ANTHROPIC_API_KEY` set, the run reads up to `MAX_DOCS_PER_RUN` pending loan documents and then rescores. Both of those Actions secrets are set. CI tests run against a Postgres service.
   - Python, because the data work (EDGAR XML, spreadsheets, fuzzy matching, statistics) is easier there, and the web app only reads from the database.
 - **Web app:** `web/`, built on:
   - Next.js 15.5 (App Router) with React 19, `@supabase/ssr`, Tailwind 4 and design tokens in `web/app/tokens.css`
   - MapLibre for maps, TanStack Table + Virtual for the prospect table, Radix for dialogs, popovers and tooltips, Recharts for charts
   - the Anthropic SDK
 - **Hosting:** Vercel, not yet deployed. Demo mode (`NEXT_PUBLIC_SUPABASE_URL=demo`) serves fictional data from `web/demo/*.json`.
-- **Editor:** Cursor. Project rules are in `.cursor/rules/*.mdc` (`project`, `new-source`, `web`), and `BUILD_GUIDE.md` is the setup walkthrough.
+- **Editor:** Cursor. Project rules are in `.cursor/rules/*.mdc` (`project`, `docs`, `new-source`, `web`, `team`), and `BUILD_GUIDE.md` is the setup walkthrough.
 - **Docs in the repo:**
   - `docs/AUDIT.md`: an honest audit of coverage, accuracy, workflow and UI
   - `docs/COVERAGE.md`: what is loaded and what was rejected
@@ -112,21 +112,25 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 | Route | What it does |
 | --- | --- |
 | `/` | **Prospects.** Four counts, a "calls worth making" list with a one-sentence call line (`lib/brief.ts`), a virtualized table with filters, and a map. Keyboard navigation with j/k. |
-| `/parks/[id]` | **Park page.** Score and why, maturity range, loan history, documents, notes (Claude turns them into follow-ups), the operating figures form, the underwriting desk, and print. |
+| `/desk` | **Today.** Ranked work for the morning: distress, upcoming maturities, follow-ups, and buy-box fits. Blocks can be hidden or reordered. |
+| `/follow-ups`, `/week` | Follow-ups due, and the week's deadlines. |
+| `/parks/[id]` | **Park page.** Score and why, fit, cadence, maturity range, loan history, documents, buyer email drafts (they open the user's mail client and do not send), the operating figures form, the underwriting desk, a watch flag, and print. |
 | `/pipeline` | Deal stages (Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, Dead) plus the buy-box form. |
+| `/loi/[id]` | A printable offer from the saved underwriting. Estimates stay labeled as estimates. |
 | `/rates` | **Rate desk.** Treasury tenors, SOFR, prime, the CMBS spread, Arizona unemployment, and charts. |
 | `/signals` | Tabs: FHA, Form D, filings, distress, sales, owners. |
 | `/markets` | Counties ranked by number of parks. |
-| `/owners`, `/owners/[id]` | Recorded owner names that hold more than one park, and each owner's parks. |
+| `/owners`, `/owners/[id]` | Recorded owner names, and one owner's parks, debt, and a place to paste an Arizona Corporation Commission page. |
 | `/portfolio` | Cooper Cardinal's own parks. |
 | `/alerts` | Maturity windows, distress, score jumps. |
-| `/admin`, `/freshness` | Admin page and source freshness log. |
-| `/styleguide` | Internal component demo page. |
-| `/login` | Email sign-in. |
+| `/onboarding` | Mark managed parks and set the buy box. Import matches existing park names. It does not create parks. |
+| `/how-it-works` | What the desk can and cannot show. |
+| `/admin`, `/admin/audit`, `/admin/issues`, `/freshness` | Admin, the park audit, failed source runs, and the source freshness log. |
+| `/styleguide` | Internal component demo page. Available while `next dev` is running. |
+| `/login` | **Sign in** sends a link only when the email already has an account. **Create account** sends the link that creates one. |
 
-- **Shell:** a left nav plus a ⌘K command palette. The palette only handles navigation and searching prospects by name.
-- **Components** (`web/components/ui/`): Shell, Drawer, ScorePill, Charts, Bits, TabClient, PrintButton.
-- **API routes:** `alerts`, `buy-box`, `deals`, `notes`, `operating`, `portfolio`, `underwriting`.
+- **Shell:** a left nav, Ask, a help button, and a ⌘K command palette that turns a sentence into prospect filters.
+- **API routes:** alerts, buy-box, deals, notes, operating, portfolio, underwriting, copilot, calendar, rents, fields, documents, contacts, watches, settings, views, issues.
 
 ## 5. Honest weaknesses (from `docs/AUDIT.md`)
 
@@ -144,51 +148,41 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 
 **Assumed income.** Refinance gaps assume $700 a site, 90% occupancy and a 40% expense ratio, unless a CMBS NOI is reported.
 
-**Product gaps:**
-- No AI copilot.
-- No natural-language search.
-- No saved views or smart lists.
-- No customizable dashboard.
-- No custom fields.
-- No owner contact discovery beyond assessor mailing addresses and the 28% of parks with a phone number.
-- No entity resolution (who controls the LLCs).
-- No outreach drafting.
-- No cadence or follow-up engine beyond alerts.
-- No ownership-change watch.
-- No in-app help.
-- Single user.
+**Product gaps that are still open:**
+- Owner contact discovery is still the assessor mailing address, the phone on the park, and contacts Jack types. Nothing is skip-traced.
+- Entity resolution is a rule in `pipeline/mhdebt/entities.py`. It is not yet what the ingest matcher uses, and there is no map of who controls the LLCs.
+- The ownership watch flags a park. It does not yet sweep the recorder overnight.
+- Custom fields are saved on the park. They are not used in document reading or in Ask.
+- One firm, Cooper Cardinal. There is no invite screen.
+- Saved-view counts do not alert when a new park enters the view.
+- The offer is a printable page, not a Word file. Document quotes are accepted text, not a PDF viewer.
+
+**Shipped since the October 30 list:** Ask, the Today desk, saved views, fit and cadence, buyer email drafts that do not send, the copilot panel, in-app help, the park audit, and the failed-run log.
 
 ## 6. Accounts and secrets
 
 **Done:**
-- the GitHub repo, with the Claude GitHub app installed
-- the Supabase project, with the schema applied
+- the GitHub repo
+- the Supabase project, with the schema through `20261030000012` applied
+- the Actions secrets `DATABASE_URL` and `ANTHROPIC_API_KEY`
 
 **Still open:**
-- Add `ANTHROPIC_API_KEY`.
 - Set up Vercel.
-- Add the GitHub Actions secrets: `DATABASE_URL`, `ANTHROPIC_API_KEY`, `FRED_API_KEY`, `SEC_USER_AGENT`.
-- Reset the Supabase database password.
-- Optional free keys: FRED, Census, the Maricopa assessor token, CourtListener.
+- Rotate the Supabase database password and the Anthropic key, then update `pipeline/.env`, `web/.env.local`, and the two Actions secrets.
+- Optional accounts, not created: Census, the Maricopa assessor token, CourtListener. FRED is a public CSV and needs no key. `SEC_USER_AGENT` is an Actions variable; the workflow already has a fallback.
 
 ## 7. Related project: Beacon
 
 Beacon (`github.com/aramoski1/Beacon`, public) is Alec's AI-native commercial real estate CRM for brokers, built under Lantern. It runs on Next.js 16, Supabase and Claude, uses South Florida county appraisers plus Massachusetts, and gets entity data from Sunbiz.
 
-It is much further along on the product layer:
-- a Copilot
-- natural-language search with smart lists
-- a customizable "command center" dashboard with a ranked Today desk
-- custom fields that flow into AI extraction
-- field-level provenance locks
-- owner portfolio and entity graphs
-- an ownership-change watch
-- outreach drafting with QA
-- cadence follow-ups and nudges
-- deal kanban and forecast
-- a document review UI with citations that jump to the PDF
-- in-app page guides
-- error and ingestion logs
-- firm multi-tenancy
+The buyer desk now has its own versions of the Today list, Ask, saved views, field locks, fit and cadence, email drafts, a copilot that answers from the loaded rows, page guides, and a failed-run log. Beacon still has these, and they were not copied:
 
-The next step is to port everything useful from Beacon into the tracker, adapted to a park **buyer** working debt and distress (see the companion prompt).
+- leases, tours, and commission tracking
+- a Sunbiz scrape, including the curl workaround
+- custom fields that flow into document extraction
+- a live recorder sweep and a widening assessor sale search
+- a PDF viewer that jumps to a citation
+- per-teammate sharing and an invite flow
+- saved-view counts that alert when a new property matches
+
+See `docs/BEACON_PORT.md` for what transferred and what was left out.

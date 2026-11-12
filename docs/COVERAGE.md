@@ -29,4 +29,4 @@ The Signals page shows these tables. Demo mode has a fictional row in each one.
 
 ## Still yours to do
 
-Rotate the database password and the Anthropic key, then update `pipeline/.env`, `web/.env.local`, and the GitHub Actions secrets. Add the Actions secrets `DATABASE_URL` and `ANTHROPIC_API_KEY` if they are not set. Drop in a Fannie or Freddie export only after reading the terms. The nightly job now keeps going when one of the new sources fails.
+The Actions secrets `DATABASE_URL` and `ANTHROPIC_API_KEY` are set. The nightly job stops before any download if `DATABASE_URL` is empty. With the Anthropic secret set, that same run reads up to `MAX_DOCS_PER_RUN` pending loan documents, then rescores. One source failing does not skip the rest. Rotate the database password and the Anthropic key, then update `pipeline/.env`, `web/.env.local`, and those two Actions secrets. Drop in a Fannie or Freddie export only after reading the terms.
