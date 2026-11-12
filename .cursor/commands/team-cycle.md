@@ -9,8 +9,7 @@ Run the team cycle from `.cursor/rules/team.mdc`, end to end, on the next work.
    - **Data audit:** ask `data-scout` (in the background) to audit coverage and accuracy and propose the five highest-value data moves.
    - **Desk walkthrough:** at the same time, ask `acquisitions-lead` to walk the core workflow in demo mode and list what blocks him from using the app every morning.
    - Merge both into one ranked backlog. Rank by how much the item would change a buy decision, then by effort.
-   - **Order:** fixes, data and simplification come before new features.
-   - **Necessity test:** a proposed feature goes in only if the acquisitions-lead says it passes his four-question test. Otherwise record it as "Later" in `DECISIONS.md`.
+   - **Necessity test:** a new feature goes in when the acquisitions-lead says it adds real value and passes his four-question test. Otherwise record it as "Later" in `DECISIONS.md`.
 3. **Work the top items.** Take up to three unblocked items, one at a time. For each one, follow steps 2–8 of the cycle: scope with `acquisitions-lead`, data from `data-scout`, build, check, test, fix, close.
 4. **Stop** when three items are closed, when you hit something that needs the user, or when you run low on context.
 5. **Write a cycle report** at the top of `docs/team/DECISIONS.md`:

@@ -24,22 +24,15 @@ They start with no memory of this chat, and they can't message each other. You c
   - `docs/team/sources/*.md`: one spec per data source
 - When a subagent returns, record its output in those files before doing anything else.
 
-## Scope: only what the buyer needs
+## Scope: the design partner decides
 
-The app already has more features than Jack's team has used. Prefer working well over doing more.
-
-- **Default answer:** no new feature unless the `acquisitions-lead` approves it with the four-question necessity test.
-  - If he says "Cut" or "Later", it doesn't get built.
-  - You never add features, screens, settings or options on your own initiative, including "nice to have" extras while building something else.
-- **Work order, in priority:**
-  1. wrong or misleading numbers
-  2. broken workflows
-  3. data coverage and accuracy
-  4. making existing features simpler
-  5. new features, last
-- **New-feature limit:** at most one new user-facing feature per cycle.
-- **Cutting is progress.** Removing or hiding a feature that fails the test counts as a shipped item. Removing a shipped feature still needs the user's approval (see below), so propose it with the acquisitions-lead's reason.
-- **Smallest version:** build the smallest version that meets the acceptance criteria. No extra configurability or abstractions "for later".
+The `acquisitions-lead` decides what gets built.
+- **Welcome:** new features are welcome when he judges they add real value for a buyer and pass his four-question test.
+- **Rejected:** if he says "Cut" or "Later", it doesn't get built. Features with no clear benefit are clutter.
+- **Your own ideas:** you never add features, screens, settings or options on your own. Propose them to him, and build what he approves.
+- **Ranking:** order the backlog by value to a buy decision. Wrong or misleading numbers and broken workflows always come first.
+- **Cutting:** removing or simplifying a feature that fails his test is progress. Removing a shipped feature still needs the user's approval (see below).
+- **Build size:** build the version that meets his acceptance criteria. Don't add extra configurability or abstractions "for later".
 
 ## The cycle (run it for every unit of work, or via `/team-cycle`)
 
