@@ -298,7 +298,7 @@ Run **Tasks: Run Task > App: dev server** (or `cd web && npm run dev`) and open 
 
 For real use:
 
-1. In Supabase **Authentication > Providers**, keep Email on and leave new sign-ups allowed. The login page emails a link; the first time someone uses an address, that creates their account.
+1. In Supabase **Authentication > Providers**, keep Email on and leave new sign-ups allowed. **Sign in** emails a link only when that address already has an account. **Create account** sends the link that creates the account the first time.
 2. Under **Authentication > URL Configuration**, add your Vercel URL and `https://<your-domain>/auth/callback`.
 3. Import the repo in Vercel, set the root directory to `web`, and add the environment variables from `web/.env.example`.
 
