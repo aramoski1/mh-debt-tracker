@@ -13,7 +13,7 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 
 | # | Item | Why it matters | Owner | From | Status |
 |---|---|---|---|---|---|
-| 1 | Nightly park upsert dies on a blank phone or website. Bind every park column on insert, including blanks, so the park is stored and the rest of the file still loads. | A missing contact field rolls back the open batch and stops the HIFLD and operating imports | dev | acquisitions-lead | in progress |
+| 1 | Nightly park upsert dies on a blank phone or website. Bind every park column on insert, including blanks, so the park is stored and the rest of the file still loads. | A missing contact field rolls back the open batch and stops the HIFLD and operating imports | dev | acquisitions-lead | done |
 | 2 | Numbers audit: reconcile `NUMBERS_SPEC.md` with the code. Build the golden parks with hand-checked outputs, add pytest and Vitest tests, and check that the Python and TypeScript formulas agree. | Wrong numbers are the most expensive defect, and the formulas live in two languages | num → dev | team setup | open |
 | 3 | Baseline review of the riskiest code: nightly jobs and field locks, RLS on every table, API routes, AI write paths | Catches existing defects before new work builds on them | rev → dev | team setup | open |
 | 4 | E2E harness: Playwright in `web/e2e/` running the core workflow in demo mode, plus a CI job | Every later change needs a regression check | dev + acq | team setup | open |
