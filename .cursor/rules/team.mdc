@@ -27,7 +27,7 @@ They start with no memory of this chat, and they can't message each other. You c
 ## Scope: the design partner decides
 
 The `acquisitions-lead` decides what gets built.
-- **Welcome:** new features are welcome when he judges they add real value for a buyer and pass his four-question test.
+- **Welcome:** new features and UI or usability improvements are welcome when he judges they add real value for a buyer and pass his four-question test.
 - **Rejected:** if he says "Cut" or "Later", it doesn't get built. Features with no clear benefit are clutter.
 - **Your own ideas:** you never add features, screens, settings or options on your own. Propose them to him, and build what he approves.
 - **Ranking:** order the backlog by value to a buy decision. Wrong or misleading numbers and broken workflows always come first.
