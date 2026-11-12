@@ -49,8 +49,13 @@ PARCELS = [
 
 
 def test_full_pipeline(conn, tmp_path):
-    jobs.ingest_hifld(conn, None, ["AZ"], geojson=_hifld_file(tmp_path))
+    geojson = _hifld_file(tmp_path)
+    jobs.ingest_hifld(conn, None, ["AZ"], geojson=geojson)
     assert conn.execute("select count(*) n from parks").fetchone()["n"] == 3  # TX filtered out
+    blank = conn.execute("select phone, website from parks where sources->>'hifld' = '1001'").fetchone()
+    assert blank["phone"] is None and blank["website"] is None
+    jobs.ingest_hifld(conn, None, ["AZ"], geojson=geojson)
+    assert conn.execute("select count(*) n from parks").fetchone()["n"] == 3
 
     st = jobs.ingest_parcels(conn, None, "maricopa", rows=[dict(p) for p in PARCELS])
     assert st == {"linked": 1, "created": 1}

@@ -46,7 +46,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 ## 3. How the data model works
 
 **Parks.**
-- Comes from the HIFLD mobile home park list, plus park-use parcels from county assessors (Maricopa PUC 0840–0899, plus Pima). Joined by spatial and name matching (`match.py`, with a contradiction gate so different parks aren't merged).
+- Comes from the HIFLD mobile home park list, plus park-use parcels from county assessors (Maricopa PUC 0840–0899, plus Pima). Joined by spatial and name matching (`match.py`, with a contradiction gate so different parks aren't merged). A blank phone, website, or other nullable park field is stored empty and does not stop the load. The park name is required.
 - About **2,249 Arizona parks** are scored. Maricopa has 759, Pima 595, then Yuma, Pinal, Yavapai and Mohave.
 
 **Loans** (`loans`):

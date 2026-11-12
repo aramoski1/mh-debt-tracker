@@ -1,6 +1,6 @@
 # Park Debt Tracker
 
-Finds mobile home and RV parks whose loans are coming due, estimates when, and scores how much pressure each owner is under, so Cooper Cardinal can pursue the right parks for its own portfolio. Built on free public data; Arizona first.
+Finds mobile home and RV parks whose loans are coming due, estimates when, and scores how much pressure each owner is under, so Cooper Cardinal can pursue the right parks for its own portfolio. Built on free public data; Arizona first. A nightly load still stores a park when its phone, website, or another nullable park field is blank. The park name is required.
 
 - `pipeline/`: Python ingestion and modeling (`mhdebt` CLI), runs nightly on GitHub Actions
 - `supabase/`: Postgres schema with row-level security
