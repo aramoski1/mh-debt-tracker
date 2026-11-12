@@ -75,7 +75,8 @@ The `acquisitions-lead` decides what gets built.
 6. **Test.** Brief `acquisitions-lead` to test the change in the running app against its acceptance criteria, plus the core-workflow regression.
 7. **Fix and re-test** until the verdict is `ship`, or the item is cut. After two failed rounds, stop and escalate to the user with the findings.
 8. **Close.** The quality gates below must all pass. Then:
-   - open a pull request (or merge, if auto-merge is on in `docs/team/README.md`)
+   - push the branch and open a pull request
+   - when auto-merge is **on** in `docs/team/README.md`, wait for CI and merge with `gh pr merge --merge --delete-branch` only if every quality gate passed and CI is green. Then pull `main` before the next item. If CI is red, the pull request has conflicts, or a merge rule below blocks it, leave the pull request open and report why
    - mark the item done
    - add a line to `DECISIONS.md`
    - update `docs/COVERAGE.md` and `SCOREBOARD.md` if anything they measure changed
@@ -113,6 +114,14 @@ An item is done only when all of these are true:
 - remove a shipped feature (cutting a backlog item is fine)
 
 Anything else: proceed, then report.
+
+## Merge rules
+
+- Only branches named `team/*`.
+- Never force-push to `main`.
+- Never merge with failing checks or open blocker findings.
+- Never merge a pull request that contains a migration the user has not applied to the real Supabase project. Leave it open and tell the user to apply the migration first.
+- Always pull `main` before starting the next item.
 
 ## Budget
 

@@ -155,7 +155,7 @@ mhdebt ingest parcels --county maricopa  # adds parcels, owners of record, last 
 mhdebt ingest parcels --county pima
 ```
 
-`mhdebt ingest hifld` reads the public federal archive on ArcGIS Online and, if that is down, the NASA mirror of the same list. A park already loaded from a county parcel at the same address keeps its loan and gains the federal name and phone. `mhdebt ingest hifld --geojson path` still accepts a local file when both public copies are down.
+`mhdebt ingest hifld` reads the public federal archive on ArcGIS Online and, if that is down, the NASA mirror of the same list. A park already loaded from a county parcel at the same address keeps its loan and gains the federal name and phone. A blank phone, website, or other nullable park field is stored empty. It does not drop the park or stop the rest of the file. The park name is required. `mhdebt ingest hifld --geojson path` still accepts a local file when both public copies are down.
 
 **Check:** in Supabase SQL Editor:
 

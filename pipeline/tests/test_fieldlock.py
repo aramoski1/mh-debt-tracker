@@ -29,6 +29,19 @@ def test_edgar_replaces_an_estimate_but_not_a_document():
     assert tags["note_rate"] == "document"
 
 
+def test_blank_phone_does_not_clear_a_stored_phone():
+    nxt, tags = apply_ingest(
+        {"name": "Sunrise", "phone": "480-555-0100", "website": "https://example.test"},
+        {"phone": "hifld", "website": "jack"},
+        {"phone": None, "website": ""},
+        "hifld",
+    )
+    assert nxt["phone"] == "480-555-0100"
+    assert nxt["website"] == "https://example.test"
+    assert tags["phone"] == "hifld"
+    assert tags["website"] == "jack"
+
+
 def test_ingest_does_not_clear_a_value_with_a_blank():
     nxt, tags = apply_ingest({"name": "Sunrise Estates"}, {"name": "assessor"}, {"name": None, "city": ""}, "hifld")
     assert nxt["name"] == "Sunrise Estates"
