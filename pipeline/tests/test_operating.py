@@ -1,9 +1,9 @@
 """Park operating figures: parsing an import file, merging observations, and their effect on the refinance gap."""
 from datetime import date
 
-from mhdebt import jobs, operating
+from mhdebt import db, jobs, operating
 from mhdebt.rates import RateCurve
-from mhdebt.scoring import EXPENSE_RATIO, LoanFacts, ParkFacts, noi_with_basis, score
+from mhdebt.scoring import LoanFacts, ParkFacts, noi_with_basis, score
 
 from test_pipeline_db import PARCELS, TODAY, _hifld_file
 
@@ -38,22 +38,24 @@ def test_merge_keeps_newest_non_empty():
     assert op.source_of("rent_current", "total_sites") == "manual, 2026-10-01; csv, 2026-01-01"
 
 
-def test_reported_rent_replaces_state_assumption():
-    base = ParkFacts(state="AZ", kind="mhp", units=100)
-    noi, basis = noi_with_basis(base)
-    assert round(noi) == round(100 * 700 * 12 * 0.90 * (1 - EXPENSE_RATIO)) and basis.startswith("estimated")
+def test_rent_does_not_become_pressure_income():
+    blank, basis = noi_with_basis(ParkFacts(state="AZ", kind="mhp", units=100))
+    assert blank is None and basis == "No income on file. Lot rent was not entered."
 
-    rich = ParkFacts(state="AZ", kind="mhp", units=100, lot_rent=900, rentable_sites=98, occupancy=0.80,
-                     operating_source="csv, 2026-10-29")
-    noi, basis = noi_with_basis(rich)
-    assert round(noi) == round(98 * 900 * 12 * 0.80 * (1 - EXPENSE_RATIO))
-    assert basis.startswith("reported $900 rent and 80% occupancy")
+    entered, entered_basis = noi_with_basis(ParkFacts(
+        state="AZ", kind="mhp", units=100, lot_rent=900, rentable_sites=98, occupancy=0.80,
+        operating_source="csv, 2026-10-29"))
+    assert entered is None and "expense ratio" in entered_basis
 
     loan = LoanFacts(lender_kind="community_bank", start_date=date(2021, 6, 1), note_rate=4.0,
-                     original_amount=5_000_000, amort_months=300)
-    lean = score(ParkFacts(state="AZ", units=100, occupancy=0.60), loan, RateCurve(), TODAY).components["refi_gap"]
-    full = score(ParkFacts(state="AZ", units=100, occupancy=1.0), loan, RateCurve(), TODAY).components["refi_gap"]
-    assert lean["equity_needed"] > full["equity_needed"]
+                     original_amount=5_000_000, amort_months=300, current_balance=4_000_000)
+    missing = score(ParkFacts(state="AZ", units=100, lot_rent=900, occupancy=0.9), loan, RateCurve(), TODAY)
+    assert missing.components["refi_gap"]["points"] is None
+    reported = score(ParkFacts(state="AZ", units=100), LoanFacts(
+        lender_kind="community_bank", start_date=date(2021, 6, 1), note_rate=4.0,
+        current_balance=4_000_000, noi=200_000), RateCurve(), TODAY)
+    assert reported.components["refi_gap"]["noi_basis"] == "reported"
+    assert reported.components["refi_gap"]["points"] is not None
 
 
 def test_import_matches_parks_and_feeds_score(conn, tmp_path):
@@ -68,7 +70,15 @@ def test_import_matches_parks_and_feeds_score(conn, tmp_path):
     assert again["rows"] == 1
     assert conn.execute("select count(*) n from park_operating").fetchone()["n"] == 1
 
+    park_id = conn.execute("select id from parks where sources->>'hifld' = '1001'").fetchone()["id"]
+    db.upsert_loan(conn, "county", "test-sunrise-loan", {
+        "park_id": park_id, "status": "active", "original_amount": 1_000_000, "current_balance": 800_000,
+        "note_rate": 5.0, "origination_date": date(2018, 1, 1), "maturity_date": date(2028, 1, 1),
+        "maturity_basis": "reported", "amort_months": 360, "balloon": True,
+    })
+    conn.commit()
     jobs.score_parks(conn, RateCurve(), today=TODAY, states=["AZ"])
-    comp = conn.execute("""select s.components from park_scores s join parks p on p.id = s.park_id
-                           where p.sources->>'hifld' = '1001'""").fetchone()["components"]
-    assert "owned-since" in comp["owner"]["why"]  # 1994 owned-since date, about 32 years
+    row = conn.execute("""select s.score, s.components from park_scores s join parks p on p.id = s.park_id
+                           where p.sources->>'hifld' = '1001'""").fetchone()
+    assert row["score"] is not None
+    assert "owned-since" in row["components"]["owner"]["why"]  # 1994 owned-since date, about 32 years

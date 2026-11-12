@@ -57,7 +57,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<SP>
   }).length;
   const documented = rows.filter((r) => r.maturity_basis === "reported" || r.maturity_basis === "document").length;
   const foreclosure = rows.filter((r) => r.loan_status === "foreclosure").length;
-  const debt = rows.reduce((sum, r) => sum + Number(r.current_balance ?? r.original_amount ?? 0), 0);
+  const debt = rows.reduce((sum, r) => sum + Number(r.current_balance ?? 0), 0);
 
   return (
     <div className="space-y-4">

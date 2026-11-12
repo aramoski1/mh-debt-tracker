@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
+import { shownPressure } from "@/lib/brief";
+import type { ParkRow } from "@/lib/types";
 import { money, monthYear } from "@/lib/format";
 import { Metric, MetricStrip } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
@@ -10,7 +12,8 @@ export const dynamic = "force-dynamic";
 
 type Park = {
   id: string; name: string; city: string | null; state: string; units: number | null;
-  score: number | null; maturity_date: string | null; owner_name: string | null;
+  score: number | null; loan_id: string | null; score_components: ParkRow["score_components"];
+  maturity_date: string | null; owner_name: string | null;
   owner_city: string | null; owner_state: string | null; owner_entity_type: string | null;
   current_balance: number | null; original_amount: number | null;
 };
@@ -19,13 +22,13 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
   const { id } = await params;
   const supabase = await supabaseServer();
   const { data } = await supabase.from("park_overview").select("*").eq("owner_id", id).order("score", { ascending: false });
-  const parks = (data ?? []) as Park[];
+  const parks = ((data ?? []) as Park[]).sort((a, b) => (shownPressure(b) ?? -1) - (shownPressure(a) ?? -1));
   if (!parks.length) notFound();
   const o = parks[0];
   const { data: people } = await supabase.from("contacts").select("id, name, role, phone, email, mailing, source, verified").eq("owner_id", id);
   const { data: notes } = await supabase.from("activities").select("id, kind, body, created_at, park_id").in("park_id", parks.map((park) => park.id)).order("created_at", { ascending: false }).limit(12);
   const sites = parks.reduce((sum, park) => sum + (park.units ?? 0), 0);
-  const debt = parks.reduce((sum, park) => sum + Number(park.current_balance ?? park.original_amount ?? 0), 0);
+  const debt = parks.reduce((sum, park) => sum + Number(park.current_balance ?? 0), 0);
   const next = parks.map((park) => park.maturity_date).filter(Boolean).sort()[0] ?? null;
   return (
     <div className="space-y-4">
@@ -66,9 +69,9 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
           <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
               <Link href={`/parks/${p.id}`} className="font-medium hover:text-accent">{p.name}</Link>
-              <div className="text-xs text-muted">{p.city}, {p.state}{p.units ? ` · ${p.units} sites` : ""} · matures {monthYear(p.maturity_date)}</div>
+              <div className="text-xs text-muted">{p.city}, {p.state}{p.units != null ? ` · ${p.units} sites` : ""} · matures {monthYear(p.maturity_date)}</div>
             </div>
-            <ScorePill score={p.score} />
+            <ScorePill score={shownPressure(p)} />
           </li>
         ))}
       </ul>

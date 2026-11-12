@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
+import { shownPressure } from "@/lib/brief";
 import { money, monthYear } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
 import { forecast } from "@/lib/forecast";
 import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
+import type { ParkRow } from "@/lib/types";
 import { Board } from "./Board";
 import BuyBoxForm from "./BuyBoxForm";
 
@@ -14,7 +16,9 @@ type Deal = {
   price?: number | null; close_date?: string | null; diligence_date?: string | null; stage_changed_at?: string | null;
 };
 type Park = {
-  id: string; name: string; city: string | null; units?: number | null; score: number | null; maturity_date: string | null;
+  id: string; name: string; city: string | null; units?: number | null; score: number | null;
+  loan_id: string | null; score_components: ParkRow["score_components"];
+  maturity_date: string | null;
   owner_name: string | null; current_balance: number | null; original_amount: number | null;
 };
 type Box = { min_sites: number; max_sites: number; states: string[]; kinds: string[] };
@@ -28,7 +32,7 @@ export default async function PipelinePage() {
   const list = (deals ?? []) as Deal[];
   const ids = list.map((d) => d.park_id);
   const { data: parks } = ids.length
-    ? await supabase.from("park_overview").select("id, name, city, units, score, maturity_date, owner_name, current_balance, original_amount").in("id", ids)
+    ? await supabase.from("park_overview").select("id, name, city, units, score, loan_id, score_components, maturity_date, owner_name, current_balance, original_amount").in("id", ids)
     : { data: [] };
   const byId = new Map(((parks ?? []) as Park[]).map((p) => [p.id, p]));
   const today = new Date().toISOString().slice(0, 10);
@@ -53,7 +57,7 @@ export default async function PipelinePage() {
           const cards = list.filter((deal) => boardColumn(deal.stage) === key);
           const debt = cards.reduce((sum, deal) => {
             const park = byId.get(deal.park_id);
-            return sum + Number(park?.current_balance ?? park?.original_amount ?? 0);
+            return sum + Number(park?.current_balance ?? 0);
           }, 0);
           return debt ? ` · ${money(debt)}` : "";
         })()}`,
@@ -98,7 +102,7 @@ export default async function PipelinePage() {
                   </td>
                   <td className="px-4 py-2">{STAGE_LABEL[d.stage] ?? d.stage}</td>
                   <td className="num px-4 py-2">{d.next_action ?? "—"}</td>
-                  <td className="num px-4 py-2 text-right">{p?.score == null ? "—" : Math.round(p.score)}</td>
+                  <td className="num px-4 py-2 text-right">{p == null || shownPressure(p) == null ? "—" : shownPressure(p)!.toFixed(1)}</td>
                   <td className="num px-4 py-2">{monthYear(p?.maturity_date ?? null)}</td>
                 </tr>
               );

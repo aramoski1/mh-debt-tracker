@@ -6,7 +6,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Basis } from "@/components/ui/Bits";
 import { Drawer } from "@/components/ui/Drawer";
 import { ScorePill } from "@/components/ui/ScorePill";
-import { bps, money, monthYear, monthsFromNow, pct, relativeWhen, signedMoney } from "@/lib/format";
+import { reportedCashGap, shownPressure } from "@/lib/brief";
+import { bps, dollars, money, monthYear, monthsFromNow, pct, relativeWhen, signedMoney } from "@/lib/format";
 import { KIND_LABEL, LENDER_LABEL, type ParkRow } from "@/lib/types";
 
 type Col = {
@@ -26,7 +27,7 @@ function field(row: ParkRow, key: string, name: string) {
 }
 
 const COLS: Col[] = [
-  { id: "score", label: "Score", width: 108, value: (r) => r.score, cell: (r) => <ScorePill score={r.score} /> },
+  { id: "score", label: "Score", width: 108, value: (r) => shownPressure(r), cell: (r) => <ScorePill score={shownPressure(r)} /> },
   {
     id: "park", label: "Park", width: 220, value: (r) => r.name,
     cell: (r) => (
@@ -51,8 +52,8 @@ const COLS: Col[] = [
     ),
   },
   {
-    id: "balance", label: "Balance", align: "right", width: 96, value: (r) => r.current_balance ?? r.original_amount,
-    cell: (r) => <span className="num">{money(r.current_balance ?? r.original_amount)}</span>,
+    id: "balance", label: "Balance", align: "right", width: 96, value: (r) => r.current_balance,
+    cell: (r) => <span className="num">{money(r.current_balance)}</span>,
   },
   { id: "note", label: "Note rate", align: "right", width: 88, value: (r) => r.note_rate, cell: (r) => <span className="num">{pct(r.note_rate)}</span> },
   {
@@ -88,8 +89,8 @@ const COLS: Col[] = [
     },
   },
   {
-    id: "gap", label: "Refi gap", align: "right", width: 96, value: (r) => field(r, "refi_gap", "equity_needed"),
-    cell: (r) => <span className="num">{signedMoney(field(r, "refi_gap", "equity_needed"))}</span>,
+    id: "gap", label: "Refi gap", align: "right", width: 96, value: (r) => reportedCashGap(r),
+    cell: (r) => <span className="num">{signedMoney(reportedCashGap(r))}</span>,
   },
   {
     id: "contact", label: "Last contact", width: 110, value: (r) => r.last_activity_at,
@@ -301,12 +302,12 @@ export default function ProspectTable({ rows, onHover }: { rows: ParkRow[]; onHo
       <Drawer open={!!open} onOpenChange={(next) => { if (!next) setOpen(null); }} title={open?.name ?? "Park"}>
         {open && (
           <div className="space-y-3 text-sm">
-            <ScorePill score={open.score} />
+            <ScorePill score={shownPressure(open)} />
             <p>{[open.city, open.state].filter(Boolean).join(", ")} · {open.units ?? "—"} sites</p>
             <p>Lender {open.lender_name ?? open.lender_name_raw ?? "—"}</p>
             <p className="num">Matures {monthYear(open.maturity_date)} <Basis basis={open.maturity_basis} /></p>
-            <p className="num">Balance {money(open.current_balance ?? open.original_amount)}</p>
-            <p className="num">Refi gap {signedMoney(field(open, "refi_gap", "equity_needed"))}</p>
+            <p className="num">Balance {money(open.current_balance)}</p>
+            <p className="num">Cash the owner must bring {dollars(reportedCashGap(open))}</p>
             <Link href={`/parks/${open.id}`} className="inline-block font-medium text-accent">Open the full page</Link>
           </div>
         )}

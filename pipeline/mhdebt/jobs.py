@@ -21,7 +21,7 @@ from .lenders import LenderClassifier, is_title_company, strip_descriptors
 from .match import Candidate, Probe, best_match, haversine_m, nearest, similarity
 from .normalize import nice_title, norm_entity
 from .rates import RateCurve, fetch_prints
-from .scoring import LoanFacts, ParkFacts, acquisition_fit, score
+from .scoring import LoanFacts, ParkFacts, Score, acquisition_fit, score
 from .sources import agency, edgar_cmbs, edgar_search, exhibits, fdic, form_d, hifld, hud_fha, maricopa, news, pima, sba
 from .sources import epa, fema
 from .sources.doc_types import CURE_TYPES, DISTRESS_TYPES, LOAN_TYPES
@@ -714,12 +714,37 @@ def ingest_operating_file(conn, path: Path, source: str, states: list[str], as_o
     return stats
 
 
+def _loan_pays_off(r: dict) -> bool:
+    """Rebuild the flag the maturity table does not store.
+
+    A known term of 180 months or more is fully amortizing only when estimate_maturities
+    already wrote that sentence. An explicit balloon with a longer amortization stays a balloon.
+    """
+    if r.get("balloon") is False:
+        return True
+    term, amort = r.get("term_months"), r.get("amort_months")
+    if term and amort and amort <= term:
+        return True
+    return "Fully amortizing — no balloon." in (r.get("explanation") or "")
+
+
 def _estimate_from_row(r: dict, today: date) -> maturity.Estimate | None:
     if r["p50_date"] is None:
         return None
-    return maturity.Estimate(r["p10_date"], r["p50_date"], r["p90_date"], float(r["prob_12m"] or 0),
-                             float(r["prob_24m"] or 0), float(r["prob_past_due"] or 0), r["basis"], r["method"],
-                             r["explanation"] or "", r["likely_date"])
+    return maturity.Estimate(
+        r["p10_date"], r["p50_date"], r["p90_date"], float(r["prob_12m"] or 0),
+        float(r["prob_24m"] or 0), float(r["prob_past_due"] or 0), r["basis"], r["method"],
+        r["explanation"] or "", r["likely_date"], fully_amortizing=_loan_pays_off(r),
+    )
+
+
+def _prefer_score(candidate: Score, best: Score) -> bool:
+    """A scored loan replaces a blank. A blank never wins, and None is not compared with a number."""
+    if candidate.total is None:
+        return False
+    if best.total is None:
+        return True
+    return candidate.total > best.total
 
 
 def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[str] | None = None) -> dict:
@@ -766,16 +791,17 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
                 lf = LoanFacts(lender_kind=ln["lender_kind"],
                                lender_cre_concentration=float(ln["cre_concentration"]) if ln["cre_concentration"] else None,
                                start_date=ln["origination_date"] or ln["recording_date"],
-                               note_rate=float(ln["note_rate"]) if ln["note_rate"] else None,
-                               original_amount=float(ln["original_amount"]) if ln["original_amount"] else None,
-                               current_balance=float(ln["current_balance"]) if ln["current_balance"] else None,
-                               amort_months=ln["amort_months"], interest_only=ln["interest_only"], noi=float(ln["noi_current"]) if ln["noi_current"] else None,
+                               note_rate=float(ln["note_rate"]) if ln["note_rate"] is not None else None,
+                               original_amount=float(ln["original_amount"]) if ln["original_amount"] is not None else None,
+                               current_balance=float(ln["current_balance"]) if ln["current_balance"] is not None else None,
+                               amort_months=ln["amort_months"], interest_only=ln["interest_only"],
+                               noi=float(ln["noi_current"]) if ln["noi_current"] is not None else None,
                                payment_status="foreclosure" if ln["status"] == "foreclosure" else ln["payment_status"],
                                estimate=_estimate_from_row(ln, today))
                 s = score(pf, lf, rates, today)
-                if s.total > best.total:
+                if _prefer_score(s, best):
                     best, best_loan = s, ln
-            note = float(best_loan["note_rate"]) if best_loan and best_loan["note_rate"] else None
+            note = float(best_loan["note_rate"]) if best_loan and best_loan["note_rate"] is not None else None
             market = best.components.get("rate_shock", {}).get("new_rate")
             km = None
             if managed and p.get("lat") is not None and p.get("lon") is not None:
@@ -793,7 +819,7 @@ def score_parks(conn, rates: RateCurve, today: date | None = None, states: list[
             conn.execute("""insert into park_score_history (park_id, score, computed_on) values (%s,%s,%s)
                             on conflict (park_id, computed_on) do update set score=excluded.score""",
                          (p["id"], best.total, today))
-            if p["prev_score"] is not None and best.total - float(p["prev_score"]) >= 15:
+            if p["prev_score"] is not None and best.total is not None and best.total - float(p["prev_score"]) >= 15:
                 jumps += db.add_alert(conn, str(p["id"]), "score_jump", f"{p['name']} jumped to {best.total:.0f}",
                                       f"Up from {float(p['prev_score']):.0f}", f"jump:{p['id']}:{today}")
             m = best.components.get("maturity", {})

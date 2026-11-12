@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { money, pct, ratio } from "@/lib/format";
+import { dollars, pct, ratio } from "@/lib/format";
 import { payment, scenario } from "@/lib/underwrite";
 
 type Saved = {
@@ -38,8 +38,8 @@ export default function UnderwritingDesk({
   const [price, setPrice] = useState(saved?.price ?? "");
   const [cap, setCap] = useState(saved?.cap_rate ?? "");
   const [rent, setRent] = useState(saved?.lot_rent ?? lotRent ?? "");
-  const [occ, setOcc] = useState(saved?.occupancy_pct ?? occupancyPct ?? "");
-  const [expense, setExpense] = useState(saved?.expense_pct ?? "");
+  const [occ, setOcc] = useState(String(saved?.occupancy_pct ?? occupancyPct ?? 90));
+  const [expense, setExpense] = useState(String(saved?.expense_pct ?? 40));
   const [growth, setGrowth] = useState(saved?.rent_growth ?? "");
   const [nSites, setSites] = useState(saved?.sites ?? sites ?? "");
   const [rates, setRates] = useState<Record<string, string>>({
@@ -55,8 +55,9 @@ export default function UnderwritingDesk({
       capRate: Number(cap), growth: Number(growth) / 100,
     };
     return Object.fromEntries(CASES.map(([k]) => {
-      const rate = Number(rates[k]);
-      return [k, rate ? scenario({ ...parsed, rate }) : null];
+      const raw = rates[k];
+      const rate = Number(raw);
+      return [k, raw !== "" && Number.isFinite(rate) ? scenario({ ...parsed, rate }) : null];
     }));
   }, [price, nSites, rent, occ, expense, cap, growth, rates]);
 
@@ -79,10 +80,10 @@ export default function UnderwritingDesk({
     ? [
         `${parkName}${city ? `, ${city}` : ""}`,
         "",
-        `We would buy the park for ${money(Number(price))}. That price is the figure entered on this page, not an appraisal.`,
-        `At ${nSites} sites, ${money(Number(rent))} lot rent, ${occ}% occupancy and ${expense}% expenses, year-1 NOI is ${money(active.noi)}.`,
-        `The ${CASES.find(([k]) => k === which)?.[1].toLowerCase()} case uses ${pct(Number(rates[which]))}. The loan amount is ${money(active.loan)}, set by the ${active.binding === "ltv" ? "75% loan-to-value cap" : "1.25 debt-service test"}.`,
-        `Cash-on-cash on those inputs is ${active.cashOnCash}%. The year-5 IRR, selling at the same ${cap}% cap rate, is ${active.irr == null ? "not computed" : `${active.irr}%`}.`,
+        `We would buy the park for ${dollars(Number(price))}. That price is the figure entered on this page, not an appraisal.`,
+        `At ${nSites} sites, ${dollars(Number(rent))} lot rent, ${occ}% occupancy and ${expense}% expenses, year-1 NOI is ${dollars(active.noi)}.`,
+        `The ${CASES.find(([k]) => k === which)?.[1].toLowerCase()} case is a 30-year desk loan at ${pct(Number(rates[which]))}. The loan amount is ${dollars(active.loan)}, and ${active.binding === "ltv" ? "75% of price (desk cap) binds" : "1.25x DSCR binds"}.`,
+        `Cash-on-cash on those inputs is ${active.cashOnCash}%. Equity is price minus the new loan, before closing costs. The year-5 IRR, before selling costs, selling at the same ${cap}% cap rate, is ${active.irr == null ? "not computed" : `${active.irr}%`}.`,
         "",
         "This draft is for review inside Cooper Cardinal. It has not been sent.",
       ].join("\n")
@@ -104,6 +105,7 @@ export default function UnderwritingDesk({
           ? `The pressure score is using ${pct(modelRate)} (${spreadBasis === "measured" ? "a measured spread" : "an assumed spread"}). Type the rate you want to underwrite.`
           : "Type the rate you want to underwrite."}
         {lotRent != null ? " Lot rent starts from the operating figures saved on this park." : " Lot rent stays blank until you enter it."}
+        {" "}90% occupancy and 40% expenses are the desk defaults until you change them. They are not this park&apos;s income.
       </p>
       <div className="grid gap-3 sm:grid-cols-4">
         {field("Price", price, setPrice, "1000")}
@@ -133,12 +135,12 @@ export default function UnderwritingDesk({
       {active?.ok && (
         <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-line bg-line sm:grid-cols-3 lg:grid-cols-6">
           {[
-            ["Price", money(Number(price))],
+            ["Price", dollars(Number(price))],
             ["Cap rate", pct(Number(cap), 1)],
-            ["Cash-on-cash", pct(active.cashOnCash, 1)],
-            ["DSCR", ratio(active.noi && Number(rates[which]) ? (active.noi as number) / (payment(active.loan as number, Number(rates[which]), 30) * 12) : null)],
-            ["Equity", money(active.equity)],
-            ["5-year IRR", active.irr == null ? "—" : pct(active.irr, 1)],
+            ["Cash-on-cash", pct(active.cashOnCash, 2)],
+            ["DSCR", ratio(active.noi != null && rates[which] !== "" ? (active.noi as number) / (payment(active.loan as number, Number(rates[which]), 30) * 12) : null)],
+            ["Equity before closing costs", dollars(active.equity)],
+            ["5-year IRR before selling costs", active.irr == null ? "—" : pct(active.irr, 2)],
           ].map(([label, value]) => (
             <div key={label} className="bg-panel px-3 py-2">
               <p className="text-xs text-muted">{label}</p>

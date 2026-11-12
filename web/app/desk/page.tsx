@@ -1,4 +1,4 @@
-import { callLine, callTargets } from "@/lib/brief";
+import { callLine, callTargets, shownPressure } from "@/lib/brief";
 import { RANK, rankToday, type TodayItem } from "@/lib/today";
 import { money, monthsFromNow } from "@/lib/format";
 import { applyProspectFilters } from "@/lib/prospects";
@@ -84,14 +84,14 @@ export default async function DeskPage() {
   const documented = rows.filter((park) => park.maturity_basis === "reported" || park.maturity_basis === "document").length;
   const distressAll = rows.filter((park) => park.loan_status === "foreclosure");
   const distress = distressAll.slice(0, 8);
-  const debt = rows.reduce((sum, park) => sum + Number(park.current_balance ?? park.original_amount ?? 0), 0);
+  const debt = rows.reduce((sum, park) => sum + Number(park.current_balance ?? 0), 0);
 
   const deals = (dealRows ?? []) as { park_id: string; stage: string }[];
   const stages = BOARD.map((id) => {
     const inStage = deals.filter((deal) => boardColumn(deal.stage) === id);
     const balance = inStage.reduce((sum, deal) => {
       const park = byId.get(deal.park_id);
-      return sum + Number(park?.current_balance ?? park?.original_amount ?? 0);
+      return sum + Number(park?.current_balance ?? 0);
     }, 0);
     return { id, label: STAGE_LABEL[id] ?? id, count: inStage.length, debt: balance };
   });
@@ -107,12 +107,12 @@ export default async function DeskPage() {
         name: park.name,
         city: park.city,
         line: callLine(park),
-        score: park.score,
+        score: shownPressure(park),
         matures: park.maturity_date,
         contacted: contacted(park.last_activity_at),
       }))}
-      unworked={rows.filter((park) => (park.score ?? 0) >= 50 && !park.last_activity_at).slice(0, 8).map((park) => ({
-        id: park.id, name: park.name, city: park.city, score: park.score,
+      unworked={rows.filter((park) => (shownPressure(park) ?? 0) >= 50 && !park.last_activity_at).slice(0, 8).map((park) => ({
+        id: park.id, name: park.name, city: park.city, score: shownPressure(park),
       }))}
       distress={distress.map((park) => ({ id: park.id, name: park.name, city: park.city, score: park.score }))}
       stages={stages}

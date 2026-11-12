@@ -42,7 +42,7 @@ export default function OperatingForm({ parkId }: { parkId: string }) {
       return;
     }
     setV({});
-    setMsg({ ok: true, text: "Saved. The score and refinance gap update on the next model run." });
+    setMsg({ ok: true, text: "Saved on this park. Coverage stays blank until a reported NOI is on the loan." });
     router.refresh();
   }
 

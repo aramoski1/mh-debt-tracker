@@ -4,19 +4,25 @@ export const DSCR_TEST = 1.25;
 export const LTV_CAP = 0.75;
 export const AMORT_YEARS = 30;
 
-export function payment(principal: number, annualRatePct: number, years: number) {
-  const months = years * 12;
+/** Monthly payment. A term of 0 months is interest-only, matching pipeline/mhdebt/scoring.py. */
+export function paymentMonths(principal: number, annualRatePct: number, months: number) {
   const r = annualRatePct / 100 / 12;
+  if (months <= 0) return principal * r;
   if (r === 0) return principal / months;
   return (principal * r) / (1 - (1 + r) ** -months);
 }
 
-export function balanceAfter(principal: number, annualRatePct: number, yearsPaid: number) {
-  const months = AMORT_YEARS * 12;
+export function payment(principal: number, annualRatePct: number, years: number) {
+  return paymentMonths(principal, annualRatePct, years * 12);
+}
+
+export function balanceAfter(principal: number, annualRatePct: number, yearsPaid: number, amortYears = AMORT_YEARS) {
+  const months = amortYears * 12;
+  if (months <= 0) return principal;
   const paid = Math.min(yearsPaid * 12, months);
   const r = annualRatePct / 100 / 12;
   if (r === 0) return principal * (1 - paid / months);
-  const pmt = payment(principal, annualRatePct, AMORT_YEARS);
+  const pmt = payment(principal, annualRatePct, amortYears);
   return Math.max(0, principal * (1 + r) ** paid - pmt * (((1 + r) ** paid - 1) / r));
 }
 

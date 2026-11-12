@@ -269,7 +269,7 @@ mhdebt top --n 30
 1. A published date (CMBS, agency, SBA term) or a date stated in the document is used as-is.
 2. Otherwise the model looks at the lender type and the date the loan was recorded, and spreads probability over that lender's typical terms (community banks: mostly 5 years, some 3, 7 and 10; seller financing: 5 to 10; and so on).
 3. A recorded modification restarts the clock with a short extension.
-4. Loans that fully amortize by maturity (SBA, many life company loans) get little pressure because there's no balloon to refinance.
+4. Loans that fully amortize by maturity (SBA, many life company loans) score 0 maturity points. The line reads "Fully amortizing — no balloon."
 5. A loan with no recorded payoff becomes less likely to still be open the longer it runs past each candidate date. The "lost" probability is shown as the chance it was already repaid without a release in our data. This keeps a 2010 loan from looking past due. Loans that still appear in a current CMBS or agency report are known to be open and don't get this discount.
 
 County loan statuses (active, released, refinanced, foreclosure, paid off) are rebuilt from the recorded documents in date order on every run, so a cancelled trustee sale clears the foreclosure flag, and notices older than two years with nothing after them are treated as cured.
@@ -280,7 +280,7 @@ County loan statuses (active, released, refinanced, foreclosure, paid off) are r
 | --- | --- | --- |
 | Loan coming due | 35 | Probability it comes due within 12 or 24 months, or is already past due; 35 if a trustee sale notice was recorded |
 | Rate shock | 20 | Today's refinance rate minus the rate they borrowed at (reported, or estimated from the 5-year Treasury plus a spread by lender type) |
-| Refinance gap | 20 | Debt coverage at today's rate. Uses reported income for CMBS/agency loans, otherwise sites × market lot rent × 90% occupancy × 60% margin. Shows the equity needed to refinance |
+| Coverage at today's rate | 20 | Reported NOI against a 25-year bank amortization at today's rate. No reported NOI leaves the line blank. The dollar line is "Cash the owner must bring," and it is separate from the points |
 | Lender pressure | 10 | Lender's CRE loans above 200% or 300% of capital, community bank or debt fund, CMBS delinquency, foreclosure |
 | Owner profile | 15 | Held 8+ or 15+ years, owner lives out of state, individual or family trust, owns a single park |
 

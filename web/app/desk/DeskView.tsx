@@ -114,7 +114,7 @@ export function DeskView({
                     <Link href={`/parks/${row.id}`} className="text-sm font-medium hover:text-accent">{row.name}</Link>
                     <span className="text-xs text-muted">{row.city}</span>
                     <span className="text-xs text-muted">{row.contacted}</span>
-                    <span className={`num ml-auto rounded-sm px-1.5 text-sm font-semibold ${scoreTone(row.score)}`}>{row.score == null ? "–" : Math.round(row.score)}</span>
+                    <span className={`num ml-auto rounded-sm px-1.5 text-sm font-semibold ${scoreTone(row.score)}`}>{row.score == null ? "–" : Number(row.score).toFixed(1)}</span>
                   </div>
                   <p className="text-xs leading-5 text-body">{row.line}</p>
                   <p className="num text-xs text-muted">{monthYear(row.matures)}</p>
@@ -132,7 +132,7 @@ export function DeskView({
               {unworked.map((park) => (
                 <li key={park.id} className="flex items-baseline justify-between px-4 py-2 text-sm">
                   <Link href={`/parks/${park.id}`} className="font-medium hover:text-accent">{park.name}</Link>
-                  <span className="text-xs text-muted">{park.city} · <span className="num">{park.score == null ? "—" : Math.round(park.score)}</span></span>
+                  <span className="text-xs text-muted">{park.city} · <span className="num">{park.score == null ? "—" : Number(park.score).toFixed(1)}</span></span>
                 </li>
               ))}
             </ul>
