@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { NextResponse } from "next/server";
 import { parseAsk } from "@/lib/ask";
 import { FABRICATION_RULE } from "@/lib/copilot-knowledge";
-import { callLine } from "@/lib/brief";
+import { callLine, shownPressure } from "@/lib/brief";
 import { monthYear } from "@/lib/format";
 import { applyProspectFilters, narrowProspects } from "@/lib/prospects";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -12,7 +12,8 @@ function fallback(rows: ParkRow[], intro: string) {
   if (!rows.length) return `${intro} Nothing on the desk matches.`;
   const lines = rows.slice(0, 8).map((park) => {
     const basis = park.maturity_basis ? BASIS_LABEL[park.maturity_basis] : "Unknown";
-    return `${park.name} in ${park.city ?? "—"} — score ${park.score == null ? "—" : Math.round(park.score)}, ${basis.toLowerCase()} maturity ${monthYear(park.maturity_date)}. ${callLine(park)} /parks/${park.id}`;
+    const pressure = shownPressure(park);
+    return `${park.name} in ${park.city ?? "—"} — score ${pressure == null ? "—" : pressure.toFixed(1)}, ${basis.toLowerCase()} maturity ${monthYear(park.maturity_date)}. ${callLine(park)} /parks/${park.id}`;
   });
   return `${intro}\n\n${lines.join("\n\n")}`;
 }
@@ -26,10 +27,10 @@ async function narrate(question: string, rows: ParkRow[]) {
     units: park.units,
     owner: park.owner_name,
     owner_state: park.owner_state,
-    score: park.score,
+    score: shownPressure(park),
     lender: park.lender_name,
     loan_status: park.loan_status,
-    balance: park.current_balance ?? park.original_amount,
+    balance: park.current_balance,
     note_rate: park.note_rate,
     maturity_date: park.maturity_date,
     maturity_basis: park.maturity_basis,

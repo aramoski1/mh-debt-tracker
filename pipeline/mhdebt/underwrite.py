@@ -6,7 +6,7 @@ rate that zeros those cash flows. It is math on the inputs, not a forecast.
 """
 from __future__ import annotations
 
-from .scoring import DSCR_TEST, REFI_AMORT_YEARS, REFI_LTV_CAP, payment, balance_after
+from .scoring import DESK_AMORT_YEARS, DSCR_TEST, REFI_LTV_CAP, payment, balance_after
 
 
 def noi(sites: float, lot_rent: float, occupancy: float, expense_ratio: float) -> float:
@@ -19,7 +19,7 @@ def proceeds(value: float, year_noi: float, annual_rate_pct: float) -> tuple[flo
     debt_service_cap = year_noi / DSCR_TEST
     # Loan whose payment equals the DSCR cap.
     # payment(L) * 12 = debt_service_cap => L = debt_service_cap / (payment(1) * 12)
-    unit = payment(1.0, annual_rate_pct, REFI_AMORT_YEARS) * 12
+    unit = payment(1.0, annual_rate_pct, DESK_AMORT_YEARS) * 12
     by_dscr = debt_service_cap / unit if unit else 0.0
     if by_ltv <= by_dscr:
         return by_ltv, "ltv"
@@ -65,7 +65,7 @@ def scenario(
     equity = price - loan
     if equity <= 0:
         return {"ok": False, "why": "The loan would cover the whole price. Raise the cap rate or lower the loan."}
-    debt_service = payment(loan, annual_rate_pct, REFI_AMORT_YEARS) * 12
+    debt_service = payment(loan, annual_rate_pct, DESK_AMORT_YEARS) * 12
     cash = base - debt_service
     flows = [-equity]
     for t in range(1, years + 1):
@@ -73,7 +73,7 @@ def scenario(
         flows.append(noi_t - debt_service)
     exit_noi = base * (1 + rent_growth) ** years
     exit_value = exit_noi / (cap_rate_pct / 100)
-    balance = balance_after(loan, annual_rate_pct, REFI_AMORT_YEARS * 12, years * 12)
+    balance = balance_after(loan, annual_rate_pct, DESK_AMORT_YEARS * 12, years * 12)
     flows[-1] += exit_value - balance
     return {
         "ok": True,

@@ -61,7 +61,7 @@ export default async function SignalsPage() {
                 <td className="px-4 py-2 text-xs">{row.raw?.soa}</td>
                 <td className="num px-4 py-2">{monthYear(row.maturity_date)}</td>
                 <td className="num px-4 py-2 text-right">{pct(row.note_rate)}</td>
-                <td className="num px-4 py-2 text-right">{money(row.current_balance ?? row.original_amount)}</td>
+                <td className="num px-4 py-2 text-right">{money(row.current_balance)}</td>
                 <td className="px-4 py-2">{row.status}</td>
               </tr>
             ))}

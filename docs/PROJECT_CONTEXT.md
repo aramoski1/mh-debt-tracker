@@ -146,7 +146,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 
 **Wide maturity estimates.** County-loan maturities are often 10+ years wide. The backtest and calibration harness doesn't exist yet.
 
-**Assumed income.** Refinance gaps assume $700 a site, 90% occupancy and a 40% expense ratio, unless a CMBS NOI is reported.
+**Income.** Coverage, DSCR, and the refinance gap use a reported NOI only. A blank park is not filled with a statewide rent, 90% occupancy, or a 40% expense ratio. Those two rates appear only as labeled defaults on the underwriting form.
 
 **Product gaps that are still open:**
 - Owner contact discovery is still the assessor mailing address, the phone on the park, and contacts Jack types. Nothing is skip-traced.

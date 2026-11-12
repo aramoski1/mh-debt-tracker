@@ -1,3 +1,4 @@
+import { reportedCashGap, shownPressure } from "./brief";
 import { heldYears } from "./fit";
 import type { ParkRow } from "./types";
 
@@ -53,6 +54,10 @@ export function applyProspectFilters<T extends Filterable>(q: T, sp: ProspectPar
 export function narrowProspects(rows: ParkRow[], sp: ProspectParams, pins: { lat: number | null; lon: number | null }[] = []) {
   const located = pins.filter((pin) => pin.lat != null && pin.lon != null) as { lat: number; lon: number }[];
   return rows.filter((park) => {
+    if (sp.minScore) {
+      const pressure = shownPressure(park);
+      if (pressure == null || pressure < Number(sp.minScore)) return false;
+    }
     if (sp.county && !(park.county ?? "").toLowerCase().includes(sp.county.toLowerCase().replace(/ county$/, ""))) return false;
     if (sp.city) {
       const have = (park.city ?? "").toLowerCase();
@@ -69,8 +74,8 @@ export function narrowProspects(rows: ParkRow[], sp: ProspectParams, pins: { lat
       if (!Number.isFinite(pts) || pts * 100 < Number(sp.shock)) return false;
     }
     if (sp.gap) {
-      const gap = Number(park.score_components?.refi_gap?.equity_needed);
-      if (!Number.isFinite(gap) || gap < Number(sp.gap)) return false;
+      const gap = reportedCashGap(park);
+      if (gap == null || gap < Number(sp.gap)) return false;
     }
     if (sp.held) {
       const years = heldYears(park);

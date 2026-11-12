@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Map as MlMap, GeoJSONSource } from "maplibre-gl";
+import { shownPressure } from "@/lib/brief";
 import type { ParkRow } from "@/lib/types";
 
 const STYLE = process.env.NEXT_PUBLIC_MAP_STYLE || "https://tiles.openfreemap.org/styles/positron";
@@ -32,7 +33,7 @@ function toGeoJson(rows: ParkRow[]) {
         properties: {
           id: r.id,
           name: r.name,
-          score: r.score ?? 0,
+          score: shownPressure(r) ?? -1,
           units: r.units ?? 0,
           lender: r.lender_name ?? r.lender_name_raw ?? "",
           matures: r.maturity_date ?? "",
@@ -110,7 +111,7 @@ export default function ParkMap({ rows, highlight }: { rows: ParkRow[]; highligh
           if (!props) return;
           m.getCanvas().style.cursor = "pointer";
           popup.setLngLat(e.lngLat).setHTML(
-            `<div style="font: 13px sans-serif; color: #1c1917"><strong>${text(props.name)}</strong><div>Score ${Math.round(Number(props.score) || 0)} · ${text(props.matures) || "no maturity"}</div><div>${text(props.lender) || "No lender"}</div></div>`,
+            `<div style="font: 13px sans-serif; color: #1c1917"><strong>${text(props.name)}</strong><div>Score ${Number(props.score) < 0 ? "—" : Number(props.score).toFixed(1)} · ${text(props.matures) || "no maturity"}</div><div>${text(props.lender) || "No lender"}</div></div>`,
           ).addTo(m);
         });
         m.on("mouseleave", "parks", () => {

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { BASIS_LABEL, KIND_LABEL, LENDER_LABEL, type ParkRow, type ScoreComponent } from "@/lib/types";
-import { money, monthYear, pct } from "@/lib/format";
-import { callLine } from "@/lib/brief";
+import { dollars, money, monthYear, pct } from "@/lib/format";
+import { paymentMonths } from "@/lib/underwrite";
+import { callLine, shownPressure } from "@/lib/brief";
 import { mergeOperating, occupancy, type Merged, type OperatingRow } from "@/lib/operating";
 import { Tabs } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
@@ -24,20 +25,31 @@ export const dynamic = "force-dynamic";
 const COMPONENT_LABEL: Record<string, [string, number]> = {
   maturity: ["Loan coming due", 35],
   rate_shock: ["Rate shock", 20],
-  refi_gap: ["Refinance gap", 20],
+  refi_gap: ["Coverage at today's rate", 20],
   lender: ["Lender pressure", 10],
   owner: ["Owner profile", 15],
 };
 
+function coverageCounts(c?: ScoreComponent) {
+  return Boolean(c && c.scored !== false && c.points != null && c.noi_basis === "reported");
+}
+
 function Detail({ c, k }: { c: ScoreComponent; k: string }) {
   const parts: string[] = [];
   if (k === "rate_shock" && c.old_rate != null)
-    parts.push(`Borrowed at ~${pct(c.old_rate as number)} (${c.old_rate_basis}); today ~${pct(c.new_rate as number)}`);
-  if (k === "refi_gap" && c.dscr_at_new_rate != null) {
-    parts.push(`Coverage at today's rate ${Number(c.dscr_at_new_rate).toFixed(2)}x on ${money(c.noi as number)} NOI (${c.noi_basis})`);
-    if ((c.equity_needed as number) > 0) parts.push(`about ${money(c.equity_needed as number)} of new equity needed to refinance`);
+    parts.push(`Borrowed at ${pct(c.old_rate as number)} (${c.old_rate_basis}); today ${pct(c.new_rate as number)}`);
+  if (k === "refi_gap" && !coverageCounts(c)) {
+    const why = String(c.why ?? "");
+    parts.push(why.startsWith("Coverage not scored") || why.startsWith("No loan") ? why : "Coverage not scored — no income on file.");
+  } else if (k === "refi_gap" && c.dscr_at_new_rate != null) {
+    parts.push(`Coverage at today's rate ${Number(c.dscr_at_new_rate).toFixed(2)}x on ${dollars(c.noi as number)} NOI (reported), 25-year bank amortization`);
+    if (c.balance_basis === "reported" && (c.equity_needed as number) > 0) {
+      parts.push(String(c.why ?? "").includes("75% of price (desk cap) binds")
+        ? `Cash the owner must bring ${dollars(c.equity_needed as number)}. The saved price cap binds`
+        : `Cash the owner must bring ${dollars(c.equity_needed as number)}`);
+    }
   }
-  if (c.why) parts.push(String(c.why));
+  if (c.why && (k !== "refi_gap" || coverageCounts(c))) parts.push(String(c.why));
   return <p className="text-xs text-muted">{parts.join(". ") || "No signal."}</p>;
 }
 
@@ -57,20 +69,22 @@ function OperatingFacts({ m }: { m: Merged }) {
   const occ = occupancy(m);
   const rent = m.rent_current?.value;
   const prior = m.rent_jan_last?.value;
-  const growth = rent && prior ? (Number(rent) / Number(prior) - 1) * 100 : null;
+  const growth = rent != null && prior != null && Number(prior) !== 0
+    ? (Number(rent) / Number(prior) - 1) * 100
+    : null;
   const history = [m.rent_jan_prior, m.rent_jan_last, m.rent_jan_this].map((x) => (x ? money(Number(x.value)) : "—"));
   const sitesSrc = m.total_sites ?? m.vacant_sites ?? m.occupancy_pct;
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
       <Fact label="Lot rent" f={m.rent_current}
-            show={rent ? `${money(Number(rent))}/mo${growth != null ? ` (${growth >= 0 ? "+" : ""}${growth.toFixed(1)}% vs last Jan)` : ""}` : null} />
+            show={rent != null ? `${money(Number(rent))}/mo${growth != null ? ` (${growth >= 0 ? "+" : ""}${growth.toFixed(1)}% vs last Jan)` : ""}` : null} />
       <Fact label="Jan 1 rent" f={m.rent_jan_last ?? m.rent_jan_this ?? m.rent_jan_prior}
             show={history.some((h) => h !== "—") ? history.join(" → ") : null} />
       <Fact label="Sites" f={m.total_sites}
-            show={m.total_sites ? `${m.total_sites.value}${m.vacant_sites ? `, ${m.vacant_sites.value} vacant` : ""}${m.dev_sites ? `, ${m.dev_sites.value} in development` : ""}` : null} />
+            show={m.total_sites != null ? `${m.total_sites.value}${m.vacant_sites != null ? `, ${m.vacant_sites.value} vacant` : ""}${m.dev_sites != null ? `, ${m.dev_sites.value} in development` : ""}` : null} />
       <Fact label="Fill rate" f={sitesSrc} show={occ != null ? `${Math.round(occ * 100)}%` : null} />
       <Fact label="Park-owned homes" f={m.park_owned_homes}
-            show={m.park_owned_homes ? `${m.park_owned_homes.value}${m.empty_homes ? `, ${m.empty_homes.value} empty` : ""}` : null} />
+            show={m.park_owned_homes != null ? `${m.park_owned_homes.value}${m.empty_homes != null ? `, ${m.empty_homes.value} empty` : ""}` : null} />
       <Fact label="Type" f={m.age_restricted ?? m.rv_share_pct}
             show={[m.age_restricted ? (m.age_restricted.value ? "55+" : "All ages") : null,
                    m.rv_share_pct ? `${Math.round(Number(m.rv_share_pct.value))}% RV` : null,
@@ -121,9 +135,28 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
   const { data: pins } = portIds.length
     ? await supabase.from("park_overview").select("lat, lon, name").in("id", portIds)
     : { data: [] };
-  const fit = fitScore(p, (box ?? {}) as { min_sites?: number; max_sites?: number; kinds?: string[]; counties?: string[] }, (pins ?? []) as { lat: number | null; lon: number | null }[]);
+  const fit = fitScore(p, (box ?? {}) as { min_sites?: number; max_sites?: number; states?: string[]; kinds?: string[] }, (pins ?? []) as { lat: number | null; lon: number | null }[]);
+  const unscored = !p.loan_id
+    ? "Not scored — no loan on file."
+    : comps.unscored?.why ? String(comps.unscored.why) : null;
+  const coverageMissing = !unscored && p.loan_id && !coverageCounts(comps.refi_gap);
+  const shownScore = shownPressure(p);
+  const primary = ((loans ?? []) as { id: string; note_rate: number | null; current_balance: number | null; original_amount: number | null; amort_months: number | null; interest_only: boolean | null }[])
+    .find((loan) => loan.id === p.loan_id) ?? null;
+  let paymentLabel = "—";
+  let paymentNote: string | null = p.loan_id ? null : "No loan on file. The payment, the balance, and the refinance gap stay blank.";
+  if (primary) {
+    if (primary.note_rate == null) paymentNote = "The note rate was not on the loan.";
+    else if (primary.current_balance == null) paymentNote = "The balance was not on the loan.";
+    else if (!primary.interest_only && primary.amort_months == null) paymentNote = "The amortization was not on the loan, so the payment stays blank.";
+    else {
+      const months = primary.interest_only ? 0 : primary.amort_months ?? 0;
+      paymentLabel = `${dollars(paymentMonths(Number(primary.current_balance), Number(primary.note_rate), months))}/mo`;
+      paymentNote = primary.interest_only ? "Interest-only." : `${primary.amort_months}-month amortization.`;
+    }
+  }
   const nearby = ((pins ?? []) as { name?: string; lat: number | null; lon: number | null }[]).filter((pin) => pin.lat != null).map((pin) => pin.name).filter((name): name is string => Boolean(name));
-  const tier = tierFor({ inPipeline: Boolean(deal), score: p.score, inBox: fit.score >= 55 });
+  const tier = tierFor({ inPipeline: Boolean(deal), score: shownScore, inBox: fit.score >= 55 });
   const due = cadenceDue(p.last_activity_at, tier);
 
   return (
@@ -136,7 +169,7 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
           <h1 className="text-2xl font-medium tracking-tight">{p.name}</h1>
           <p className="mt-1 text-body">
             {[p.address, p.city, p.state, p.zip].filter(Boolean).join(", ")} · {KIND_LABEL[p.kind]}
-            {p.units ? ` · ${p.units} sites` : ""}
+            {p.units != null ? ` · ${p.units} sites` : ""}
           </p>
           <p className="mt-2">
             <span className="text-muted">Owner </span>
@@ -166,7 +199,7 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         <div className="flex items-start gap-3">
           <PrintButton />
           <div className="text-right">
-            <ScorePill score={p.score} />
+            <ScorePill score={shownScore} />
             <div className="mt-1 text-xs text-muted">Owner pressure</div>
             <div className="mt-3 text-right">
               <div className="num text-lg font-medium">{fit.score}</div>
@@ -224,35 +257,23 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         values={((parkRow as { custom_fields?: Record<string, string> } | null)?.custom_fields) ?? {}}
         rents={(rents ?? []) as { id: string; submarket: string; lot_rent: number | null; source: string; observed_on: string | null }[]}
       />
-      {comps.fit && (
-        <section className="rounded-sm border border-line bg-panel p-4">
-          <h2 className="font-semibold">Acquisition fit {Math.round(Number(comps.fit.points ?? 0))}</h2>
-          <ul className="mt-2 space-y-1 text-sm">
-            {((comps.fit.parts as { key: string; points: number; max: number; why: string }[] | undefined) ?? []).map((part) => (
-              <li key={part.key} className="flex justify-between gap-4">
-                <span>{part.why}</span>
-                <span className="num shrink-0 text-muted">{part.points}/{part.max}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <div className="grid gap-4 lg:grid-cols-3">
         <section className="rounded-sm border border-line bg-panel p-4 lg:col-span-2">
-          <h2 className="mb-3 font-semibold">Why it scores {p.score == null ? "–" : Math.round(p.score)}</h2>
+          <h2 className="mb-1 font-semibold">{unscored ? unscored : `Why it scores ${shownScore == null ? "—" : shownScore.toFixed(1)}`}</h2>
+          {coverageMissing && <p className="mb-3 text-xs text-muted">Coverage not scored — no income on file.</p>}
           <div className="space-y-3">
             {Object.entries(COMPONENT_LABEL).map(([k, [label, max]]) => {
-              const c = comps[k];
-              const pts = c?.points ?? 0;
+              const c = !p.loan_id ? undefined : comps[k];
+              const raw = k === "refi_gap" && c && !coverageCounts(c) ? null : c?.points;
+              const pts = raw == null ? null : Number(raw);
               return (
                 <div key={k}>
                   <div className="flex items-center justify-between">
                     <span>{label}</span>
-                    <span className="num text-body">{Math.round(pts)} / {max}</span>
+                    <span className="num text-body">{pts == null ? "—" : `${pts.toFixed(1)} / ${max}`}</span>
                   </div>
                   <div className="my-1 h-1.5 rounded bg-sunken">
-                    <div className="h-1.5 rounded bg-accent" style={{ width: `${(pts / max) * 100}%` }} />
+                    <div className="h-1.5 rounded bg-accent" style={{ width: `${pts == null ? 0 : (pts / max) * 100}%` }} />
                   </div>
                   {c && <Detail c={c} k={k} />}
                 </div>
@@ -293,10 +314,13 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
             <dt className="text-muted">Type</dt>
             <dd>{p.lender_kind ? LENDER_LABEL[p.lender_kind] : "—"}</dd>
             <dt className="text-muted">Balance</dt>
-            <dd className="num">{money(p.current_balance ?? p.original_amount)}</dd>
+            <dd className="num">{money(p.current_balance)}</dd>
             <dt className="text-muted">Rate</dt>
             <dd className="num">{pct(p.note_rate)}</dd>
+            <dt className="text-muted">Payment</dt>
+            <dd className="num">{paymentLabel}</dd>
           </dl>
+          {paymentNote && <p className="mt-2 text-xs text-muted">{paymentNote}</p>}
         </section>
       </div>
 
@@ -304,8 +328,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         <h2 className="mb-1 font-semibold">Operating figures</h2>
         <p className="mb-3 text-xs text-muted">
           {hasOp
-            ? "Rent and occupancy here replace the statewide estimate in the refinance gap."
-            : `None yet. The refinance gap assumes ${p.state} market lot rent and 90% occupancy until rent and vacancy are entered.`}
+            ? "Rent and occupancy entered here stay on the park. They do not become NOI for the coverage score. That score uses a reported NOI only."
+            : "No income on file. DSCR, the refinance gap, and the cap rate stay blank until income is reported or entered."}
         </p>
         {hasOp && <OperatingFacts m={op} />}
         <details className="mt-3">

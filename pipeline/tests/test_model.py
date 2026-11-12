@@ -84,17 +84,22 @@ def test_score_high_pressure_park():
     park = ParkFacts(state="AZ", kind="mhp", units=80, owner_entity_type="individual", owner_state="CA",
                      owner_park_count=1, held_since=date(2004, 5, 1))
     loan = LoanFacts(lender_kind="community_bank", lender_cre_concentration=340, start_date=date(2021, 8, 1),
-                     original_amount=5_000_000, amort_months=300, estimate=est)
+                     original_amount=5_000_000, amort_months=300, estimate=est, noi=200_000)
     s = score(park, loan, rates, TODAY)
     assert s.components["rate_shock"]["shock_pct_pts"] > 2
+    assert s.components["refi_gap"]["noi_basis"] == "reported"
     assert s.components["refi_gap"]["dscr_at_new_rate"] < 1.25
     assert s.total >= 60, s.components
+    blank = score(park, LoanFacts(lender_kind="community_bank", start_date=date(2021, 8, 1),
+                                  original_amount=5_000_000, estimate=est), rates, TODAY)
+    assert blank.components["refi_gap"]["points"] is None
 
 
-def test_score_free_and_clear_park_is_low():
+def test_score_free_and_clear_park_is_not_scored():
     s = score(ParkFacts(state="AZ", units=40, owner_entity_type="llc", owner_state="AZ", owner_park_count=5), None,
               RateCurve(), TODAY)
-    assert s.total < 10
+    assert s.total is None
+    assert s.components["unscored"]["why"] == "Not scored — no loan on file."
 
 
 def test_payment_math():

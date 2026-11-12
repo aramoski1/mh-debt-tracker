@@ -76,7 +76,7 @@ def test_measured_spread_needs_a_sample():
 def test_ltv_cap_waits_for_a_saved_price():
     rates = RateCurve()
     loan = LoanFacts(lender_kind="community_bank", start_date=date(2021, 8, 1),
-                     original_amount=5_000_000, current_balance=4_000_000, note_rate=4.0)
+                     original_amount=5_000_000, current_balance=4_000_000, note_rate=4.0, noi=400_000)
     bare = score(ParkFacts(state="AZ", units=80), loan, rates, TODAY).components["refi_gap"]
     priced = score(ParkFacts(state="AZ", units=80, value=3_000_000), loan, rates, TODAY).components["refi_gap"]
     assert bare["ltv_applied"] is False

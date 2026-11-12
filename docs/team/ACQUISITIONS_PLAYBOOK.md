@@ -237,6 +237,17 @@ Then:
 
 Anything that doesn't serve one of these is a candidate to cut.
 
+## 10. Numbers I will act on
+
+Desk decision, 11 Nov 2026, first team cycle. These are business choices, not new market facts.
+
+- A blank park has no NOI. Statewide rent, 90% occupancy, and a 40% expense ratio do not fill one in. Those may appear only as labeled defaults on a form someone is filling in.
+- Seller refinance test: 25-year amortization, 75% of price, 1.25x DSCR. Label: "25-year bank amortization." Our own loan: 30-year amortization, same 75% and 1.25x. Label: "30-year desk loan." 75% is a desk cap, tighter than Fannie Mae's 80%.
+- Coverage points run from 0 at a 1.40x DSCR to 20 at 0.85x. The cash gap is a separate line: balance minus the max new loan, labeled "Cash the owner must bring."
+- One fit score: size 25, state 20, kind 15, rate 20, distance 20. Years held stays on owner pressure. A blank flood zone adds nothing.
+- Owner pressure ranks who may need to sell or recapitalize. It is a call list, not a listing score.
+- A document maturity that is already past due is full maturity pressure (35).
+
 ---
 
 ## Sources

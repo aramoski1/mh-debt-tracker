@@ -7,6 +7,11 @@ export const money = (v: number | null | undefined) =>
         ? `$${Math.round(Math.abs(v) / 1_000)}K`
         : `$${Math.round(Math.abs(v))}`;
 
+export function dollars(v: number | null | undefined) {
+  if (v == null || Number.isNaN(v)) return "—";
+  return v.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+}
+
 export function signedMoney(v: number | null | undefined) {
   if (v == null || Number.isNaN(v)) return "—";
   return v < 0 ? `(${money(v)})` : money(v);

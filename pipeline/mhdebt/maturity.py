@@ -64,6 +64,7 @@ class Estimate:
     method: str
     explanation: str
     likely: date | None = None   # single most likely date (mode); what the app shows by default
+    fully_amortizing: bool = False
 
 
 def _quantile(points: list[tuple[date, float]], q: float) -> date | None:
@@ -97,13 +98,13 @@ def exact(maturity: date, today: date, basis: str = "reported", fully_amortizing
         expl += " The date passed long ago; the loan was most likely repaid without a recorded release."
     k = AMORTIZING_PRESSURE if fully_amortizing else 1.0
     if fully_amortizing:
-        expl += " The loan fully amortizes by then, so there is no balloon to refinance."
+        expl += " Fully amortizing — no balloon."
     return Estimate(
         p10=maturity, p50=maturity, p90=maturity, likely=maturity,
         prob_12m=k * still_open if past or months_out <= 12 else 0.0,
         prob_24m=k * still_open if past or months_out <= 24 else 0.0,
         prob_past_due=k * still_open if past else 0.0,
-        basis=basis, method="exact", explanation=expl,
+        basis=basis, method="exact", explanation=expl, fully_amortizing=fully_amortizing,
     )
 
 
@@ -118,9 +119,12 @@ def estimate(
 ) -> Estimate:
     """Distribution over maturity dates for a loan with no stated maturity."""
     if known_term_months:
-        est = exact(add_months(start, known_term_months), today, basis="estimated", fully_amortizing=fully_amortizing)
+        pays_off = fully_amortizing or known_term_months >= BALLOON_FREE_MONTHS
+        est = exact(add_months(start, known_term_months), today, basis="estimated", fully_amortizing=pays_off)
         est.method = "known_term"
         est.explanation = f"Term of {known_term_months} months from {start.isoformat()}."
+        if pays_off:
+            est.explanation += " Fully amortizing — no balloon."
         return est
     if modification_date and modification_date > start:
         anchor, prior, why = modification_date, EXTENSION_PRIOR, f"modification recorded {modification_date.isoformat()}"
@@ -145,18 +149,23 @@ def estimate(
     in24 = sum(w for d, w in balloon_points if (d - today).days <= 731)
     p_past = sum(w for d, w in balloon_points if d < today)
 
-    likely = max(points, key=lambda x: x[1])[0]
-    expl = (f"Estimated from {why}. Most likely maturity {likely.isoformat()}; "
-            f"{round(in24 * 100)}% chance it comes due within 24 months")
-    if p_past > 0.05:
-        expl += f", {round(p_past * 100)}% chance it is already past its original maturity (extended or unreleased)"
-    expl += "."
-    if p_open < 0.6:
-        expl += (f" No payoff is recorded, but there is about a {round((1 - p_open) * 100)}% chance it was already "
-                 "repaid or refinanced without a release in our data.")
+    likely = max(points, key=lambda x: x[1])[0] if points else None
+    balloon_free = not balloon_points
+    if balloon_free and likely:
+        expl = (f"Estimated from {why}. Fully amortizing — no balloon. "
+                f"The term ends {likely.isoformat()}.")
+    else:
+        expl = (f"Estimated from {why}. Most likely maturity {likely.isoformat() if likely else 'unknown'}; "
+                f"{round(in24 * 100)}% chance it comes due within 24 months")
+        if p_past > 0.05:
+            expl += f", {round(p_past * 100)}% chance it is already past its original maturity (extended or unreleased)"
+        expl += "."
+        if p_open < 0.6:
+            expl += (f" No payoff is recorded, but there is about a {round((1 - p_open) * 100)}% chance it was already "
+                     "repaid or refinanced without a release in our data.")
     return Estimate(
         p10=_quantile(points, 0.10), p50=_quantile(points, 0.50), p90=_quantile(points, 0.90),
         prob_12m=round(in12, 3), prob_24m=round(in24, 3), prob_past_due=round(p_past, 3),
         basis="estimated", method=f"term_prior:{lender_kind}" + (":extension" if anchor != start else ""),
-        explanation=expl, likely=likely,
+        explanation=expl, likely=likely, fully_amortizing=balloon_free,
     )

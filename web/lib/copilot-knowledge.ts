@@ -14,6 +14,7 @@ export const COPILOT_DOES_NOT_HAVE = [
   "Arizona Corporation Commission automation",
   "paid skip trace",
   "invented maturity dates, balances, or emails",
+  "a statewide rent, 90% occupancy, or a 40% expense ratio used as a park's NOI",
 ];
 
 export const FABRICATION_RULE =

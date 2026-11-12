@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { callLine, callTargets } from "@/lib/brief";
+import { callLine, callTargets, shownPressure } from "@/lib/brief";
 import { monthYear, scoreTone } from "@/lib/format";
 import type { ParkRow } from "@/lib/types";
 
@@ -44,8 +44,8 @@ export default function CallList({ rows }: { rows: ParkRow[] }) {
               </div>
               <div className="flex items-center gap-3 sm:justify-end">
                 <span className="num text-xs text-muted">{monthYear(r.maturity_date)}</span>
-                <span className={`num inline-block min-w-9 rounded-sm px-1.5 py-0.5 text-center text-sm font-semibold ${scoreTone(r.score)}`}>
-                  {r.score == null ? "–" : Math.round(r.score)}
+                <span className={`num inline-block min-w-9 rounded-sm px-1.5 py-0.5 text-center text-sm font-semibold ${scoreTone(shownPressure(r))}`}>
+                  {shownPressure(r) == null ? "–" : shownPressure(r)!.toFixed(1)}
                 </span>
               </div>
             </li>

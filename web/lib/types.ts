@@ -1,5 +1,5 @@
 export type ScoreComponent = {
-  points: number;
+  points: number | null;
   why?: string | null;
   [key: string]: unknown;
 };

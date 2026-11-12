@@ -1,3 +1,4 @@
+import { shownPressure } from "@/lib/brief";
 import { supabaseServer } from "@/lib/supabase/server";
 import { monthsFromNow } from "@/lib/format";
 import { PageHeader } from "@/components/ui/Bits";
@@ -8,8 +9,8 @@ export const dynamic = "force-dynamic";
 
 export default async function MarketsPage() {
   const supabase = await supabaseServer();
-  const { data } = await supabase.from("park_overview").select("county, score, maturity_date, units").eq("state", "AZ").limit(2000);
-  const rows = (data ?? []) as Pick<ParkRow, "county" | "score" | "maturity_date" | "units">[];
+  const { data } = await supabase.from("park_overview").select("county, score, loan_id, score_components, maturity_date, units").eq("state", "AZ").limit(2000);
+  const rows = (data ?? []) as Pick<ParkRow, "county" | "score" | "loan_id" | "score_components" | "maturity_date" | "units">[];
   const byCounty = new Map<string, { parks: number; sites: number; due: number; score: number; scored: number }>();
   for (const row of rows) {
     const key = row.county || "Unknown";
@@ -18,8 +19,9 @@ export default async function MarketsPage() {
     cell.sites += row.units ?? 0;
     const months = monthsFromNow(row.maturity_date);
     if (months != null && months >= 0 && months <= 12) cell.due += 1;
-    if (row.score != null) {
-      cell.score += Number(row.score);
+    const pressure = shownPressure(row);
+    if (pressure != null) {
+      cell.score += pressure;
       cell.scored += 1;
     }
     byCounty.set(key, cell);

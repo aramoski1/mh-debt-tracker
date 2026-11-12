@@ -2,12 +2,12 @@
 
   maturity     0-35  loan coming due within 12/24 months, or already past maturity
   rate_shock   0-20  refinance rate today minus the rate they borrowed at
-  refi_gap     0-20  whether the park's income still covers debt service at today's rate (DSCR < 1.25 = gap)
+  refi_gap     0-20  coverage at today's rate on a 25-year bank amortization (DSCR scale, not the dollar gap)
   lender       0-10  lender under pressure (high CRE concentration, CMBS loan delinquent or in special servicing)
   owner        0-15  long hold, out-of-state or individual owner, single-park owner
 
-Each component returns its points plus the facts behind them, so a broker can see *why* a park ranks high.
-Weights are deliberately simple; tune them from which calls turn into listings.
+Each component returns its points plus the facts behind them. A missing input stays missing.
+Weights are deliberately simple.
 """
 from __future__ import annotations
 
@@ -17,17 +17,16 @@ from datetime import date
 from .maturity import Estimate
 from .rates import RateCurve
 
-# Assumed average monthly lot rent by state, used only when neither the loan nor the park's operating figures
-# (park_operating: broker entry or an imported rent survey) give one.
-# National average asking lot rent was about $752 in Q2 2025 (Northmarq). Replace with MHVillage or
-# Cooper Cardinal's own rent rolls for target markets.
+# The rent table is not an NOI. Owner pressure does not fill a blank park with it.
+# The underwriting desk may show 90% and 40% only as labeled defaults on a form.
 LOT_RENT = {"AZ": 700, "TX": 600, "FL": 800, "CA": 1000, "CO": 850, "NV": 750, "NM": 550, "UT": 700, "ND": 550,
             "_default": 650}
-RV_SITE_MONTHLY = 450       # blended monthly revenue per RV site, very rough
+RV_SITE_MONTHLY = 450
 OCCUPANCY = 0.90
-EXPENSE_RATIO = 0.40        # MH parks commonly run 35-45%
+EXPENSE_RATIO = 0.40
 REFI_LTV_CAP = 0.75
-REFI_AMORT_YEARS = 30
+SELLER_AMORT_YEARS = 25     # seller refinance test and the coverage score
+DESK_AMORT_YEARS = 30       # our own loan on the underwriting desk
 DSCR_TEST = 1.25
 
 
@@ -66,7 +65,7 @@ class LoanFacts:
 
 @dataclass
 class Score:
-    total: float
+    total: float | None
     components: dict = field(default_factory=dict)
 
 
@@ -104,32 +103,56 @@ def estimated_noi(p: ParkFacts) -> float | None:
 
 
 def noi_with_basis(p: ParkFacts) -> tuple[float | None, str]:
-    """Sites x monthly lot rent x 12 x occupancy x (1 - expenses), using the park's own figures where known."""
-    sites = p.rentable_sites or p.units
-    if not sites:
-        return None, "estimated from units and market lot rent"
-    rent = p.lot_rent or (RV_SITE_MONTHLY if p.kind == "rv" else LOT_RENT.get(p.state, LOT_RENT["_default"]))
-    occ = p.occupancy if p.occupancy is not None else OCCUPANCY
-    noi = sites * rent * 12 * occ * (1 - EXPENSE_RATIO)
-    if p.lot_rent and p.occupancy is not None:
-        basis = f"reported ${rent:,.0f} rent and {occ:.0%} occupancy"
-    elif p.lot_rent:
-        basis = f"reported ${rent:,.0f} rent, assumed {OCCUPANCY:.0%} occupancy"
-    elif p.occupancy is not None:
-        basis = f"reported {occ:.0%} occupancy, market lot rent"
-    else:
-        return noi, "estimated from units and market lot rent"
-    return noi, basis + (f" ({p.operating_source})" if p.operating_source else "")
+    """Income for a pressure score. A blank rent, occupancy, or expense stays blank.
+
+    Zero is a real figure. A statewide rent is never substituted. The 40% expense
+    ratio is not applied here: there is no expense field on the pressure score.
+    """
+    sites = p.rentable_sites if p.rentable_sites is not None else p.units
+    if sites is None:
+        return None, "No income on file. Site count was not entered."
+    if p.lot_rent is None:
+        return None, "No income on file. Lot rent was not entered."
+    if p.occupancy is None:
+        return None, "No income on file. Occupancy was not entered."
+    if sites == 0 or p.lot_rent == 0 or p.occupancy == 0:
+        return 0.0, "Entered rent, occupancy, or rentable sites is zero."
+    return None, "No income on file. An expense ratio was not entered."
+
+
+def _blank(why: str) -> dict:
+    return {"points": None, "scored": False, "why": why}
 
 
 def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date) -> Score:
+    if loan is None:
+        return Score(total=None, components={
+            "unscored": _blank("Not scored — no loan on file."),
+            "maturity": _blank("No loan on file. The payment, the balance, and the refinance gap stay blank."),
+            "rate_shock": _blank("No loan on file."),
+            "refi_gap": _blank("No loan on file. The payment, the balance, and the refinance gap stay blank."),
+            "lender": _blank("No loan on file."),
+            "owner": _blank("No loan on file."),
+        })
+
     comp: dict[str, dict] = {}
 
     # --- maturity --------------------------------------------------------------------------
-    if loan and loan.payment_status == "foreclosure":
+    if loan.payment_status == "foreclosure":
         comp["maturity"] = {"points": 35, "basis": "document",
                             "why": "Notice of trustee sale or lis pendens recorded: the lender is enforcing."}
-    elif loan and loan.estimate:
+    elif loan.estimate and loan.estimate.fully_amortizing:
+        e = loan.estimate
+        comp["maturity"] = {"points": 0, "likely": (e.likely or e.p50).isoformat() if (e.likely or e.p50) else None,
+                            "p50": e.p50.isoformat() if e.p50 else None,
+                            "prob_12m": e.prob_12m, "prob_24m": e.prob_24m, "basis": e.basis,
+                            "why": "Fully amortizing — no balloon."}
+    elif loan.estimate and loan.estimate.basis in ("document", "reported") and loan.estimate.p50 and loan.estimate.p50 < today:
+        e = loan.estimate
+        comp["maturity"] = {"points": 35, "likely": e.p50.isoformat(), "p50": e.p50.isoformat(),
+                            "prob_12m": e.prob_12m, "prob_24m": e.prob_24m, "basis": e.basis,
+                            "why": "Maturity date has passed. " + e.explanation}
+    elif loan.estimate:
         e = loan.estimate
         pts = 35 * _clamp(0.55 * e.prob_12m + 0.30 * e.prob_24m + 0.15 * e.prob_past_due)
         comp["maturity"] = {"points": round(pts, 1), "likely": (e.likely or e.p50).isoformat() if (e.likely or e.p50) else None,
@@ -137,70 +160,86 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
                             "prob_12m": e.prob_12m, "prob_24m": e.prob_24m, "basis": e.basis,
                             "why": e.explanation}
     else:
-        comp["maturity"] = {"points": 0, "why": "No recorded loan found (possibly owned free and clear)."}
+        comp["maturity"] = {"points": 0, "why": "No maturity date on this loan."}
 
     # --- rate shock ------------------------------------------------------------------------
-    kind = loan.lender_kind if loan else "community_bank"
+    kind = loan.lender_kind
     spread, spread_basis, spread_n = rates.spread_for(kind)
     new_rate = rates.loan_rate(today, kind)
     old_rate = None
-    if loan and loan.start_date:
-        old_rate = loan.note_rate or rates.loan_rate(loan.start_date, loan.lender_kind)
+    old_basis = None
+    if loan.note_rate is not None:
+        old_rate, old_basis = loan.note_rate, "reported"
+    elif loan.start_date:
+        old_rate, old_basis = rates.loan_rate(loan.start_date, loan.lender_kind), "estimated"
+    if old_rate is not None:
         shock = new_rate - old_rate
         comp["rate_shock"] = {"points": round(20 * _clamp(shock / 3.0), 1), "old_rate": round(old_rate, 2),
-                              "old_rate_basis": "reported" if loan.note_rate else "estimated",
+                              "old_rate_basis": old_basis,
                               "new_rate": new_rate, "shock_pct_pts": round(shock, 2),
                               "spread": spread, "spread_basis": spread_basis, "spread_n": spread_n}
     else:
         comp["rate_shock"] = {"points": 0, "new_rate": new_rate, "spread": spread,
-                              "spread_basis": spread_basis, "spread_n": spread_n}
+                              "spread_basis": spread_basis, "spread_n": spread_n,
+                              "why": "No note rate on file, and no origination date to estimate one."}
 
-    # --- refinance gap ---------------------------------------------------------------------
-    if loan and loan.noi:
+    # --- coverage at today's rate ----------------------------------------------------------
+    # Only a reported NOI. Rent, occupancy, and a statewide guess do not fill this in.
+    if loan.noi is not None:
         noi, noi_basis = loan.noi, "reported"
     else:
-        noi, noi_basis = noi_with_basis(park)
-    bal = None
-    if loan:
-        bal = loan.current_balance
-        if bal is None and loan.original_amount and loan.start_date and old_rate:
-            months = (today.year - loan.start_date.year) * 12 + today.month - loan.start_date.month
-            amort = 0 if loan.interest_only else (loan.amort_months or 300)
-            bal = balance_after(loan.original_amount, old_rate, amort, max(0, months))
-    if noi and bal:
-        ds_new = payment(bal, new_rate, REFI_AMORT_YEARS) * 12
+        noi, noi_basis = None, "No income on file."
+    bal = loan.current_balance
+    if bal is None and loan.original_amount is not None and loan.start_date and old_rate is not None:
+        months = (today.year - loan.start_date.year) * 12 + today.month - loan.start_date.month
+        amort = 0 if loan.interest_only else (loan.amort_months if loan.amort_months is not None else 300)
+        bal = balance_after(loan.original_amount, old_rate, amort, max(0, months))
+    if noi is None or bal is None:
+        missing = "no income on file" if noi is None else "no balance on file"
+        comp["refi_gap"] = {"points": None, "scored": False, "noi_basis": noi_basis,
+                            "why": f"Coverage not scored — {missing}."}
+        if bal is not None:
+            comp["refi_gap"]["balance"] = round(bal)
+            comp["refi_gap"]["balance_basis"] = "reported" if loan.current_balance is not None else "estimated"
+    else:
+        ds_new = payment(bal, new_rate, SELLER_AMORT_YEARS) * 12
         dscr_new = noi / ds_new if ds_new else None
-        # DSCR test: a new loan of this size would have to clear 1.25x. The 75% LTV cap is applied
-        # only when a price has been saved. There is no market value to invent one from.
-        max_loan_dscr = bal * (dscr_new / DSCR_TEST) if dscr_new else 0
+        raw = bal * (dscr_new / DSCR_TEST) if dscr_new is not None else 0.0
+        max_loan_dscr = max(0.0, raw)
         if park.value and park.value > 0:
-            max_loan = min(max_loan_dscr, park.value * REFI_LTV_CAP)
-            ltv_note = f"75% of the saved price ${park.value:,.0f}"
+            price_cap = park.value * REFI_LTV_CAP
+            if max_loan_dscr <= price_cap:
+                max_loan = max_loan_dscr
+                bind = "1.25x DSCR binds"
+            else:
+                max_loan = price_cap
+                bind = "75% of price (desk cap) binds"
+            ltv_applied = True
         else:
             max_loan = max_loan_dscr
-            ltv_note = "no saved price, so the 75% LTV cap was not applied"
+            bind = "no saved price, so the 75% LTV cap was not applied"
+            ltv_applied = False
         gap = max(0.0, bal - max_loan)
-        pts = 20 * _clamp((1.40 - dscr_new) / 0.55) if dscr_new else 0
-        comp["refi_gap"] = {"points": round(pts, 1), "noi": round(noi), "noi_basis": noi_basis,
-                            "balance": round(bal), "balance_basis": "reported" if loan.current_balance else "estimated",
-                            "dscr_at_new_rate": round(dscr_new, 2) if dscr_new else None,
-                            "equity_needed": round(gap, -3), "ltv_applied": bool(park.value),
-                            "why": ltv_note}
-    else:
-        comp["refi_gap"] = {"points": 0, "why": "Not enough data (need loan amount and units or income)."}
+        pts = 20 * _clamp((1.40 - dscr_new) / 0.55) if dscr_new is not None else 0
+        comp["refi_gap"] = {
+            "points": round(pts, 1), "scored": True, "noi": round(noi), "noi_basis": noi_basis,
+            "balance": round(bal), "balance_basis": "reported" if loan.current_balance is not None else "estimated",
+            "dscr_at_new_rate": round(dscr_new, 2) if dscr_new is not None else None,
+            "equity_needed": round(gap), "ltv_applied": ltv_applied, "amort_years": SELLER_AMORT_YEARS,
+            "why": f"{SELLER_AMORT_YEARS}-year bank amortization. {bind}",
+        }
 
     # --- lender ----------------------------------------------------------------------------
     lp, lwhy = 0.0, []
-    if loan:
-        if loan.lender_cre_concentration and loan.lender_cre_concentration >= 300:
-            lp += 6; lwhy.append(f"lender CRE concentration {loan.lender_cre_concentration:.0f}% of capital")
-        elif loan.lender_cre_concentration and loan.lender_cre_concentration >= 200:
-            lp += 3; lwhy.append(f"lender CRE concentration {loan.lender_cre_concentration:.0f}%")
-        if loan.lender_kind in ("community_bank", "debt_fund"):
-            lp += 2; lwhy.append(loan.lender_kind.replace("_", " "))
-        if loan.payment_status and loan.payment_status not in ("0", "A", "B"):
-            lp += 8; lwhy.append("foreclosure notice recorded" if loan.payment_status == "foreclosure" else
-                                 f"CMBS payment status {loan.payment_status} (delinquent or special servicing)")
+    if loan.lender_cre_concentration is not None and loan.lender_cre_concentration >= 300:
+        lp += 6; lwhy.append(f"lender CRE concentration {loan.lender_cre_concentration:.0f}% of capital")
+    elif loan.lender_cre_concentration is not None and loan.lender_cre_concentration >= 200:
+        lp += 3; lwhy.append(f"lender CRE concentration {loan.lender_cre_concentration:.0f}%")
+    if loan.lender_kind in ("community_bank", "debt_fund"):
+        lp += 2; lwhy.append(loan.lender_kind.replace("_", " "))
+    if loan.payment_status and loan.payment_status not in ("0", "A", "B"):
+        lp += 8; lwhy.append("foreclosure notice recorded" if loan.payment_status == "foreclosure" else
+                             f"CMBS payment status {loan.payment_status} (delinquent or special servicing)")
     comp["lender"] = {"points": min(10, lp), "why": "; ".join(lwhy) or None}
 
     # --- owner -----------------------------------------------------------------------------
@@ -215,12 +254,14 @@ def score(park: ParkFacts, loan: LoanFacts | None, rates: RateCurve, today: date
     if park.owner_state and park.owner_state.upper() != park.state.upper():
         op += 3; owhy.append(f"owner based in {park.owner_state}")
     if park.owner_entity_type in ("individual", "trust"):
-        op += 4; owhy.append(f"owned by an {park.owner_entity_type}")
+        article = "an" if park.owner_entity_type == "individual" else "a"
+        op += 4; owhy.append(f"owned by {article} {park.owner_entity_type}")
     if park.owner_park_count == 1:
         op += 3; owhy.append("single-park owner")
     comp["owner"] = {"points": min(15, op), "why": "; ".join(owhy) or None}
 
-    total = sum(comp[k]["points"] for k in ("maturity", "rate_shock", "refi_gap", "lender", "owner"))
+    total = sum(comp[k]["points"] for k in ("maturity", "rate_shock", "refi_gap", "lender", "owner")
+                if isinstance(comp[k]["points"], (int, float)))
     return Score(total=round(min(100, total), 1), components=comp)
 
 
@@ -254,7 +295,7 @@ def acquisition_fit(
                   "why": f"{kind or 'unknown'} {'is' if kind in kinds else 'is not'} a type the box wants."})
     if note_rate is None or market_rate is None:
         parts.append({"key": "rate", "points": 0, "max": 20, "why": "No note rate to compare with today's rate."})
-    elif note_rate + 0.50 < market_rate:
+    elif note_rate + 0.50 <= market_rate:
         parts.append({"key": "rate", "points": 20, "max": 20,
                       "why": f"Note rate {note_rate:.2f}% is at least half a point inside today's {market_rate:.2f}%."})
     else:
