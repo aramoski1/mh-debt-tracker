@@ -41,7 +41,7 @@ def apply_ingest(
         same_writer = tag == writer
         if tag in LOCKED and not same_writer:
             continue
-        if has_value(prior) and writer in WEAK:
+        if has_value(prior) and writer in WEAK and not same_writer:
             continue
         if has_value(prior) and tag not in WEAK and tag is not None and not same_writer:
             continue

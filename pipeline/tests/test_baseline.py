@@ -6,6 +6,15 @@ from mhdebt import db, jobs
 from mhdebt.sources.edgar_cmbs import CmbsLoan, CmbsProperty
 
 
+def test_a_quoted_modification_rate_does_not_wait_on_a_maturity():
+    assert jobs.modification_sets(None, 6.25) == {"note_rate": 6.25}
+    assert jobs.modification_sets(None, None) == {}
+    dated = jobs.modification_sets(date(2027, 1, 11), None)
+    assert dated["maturity_date"] == date(2027, 1, 11)
+    assert dated["maturity_basis"] == "document"
+    assert "note_rate" not in dated
+
+
 def test_empty_filing_list_pays_nothing_off():
     assert jobs.trusts_dropped_from_filings({"0001": "acc-1", "0002": "acc-2"}, []) == []
 

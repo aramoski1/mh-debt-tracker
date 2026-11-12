@@ -29,6 +29,17 @@ def test_edgar_replaces_an_estimate_but_not_a_document():
     assert tags["note_rate"] == "document"
 
 
+def test_hifld_refreshes_its_own_phone():
+    nxt, tags = apply_ingest(
+        {"phone": "480-555-0100"},
+        {"phone": "hifld"},
+        {"phone": "480-555-0199"},
+        "hifld",
+    )
+    assert nxt["phone"] == "480-555-0199"
+    assert tags["phone"] == "hifld"
+
+
 def test_same_writer_refreshes_its_own_balance():
     nxt, tags = apply_ingest(
         {"current_balance": 5_000_000, "note_rate": 4.1},

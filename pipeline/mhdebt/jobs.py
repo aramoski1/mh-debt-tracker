@@ -180,6 +180,17 @@ def _loan_with_lender(conn, rec: dict, lender_name: str | None, kind: str) -> di
     return rec
 
 
+def modification_sets(maturity: date | None, quoted_rate: float | None) -> dict:
+    """Columns a modification may write. A quoted rate does not wait on a maturity date."""
+    out: dict = {}
+    if maturity is not None:
+        out["maturity_date"] = maturity
+        out["maturity_basis"] = "document"
+    if quoted_rate is not None:
+        out["note_rate"] = quoted_rate
+    return out
+
+
 def trusts_dropped_from_filings(seen: dict, filings: list) -> list[str]:
     """Trusts we have seen that are absent from this filing list.
 
@@ -615,16 +626,27 @@ def extract_documents(conn, client: PoliteClient, anthropic_client, limit: int |
                                                and l.recording_date < md.recording_date
                                              order by l.recording_date desc limit 1""", (d["id"],)).fetchone()
                 quoted_rate = x.rate if quoted_field(x.data, "interest_rate_pct") else None
-                if target and mat:
-                    conn.execute("""update loans set maturity_date=%s, maturity_basis='document',
-                                    note_rate=coalesce(%s, note_rate), updated_at=now() where id=%s""",
-                                 (mat, quoted_rate, target["id"]))
+                patch = modification_sets(mat, quoted_rate)
+                if target and patch:
+                    sets: list[str] = []
+                    params: list = []
+                    if "maturity_date" in patch:
+                        sets.append("maturity_date=%s")
+                        sets.append("maturity_basis='document'")
+                        params.append(patch["maturity_date"])
+                    if "note_rate" in patch:
+                        sets.append("note_rate=%s")
+                        params.append(patch["note_rate"])
+                    sets.append("updated_at=now()")
+                    params.append(target["id"])
+                    conn.execute(f"update loans set {', '.join(sets)} where id=%s", params)
                 done += 1
                 with_maturity += bool(mat)
                 conn.commit()
                 continue
             note_date = x.note_date if quoted_field(x.data, "note_date") else None
             lender_name = x.data.get("lender_name") if quoted_field(x.data, "lender_name") else None
+            quoted_rate = x.rate if quoted_field(x.data, "interest_rate_pct") else None
             conn.execute("""update loans set
                               maturity_date = coalesce(%s, maturity_date),
                               maturity_basis = case when %s::date is not null then 'document' else maturity_basis end,
@@ -634,7 +656,7 @@ def extract_documents(conn, client: PoliteClient, anthropic_client, limit: int |
                               lender_name_raw = coalesce(lender_name_raw, %s),
                               updated_at = now()
                             where document_id = %s""",
-                         (mat, mat, x.rate, x.loan_amount, note_date, lender_name, d["id"]))
+                         (mat, mat, quoted_rate, x.loan_amount, note_date, lender_name, d["id"]))
             if lender_name:
                 lid = db.upsert_lender(conn, lender_name)
                 conn.execute("update loans set lender_id=%s where document_id=%s and lender_id is null", (lid, d["id"]))
