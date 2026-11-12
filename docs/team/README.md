@@ -62,7 +62,7 @@ The team stops and asks before it:
 - adds anything that costs money
 - removes a shipped feature
 
-**Auto-merge to `main`:** **off**. Each item becomes a pull request. Change this line to "on" to let the developer merge once every quality gate passes.
+**Auto-merge to `main`:** **on**. Merge automatically when every quality gate passes and CI is green. Otherwise leave the pull request open and report why.
 
 ## Cost
 
