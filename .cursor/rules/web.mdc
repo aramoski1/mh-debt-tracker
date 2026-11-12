@@ -10,6 +10,6 @@ alwaysApply: false
 - Next 15: `params` and `searchParams` are Promises; `await` them.
 - Filters live in the URL (GET form), so views can be bookmarked and shared.
 - Keep demo mode working: anything new the pages query must also be served by `lib/supabase/demo.ts` and present in `demo/data.json` (regenerate with `pipeline/scripts/make_demo.py`).
-- Look: plain, dense broker tool. Stone neutrals, one red/amber scale for scores, tabular numbers (`.num`). No gradients or shadows.
+- Look: plain, dense acquisitions tool. Stone neutrals, one red/amber scale for scores, tabular numbers (`.num`). No gradients or shadows.
 - Claude calls happen only in server routes (`app/api/*`), with `ANTHROPIC_API_KEY` from the server environment.
 - Run `npx tsc --noEmit` before committing.

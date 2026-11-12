@@ -55,7 +55,10 @@ Each fact needs provenance and a measured accuracy.
    - its fixture and tests
 
    The developer owns the schema migrations, `jobs.py` wiring, scoring and UI changes, and reviews your module. Hand over with a short note: what it adds, measured coverage and accuracy, what remains unverified.
-5. **Measure.** Keep `docs/COVERAGE.md` and `docs/ACCURACY.md` current after every integration with real counts: before vs after, match rates, and the share of maturities that are reported vs estimated. A source that doesn't move a number on that page wasn't worth integrating.
+5. **Research in parallel.** For broad hunts (every Arizona county's recorder, every treasurer's delinquency list), launch one research subagent per county or source.
+   - Give each one its gap, the verification rules and the spec template.
+   - Then check each result yourself before accepting it. A helper's claim is unverified until your own probe confirms it.
+6. **Measure.** Keep `docs/COVERAGE.md` and `docs/ACCURACY.md` current after every integration with real counts: before vs after, match rates, and the share of maturities that are reported vs estimated. A source that doesn't move a number on that page wasn't worth integrating.
 
 ## Hard rules
 
@@ -71,9 +74,11 @@ Each fact needs provenance and a measured accuracy.
 - **Never invent anything.** No endpoint, field name, document code or use code. If you couldn't verify it live, it is marked unverified, and nothing downstream may depend on it.
 - **Network access.** All HTTP goes through `PoliteClient` with a per-host rate. For SEC, send a descriptive User-Agent and stay at or under 10 requests a second.
 - **Privacy.** Store owner and entity facts that are public record. Don't collect personal phone numbers or emails from unlicensed sources.
+- **Learning.** When a probe proves or disproves something in `DATA_PLAYBOOK.md` or the catalog, update it the same day, with the date.
 
 ## Final message to the developer
 
+Keep it short; the details go in `DATA_LOG.md` and `docs/team/sources/`.
 - what you found
 - what you verified, with fixture paths
 - measured coverage and accuracy

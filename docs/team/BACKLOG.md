@@ -1,24 +1,26 @@
 # Backlog
 
-Ranked work for the team. Highest value to a buy decision first, then lowest effort. The developer keeps this current.
+Ranked work for the team. Wrong numbers and broken workflows first, then by value to a buy decision, then by lowest effort. The developer keeps this current.
 
 **Status values:** `open`, `in progress`, `blocked: <reason>`, `done`, `cut`.
 
 **Owner values:**
 - `dev`: the developer
-- `data`: the data-scout
 - `acq`: the acquisitions-lead
+- `data`: the data-scout
+- `num`: the numbers-auditor
+- `rev`: the code-reviewer
 
 | # | Item | Why it matters | Owner | From | Status |
 |---|---|---|---|---|---|
-| 0 | Feature audit: the acquisitions-lead runs every shipped screen and feature through the value test. Each one is marked keep, simplify or cut, and the cut list goes to the user for approval. | The Beacon port added many features. A smaller app Jack trusts beats a big one he doesn't. | acq → dev | user | open |
-| 1 | Recorder distress sweep by document code and date (trustee's sale notices, lis pendens, releases, assignments) for Maricopa, matched to parks | Post-purchase distress is almost entirely missing. It is the strongest seller signal. | data → dev | AUDIT.md | open |
-| 2 | Labeled accuracy set: 20+ hand-checked parks per county (APN, owner, loan, maturity) plus a match-rate report | Without it, every accuracy claim is an opinion | data | DATA_PLAYBOOK | open |
-| 3 | Maturity holdout and calibration: hide known CMBS/SBA maturities, estimate, report p10–p90 coverage | County-loan maturities drive the score and are wide | data → dev | AUDIT.md | open |
-| 4 | Fix CMBS loans with a null maturity (parse gap or truly absent; prove it with a fixture) | Reported dates are the most trustworthy facts we have | data → dev | AUDIT.md | open |
-| 5 | End-to-end test harness: Playwright in `web/e2e/` running the core workflow in demo mode, plus a CI job | The acquisitions-lead needs repeatable regression tests | dev + acq | team setup | open |
-| 6 | Acquisitions-lead's first full walkthrough: core workflow, money math by hand, edge cases, phone width | Baseline of what blocks daily use | acq | team setup | open |
-| 7 | Pima recorder (verify API or bulk access), then Pinal parcels and use codes | Pima is 26% of parks with no loan documents | data | COVERAGE.md | open |
-| 8 | Update `.cursor/rules/project.mdc`: it still says "brokerage team" | Wrong framing leaks into every agent's output | dev | team setup | open |
-| 9 | FFIEC call reports: bank CRE concentration and noncurrent loans by lender, as a lender-stress input | Most park debt is bank debt we can't see. Lender stress is a proxy. | data | DATA_PLAYBOOK | open |
+| 1 | Numbers audit: reconcile `NUMBERS_SPEC.md` with the code. Build the golden parks with hand-checked outputs, add pytest and Vitest tests, and check that the Python and TypeScript formulas agree. | Wrong numbers are the most expensive defect, and the formulas live in two languages | num → dev | team setup | open |
+| 2 | Baseline review of the riskiest code: nightly jobs and field locks, RLS on every table, API routes, AI write paths | Catches existing defects before new work builds on them | rev → dev | team setup | open |
+| 3 | E2E harness: Playwright in `web/e2e/` running the core workflow in demo mode, plus a CI job | Every later change needs a regression check | dev + acq | team setup | open |
+| 4 | First walkthrough and feature audit: the acquisitions-lead runs the core workflow (money math by hand, edge cases, phone width) and puts every shipped screen through the value test. Each is marked keep, simplify, cut or improve; cuts go to the user. | Baseline of what blocks daily use, and what's clutter | acq → dev | user | open |
+| 5 | Recorder distress sweep by document code and date for Maricopa (trustee's sale notices, lis pendens, releases, assignments), matched to parks | Post-purchase distress is almost entirely missing. It is the strongest seller signal. | data → dev | AUDIT.md | open |
+| 6 | Fix CMBS loans with a null maturity (parse gap or truly absent; prove it with a fixture) | Reported dates are the most trustworthy facts we have | data → dev | AUDIT.md | open |
+| 7 | Labeled accuracy set: 20+ hand-checked parks per county (APN, owner, loan, maturity), plus a match-rate report | Without it, every accuracy claim is an opinion | data | DATA_PLAYBOOK | open |
+| 8 | Maturity holdout and calibration: hide known CMBS/SBA maturities, estimate them, report p10–p90 coverage | County-loan maturities drive the score and are wide | data + num → dev | AUDIT.md | open |
+| 9 | Pima recorder (verify API or bulk access), then Pinal parcels and use codes | Pima is 26% of parks with no loan documents | data | COVERAGE.md | open |
 | 10 | Treasurer tax delinquency and lien lists (Maricopa, Pima, Pinal), matched to parks | Cheap, strong distress signal | data → dev | DATA_PLAYBOOK | open |
+| 11 | FFIEC call reports: bank CRE concentration and noncurrent loans by lender, as a lender-stress input | Most park debt is bank debt we can't see. Lender stress is a proxy. | data | DATA_PLAYBOOK | open |

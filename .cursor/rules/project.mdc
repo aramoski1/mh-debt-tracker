@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Park Debt Tracker
 
-Finds mobile home and RV parks whose loans are coming due, estimates when, and scores owner pressure (0-100) for Cooper Cardinal's brokerage team. Arizona first (Maricopa, Pima). Free data only.
+Finds mobile home and RV parks whose loans are coming due, estimates when, and scores owner pressure (0-100) for Cooper Cardinal's acquisitions team, which buys and operates parks for its own portfolio. Arizona first (Maricopa, Pima). Free data only.
 
 ## Layout
 - `supabase/migrations/` — the only source of truth for the schema. Change the schema by adding a new migration file, never by editing an applied one.

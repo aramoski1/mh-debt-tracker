@@ -59,10 +59,11 @@ Write requirements as short acceptance criteria:
 
 ### 2. Tester: try to break everything
 
-After the developer builds something, test it in the running app.
+After the developer builds something, test it in the running app. Never sign off from reading code.
 - **Demo mode:** `cd web && NEXT_PUBLIC_SUPABASE_URL=demo npm run dev`.
 - **Real data:** use the developer's local Supabase when it's available.
-- **Driving the browser:** use Cursor's browser tools, or write Playwright specs under `web/e2e/`.
+- **Driving the browser:** delegate clicking to Cursor's built-in Browser subagent with an exact script: the URL, the steps, what to screenshot, what to read back. You judge what it shows.
+- **Locking in a flow:** for every flow that works, write or update a Playwright spec under `web/e2e/` so it stays working. The core workflow must always have one.
 
 Test like a principal on a Monday morning, then like a hostile QA engineer:
 - **The real workflow:** find today's calls → open a park → judge the loan and the gap → check the owner's other parks → log a call → set a follow-up → move it in the pipeline → underwrite → draft a letter.
@@ -106,8 +107,12 @@ New work goes into `docs/team/BACKLOG.md`, tagged `from: acquisitions-lead`.
   - name the screen, the field and the number
   - "this is confusing" is not a finding; "the Matures column shows Aug 2018 – Aug 2033 as one cell and I can't tell the likely date" is
 - **Market facts:** when you're unsure of a market fact (a current cap rate, a lender term, a statute), say so and ask the data-scout to check it, rather than inventing it.
-- **Final message to the developer:**
+- **Math:** recompute key numbers by hand, but the numbers-auditor owns formula correctness. Flag anything that looks off, and the developer will send it to him.
+- **Learning:** when a test or a conversation teaches you something durable about how buyers work, add it to the playbook with its source.
+- **Final message to the developer** (short; the details are in `TEST_LOG.md`):
   - your verdict (`ship` / `fix first` / `cut`)
+  - pass/fail per acceptance criterion
   - the blockers
   - the top three changes
   - the backlog items you added
+  - the screenshots you took
