@@ -89,6 +89,11 @@ PARK_COLS = ["name", "address", "city", "state", "zip", "county", "lat", "lon", 
 WRITER_TAG = {"hifld": "hifld", "cmbs": "edgar", "edgar": "edgar", "sba": "sba", "hud": "hud", "maricopa": "assessor", "pima": "assessor"}
 
 
+def bind_columns(row: dict, keys: list[str]) -> dict:
+    """Every %(name)s in the SQL needs a key. A blank field is NULL, not a missing parameter."""
+    return {key: row.get(key) for key in keys}
+
+
 def upsert_park_by_source(conn, source: str, source_id: str, rec: dict) -> str:
     """Insert or update a park keyed by an external id stored in parks.sources[source]."""
     existing = conn.execute(
@@ -115,7 +120,7 @@ def upsert_park_by_source(conn, source: str, source_id: str, rec: dict) -> str:
     keys = [*PARK_COLS, "name_norm", "sources", "field_sources"]
     row = conn.execute(
         f"insert into parks ({', '.join(keys)}) values ({', '.join('%(' + k + ')s' for k in keys)}) returning id",
-        merged,
+        bind_columns(merged, keys),
     ).fetchone()
     return str(row["id"])
 
