@@ -158,3 +158,6 @@ def test_docai_extraction_requires_evidence():
     no_quote = FakeAnthropic({"document_type": "deed_of_trust", "maturity_date": "2026-09-01",
                               "maturity_is_computed": False, "apns": [], "evidence": []})
     assert docai.trustworthy_maturity(docai.extract(no_quote, "m", pdf=b"x")) is None
+    assert docai.quoted_field(good.payload, "maturity_date") is True
+    assert docai.quoted_field(good.payload, "note_date") is False
+    assert docai.quoted_field(good.payload, "lender_name") is False

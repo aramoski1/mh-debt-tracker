@@ -15,7 +15,7 @@ from pathlib import Path
 
 from . import db, geocode, maturity, operating
 from .config import settings
-from .docai import extract, trustworthy_maturity
+from .docai import extract, quoted_field, trustworthy_maturity
 from .http import PoliteClient
 from .lenders import LenderClassifier, is_title_company, strip_descriptors
 from .match import Candidate, Probe, best_match, haversine_m, nearest, similarity
@@ -180,6 +180,17 @@ def _loan_with_lender(conn, rec: dict, lender_name: str | None, kind: str) -> di
     return rec
 
 
+def trusts_dropped_from_filings(seen: dict, filings: list) -> list[str]:
+    """Trusts we have seen that are absent from this filing list.
+
+    An empty list is a failed fetch, not evidence that every trust paid off.
+    """
+    if not filings:
+        return []
+    active = {f.cik for f in filings}
+    return [cik for cik in seen if cik not in active]
+
+
 def ingest_cmbs(conn, client: PoliteClient, states: list[str], today: date | None = None) -> dict:
     with db.source_run(conn, "cmbs") as stats:
         state = db.get_state(conn, "cmbs")
@@ -187,7 +198,10 @@ def ingest_cmbs(conn, client: PoliteClient, states: list[str], today: date | Non
         filings = edgar_cmbs.latest_cmbs_filings(client, today=today)
         stats["filings"], n_loans = len(filings), 0
         paid_off = 0
-        active_ciks = {f.cik for f in filings}
+        if not filings:
+            # An empty index is a failed fetch, not evidence that every trust paid off.
+            stats.update(park_loans=0, paid_off=0)
+            return stats
         for f in filings:
             if seen.get(f.cik) == f.accession:
                 continue  # already processed this month's report for this trust
@@ -211,7 +225,7 @@ def ingest_cmbs(conn, client: PoliteClient, states: list[str], today: date | Non
             db.set_state(conn, "cmbs", {"seen": seen})
             conn.commit()
         # Trusts that stopped filing have paid off or been collapsed.
-        gone = [c for c in seen if c not in active_ciks]
+        gone = trusts_dropped_from_filings(seen, filings)
         if gone:
             paid_off += conn.execute("""update loans set status='paid_off' where source='cmbs' and status='active'
                                         and raw->>'trust_cik' = any(%s)""", (gone,)).rowcount
@@ -237,7 +251,7 @@ def upsert_cmbs_loan(conn, ln: edgar_cmbs.CmbsLoan) -> int:
             "note_rate": ln.current_rate or ln.original_rate, "term_months": ln.term_months,
             "amort_months": ln.amort_months, "interest_only": ln.interest_only, "balloon": ln.balloon,
             "dscr_current": p.dscr_noi_current, "noi_current": p.noi_current, "occupancy_current": p.occupancy,
-            "payment_status": ln.payment_status,
+            "payment_status": ln.payment_status, "status": "active",
             "property_name_raw": p.name, "property_address_raw": p.address, "property_city_raw": p.city,
             "property_state_raw": p.state, "property_zip_raw": p.zip,
             "raw": {"trust": ln.trust_name, "trust_cik": ln.trust_cik, "asset": ln.asset_number,
@@ -600,27 +614,30 @@ def extract_documents(conn, client: PoliteClient, anthropic_client, limit: int |
                                                and l.status in ('active','foreclosure')
                                                and l.recording_date < md.recording_date
                                              order by l.recording_date desc limit 1""", (d["id"],)).fetchone()
+                quoted_rate = x.rate if quoted_field(x.data, "interest_rate_pct") else None
                 if target and mat:
                     conn.execute("""update loans set maturity_date=%s, maturity_basis='document',
                                     note_rate=coalesce(%s, note_rate), updated_at=now() where id=%s""",
-                                 (mat, x.rate, target["id"]))
+                                 (mat, quoted_rate, target["id"]))
                 done += 1
                 with_maturity += bool(mat)
                 conn.commit()
                 continue
+            note_date = x.note_date if quoted_field(x.data, "note_date") else None
+            lender_name = x.data.get("lender_name") if quoted_field(x.data, "lender_name") else None
             conn.execute("""update loans set
                               maturity_date = coalesce(%s, maturity_date),
                               maturity_basis = case when %s::date is not null then 'document' else maturity_basis end,
                               note_rate = coalesce(note_rate, %s),
                               original_amount = coalesce(original_amount, %s),
-                              origination_date = coalesce(%s, origination_date),
-                              lender_name_raw = coalesce(%s, lender_name_raw),
+                              origination_date = coalesce(origination_date, %s),
+                              lender_name_raw = coalesce(lender_name_raw, %s),
                               updated_at = now()
                             where document_id = %s""",
-                         (mat, mat, x.rate, x.loan_amount, x.note_date, x.data.get("lender_name"), d["id"]))
-            if x.data.get("lender_name"):
-                lid = db.upsert_lender(conn, x.data["lender_name"])
-                conn.execute("update loans set lender_id=%s where document_id=%s", (lid, d["id"]))
+                         (mat, mat, x.rate, x.loan_amount, note_date, lender_name, d["id"]))
+            if lender_name:
+                lid = db.upsert_lender(conn, lender_name)
+                conn.execute("update loans set lender_id=%s where document_id=%s and lender_id is null", (lid, d["id"]))
             done += 1
             with_maturity += bool(mat)
             conn.commit()

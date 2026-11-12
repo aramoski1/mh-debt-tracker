@@ -50,7 +50,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 - About **2,249 Arizona parks** are scored. Maricopa has 759, Pima 595, then Yuma, Pinal, Yavapai and Mohave.
 
 **Loans** (`loans`):
-- **SEC EDGAR CMBS:** the 10-D EX-102 asset tapes (property type `MH`) give balance, rate, maturity, NOI and DSCR. Portfolio loans are split across parks by their share. A loan is marked paid off when it drops out of the tape.
+- **SEC EDGAR CMBS:** the 10-D EX-102 asset tapes (property type `MH`) give balance, rate, maturity, NOI and DSCR. Portfolio loans are split across parks by their share. A loan is marked paid off when it drops out of a filing that was actually retrieved. An empty filing list does not pay the book off. A loan that shows up again is active, and a later tape replaces the balance, rate, and maturity that the same source wrote.
 - **County recorder:** the Maricopa recorder public API supplies deeds of trust, releases, assignments and trustee notices. Pima recorder exports load from files. Loan status is rebuilt by replaying the documents in date order: release, refinance, foreclosure notice, cure.
 - **SBA:** the 7(a) and 504 FOIA files, for RV parks (NAICS 721211).
 - **HUD FHA:** Section 207 "mobile home courts" loans. None are in Arizona yet.

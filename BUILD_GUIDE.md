@@ -175,7 +175,7 @@ You want a few thousand parks for Arizona with owners on most of the Maricopa an
 mhdebt ingest cmbs
 ```
 
-This reads EDGAR's quarterly index, finds each CMBS trust's latest monthly ABS-EE filing, streams its EX-102 XML, and keeps loans on manufactured housing (property type `MH`) plus RV parks coded as other/lodging/mixed use. Portfolio loans are split across all of their properties by site count (or value), so a park only carries its own share. When a loan drops out of a trust's monthly report, it's marked paid off. Partial-year income figures are annualized. The first run takes a while (hundreds of trusts); later runs skip trusts already processed that month.
+This reads EDGAR's quarterly index, finds each CMBS trust's latest monthly ABS-EE filing, streams its EX-102 XML, and keeps loans on manufactured housing (property type `MH`) plus RV parks coded as other/lodging/mixed use. Portfolio loans are split across all of their properties by site count (or value), so a park only carries its own share. When a loan drops out of a trust's monthly report, it's marked paid off. An empty filing index does not pay the book off, and a loan that shows up again is active. A later tape replaces the balance, rate, and maturity that the same source wrote. A value Jack entered, or a date taken from a quoted document, stays. Partial-year income figures are annualized. The first run takes a while (hundreds of trusts); later runs skip trusts already processed that month.
 
 ### 4b. Fannie Mae and Freddie Mac (free, manual download, monthly)
 

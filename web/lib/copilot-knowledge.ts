@@ -5,6 +5,7 @@ Cooper Cardinal buys and operates mobile home parks and RV parks. This desk is n
 Routes: /desk Today, / Prospects, /pipeline, /rates, /markets, /signals, /owners, /owners/[id], /portfolio, /alerts, /follow-ups, /week, /how-it-works, /onboarding, /loi/[id], /admin, /admin/audit, /admin/issues, /parks/[id].
 Buttons: Ask, ?, Customize (show, hide, drag), Save view, Watch, Mark managed, stage, next action, outreach templates, Mark as sent, document quote accept or reject, offer letter, calendar download.
 Ask turns a sentence into filters. Answer from the book only uses rows those filters return. Email drafts open the user's mail client. The desk does not send mail.
+A later tape from the same source refreshes the balance it wrote. A custom field or a lot rent taken from a document is saved only when that write succeeds. An empty CMBS filing list does not mark those loans paid off.
 `.trim();
 
 export const COPILOT_DOES_NOT_HAVE = [

@@ -129,11 +129,17 @@ def extract(client, model: str, *, pdf: bytes | None = None, images: list[bytes]
     )
 
 
+def quoted_field(data: dict, field: str) -> bool:
+    """True when the model returned a non-empty quote for this field."""
+    evidence = data.get("evidence") or []
+    return any(isinstance(e, dict) and e.get("field") == field and str(e.get("quote") or "").strip() for e in evidence)
+
+
 def trustworthy_maturity(x: Extraction) -> date | None:
     """Accept a maturity date only if the model quoted evidence for it and it's plausible."""
     if not x.maturity_date:
         return None
-    if not any(e.get("field") == "maturity_date" and e.get("quote") for e in x.data.get("evidence", [])):
+    if not quoted_field(x.data, "maturity_date"):
         return None
     if x.note_date and not (x.note_date < x.maturity_date <= date(x.note_date.year + 40, 12, 31)):
         return None

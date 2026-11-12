@@ -29,6 +29,19 @@ def test_edgar_replaces_an_estimate_but_not_a_document():
     assert tags["note_rate"] == "document"
 
 
+def test_same_writer_refreshes_its_own_balance():
+    nxt, tags = apply_ingest(
+        {"current_balance": 5_000_000, "note_rate": 4.1},
+        {"current_balance": "edgar", "note_rate": "jack"},
+        {"current_balance": 4_800_000, "note_rate": 6.5},
+        "edgar",
+    )
+    assert nxt["current_balance"] == 4_800_000
+    assert tags["current_balance"] == "edgar"
+    assert nxt["note_rate"] == 4.1
+    assert tags["note_rate"] == "jack"
+
+
 def test_blank_phone_does_not_clear_a_stored_phone():
     nxt, tags = apply_ingest(
         {"name": "Sunrise", "phone": "480-555-0100", "website": "https://example.test"},

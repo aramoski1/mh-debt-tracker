@@ -2,6 +2,8 @@
 
 Newest first. Each cycle report lists: shipped, cut (and why), blocked (and on what), coverage before vs after, open defects by severity, and next.
 
+2026-11-12 — Baseline review blocked the nightly loan path. A second CMBS, SBA, or HUD file does not refresh a balance already tagged with that writer, because `apply_ingest` treats the writer's own tag as a lock. A CMBS loan missing from one filing is marked paid off and stays paid off when it returns, and an empty filing list can mark every previously seen trust gone. Document extraction can replace a recorded origination date and lender with no quote. Accepting a lot-rent quote and saving a custom field both report success when row-level security drops the write. These are the fixes for this cycle if the acquisitions-lead approves them.
+
 2026-11-12 — The live score columns are nullable. A read of `information_schema` on the project showed `park_scores.score` and `park_score_history.score` as nullable. The migration file in PR #1 matches a change that is already on the live project. This branch was updated onto main so the blank-field park insert and the numbers audit are in one history. CI still has to pass before that pull request merges.
 
 2026-11-12 — The nullable-score migration is applied on the live project. `park_scores.score` and `park_score_history.score` can be blank. The existing 2,249 score rows and 6,747 history rows were left in place. The live scores were not rebuilt.
