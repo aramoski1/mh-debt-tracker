@@ -1,6 +1,6 @@
 # Coverage after the public-source pass (2026-10-30)
 
-This is what the desk now loads, and what was looked at and left out. Counts are from the load on 2026-10-30. A later `mhdebt run` refreshes them. A park with a blank phone, website, or other nullable park field is stored with that field empty. The blank does not drop the park or stop the rest of the file. The park name is required. A later tape from the same source refreshes the balance it wrote. A quoted document can fill a blank origination date or lender, and it does not replace one already stored. Saving a custom field, or a lot rent accepted from a quoted document, needs `supabase/migrations/20261112000014_save_field_and_quoted_rent.sql` applied on the live project before that save sticks.
+This is what the desk now loads, and what was looked at and left out. Counts are from the load on 2026-10-30. A later `mhdebt run` refreshes them. A park with a blank phone, website, or other nullable park field is stored with that field empty. The blank does not drop the park or stop the rest of the file. The park name is required. A later tape from the same source refreshes the balance it wrote. A quoted document can fill a blank origination date or lender, and it does not replace one already stored. Saving a custom field, or a lot rent accepted from a quoted document, uses `supabase/migrations/20261112000014_save_field_and_quoted_rent.sql`, applied on the live project on 2026-11-12.
 
 ## Loaded
 
