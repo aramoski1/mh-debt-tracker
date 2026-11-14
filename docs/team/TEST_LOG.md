@@ -2,6 +2,39 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-13 — Demo browser harness
+
+Branch `team/e2e-harness`, not committed. Demo data only. From `web/`, I ran `npm run e2e` (`playwright test`). Playwright started its own server and the suite finished **6 passed (42.9s)**. Before the run, nothing was listening on port 3000 or port 3100. I did not sign in, did not open the signed-in app, did not click Save case, did not write the database, and did not run a migration.
+
+**Data.** The runner's server is demo mode on http://127.0.0.1:3100, with the desk clock set to 2026-11-12. The log line `[WebServer]` is that server. The pages loaded the demo parks with no sign-in wall. Today's calendar date is 2026-11-13. The call sentences count months, so Nov 13 says the same thing as Nov 12. The pin is what holds those sentences when the month changes. The figures below are the same ones I hand-checked on 2026-11-11.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** From `web/`, `npm run e2e` starts its own demo server and exits 0. All 6 tests passed. Ports 3000 and 3100 were free beforehand, and the pages came from the server Playwright started, in demo mode, on port 3100, with the clock set to 2026-11-12.
+2. **Pass.** "today lists Golden Sun, and that park's loan is the reported May 2028 note" (9.1s). Today lists Golden Sun Mobile Home Park linking to `/parks/4afc56da-ea0a-4cf9-b433-d7696eabeed1`. The park shows Commerce Bank of Arizona, Balance $2.5M, Rate 3.56%, Payment —, and "The loan is reported to come due May 2028."
+3. **Pass.** "Silver Spur shows one fit of 60 and owner pressure 45.5, with no cash gap" (3.1s). One Acquisition fit of 60. Owner pressure 45.5 High. Parts 29.8/35, 5.7/20, coverage blank, 2.0/10, 8.0/15. Fit parts 25, 20, 15, 0, 0. Balance blank. No "Cash the owner must bring". Call line exactly "The loan is documented through Sep 2027. Ask what they have lined up to replace it."
+4. **Pass.** "Saguaro leaves the payment blank" (2.0s). Balance $1.1M, Rate 4.91%, Payment —.
+5. **Pass.** "Paradise has no loan score and one fit of 60" (1.8s). Heading "Not scored — no loan on file." No score. One fit of 60. Five parts blank.
+6. **Pass.** "Saguaro underwriting stays unsaved and matches the desk case" (2.3s). Unsaved inputs: Price 6000000, Cap 7.5, Sites 100, Lot rent 375, Occupancy 100, Expenses 0, Rent growth 0, New bank loan 7. Tiles: cash-on-cash 6.05%, equity $1,500,000, IRR 8.99%. The draft has the year-1 NOI $450,000 sentence, the 30-year desk loan at 7.00% for $4,500,000 with 75% of price binding, cash-on-cash 6.05%, equity before closing costs, and year-5 IRR 8.99% at a 7.5% cap. The draft does not mention 4.91% or the existing balance. Clearing the bank rate to 0 keeps a draft at 0.00% and $4,500,000, and cash-on-cash 20.00%.
+7. **Pass.** "Golden Sun underwriting uses the figures left on the form" (2.2s). Unsaved inputs: Price 4000000, Cap 8, Lot rent 400, Rent growth 2, New bank loan 7, leaving sites, occupancy, and expenses. The draft contains $4,000,000, "80 sites, $400 lot rent, 90% occupancy and 40% expenses, year-1 NOI is $207,360", and a 30-year desk loan at 7.00%.
+8. **Pass.** The Golden Sun loan spec and both underwriting specs assert no POST to `/api/underwriting` and zero "Saved on this park." All three passed. I did not click Save case.
+
+### Defects
+
+None that fail a criterion.
+
+Dev-server noise, not a fail: Next printed "Cross origin request detected from 127.0.0.1 to /_next/* resource." The six tests still passed. The known nav hydration warning did not appear in this run's output. Logging a call, a follow-up, a stage change, and an owner page stay Later (backlog 16 and 17).
+
+### Screenshots
+
+None. The suite ran headless. I did not open the demo in a browser.
+
+### Backlog added
+
+None.
+
 ## 2026-11-12 — Blank phone and website on park insert
 
 Branch `team/blank-park-upsert`, commits `5ccbe50` and `b5bba9e`, off `504e911`. Live desk at http://localhost:3000 (Supabase from `web/.env.local`). No case saved, no note, no stage change, no database write.

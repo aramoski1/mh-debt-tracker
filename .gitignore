@@ -1,6 +1,10 @@
 node_modules/
 .next/
 .next-demo/
+.next-e2e/
+web/playwright-report/
+web/test-results/
+web/blob-report/
 *.tsbuildinfo
 next-env.d.ts
 .env

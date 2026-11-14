@@ -25,11 +25,20 @@ export function monthYear(d: string | null | undefined) {
   return `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m - 1]} ${y}`;
 }
 
+/** Wall clock. A demo run sets DEMO_AS_OF=YYYY-MM-DD so the call list does not follow a later calendar date. */
+export function now(): Date {
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL !== "demo") return new Date();
+  const pin = process.env.DEMO_AS_OF || process.env.NEXT_PUBLIC_DEMO_AS_OF;
+  if (!pin || !/^\d{4}-\d{2}-\d{2}$/.test(pin)) return new Date();
+  const [y, m, d] = pin.split("-").map(Number);
+  return new Date(y, m - 1, d, 12, 0, 0);
+}
+
 export function monthsFromNow(d: string | null | undefined) {
   if (!d) return null;
   const [y, m] = d.split("-").map(Number);
-  const now = new Date();
-  return (y - now.getFullYear()) * 12 + (m - 1 - now.getMonth());
+  const clock = now();
+  return (y - clock.getFullYear()) * 12 + (m - 1 - clock.getMonth());
 }
 
 export function scoreTone(s: number | null | undefined) {

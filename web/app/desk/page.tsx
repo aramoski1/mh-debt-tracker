@@ -1,6 +1,6 @@
 import { callLine, callTargets, shownPressure } from "@/lib/brief";
 import { RANK, rankToday, type TodayItem } from "@/lib/today";
-import { money, monthsFromNow } from "@/lib/format";
+import { money, monthsFromNow, now } from "@/lib/format";
 import { applyProspectFilters } from "@/lib/prospects";
 import { BOARD, STAGE_LABEL, boardColumn } from "@/lib/stages";
 import { supabaseServer } from "@/lib/supabase/server";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 function contacted(iso: string | null | undefined) {
   if (!iso) return "Never logged";
-  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  const days = Math.floor((now().getTime() - new Date(iso).getTime()) / 86_400_000);
   if (Number.isNaN(days) || days < 0) return "Never logged";
   if (days === 0) return "Logged today";
   if (days === 1) return "Logged yesterday";
@@ -21,8 +21,9 @@ function contacted(iso: string | null | undefined) {
 
 export default async function DeskPage() {
   const supabase = await supabaseServer();
-  const today = new Date().toISOString().slice(0, 10);
-  const horizon = new Date();
+  const clock = now();
+  const today = clock.toISOString().slice(0, 10);
+  const horizon = new Date(clock);
   horizon.setDate(horizon.getDate() + 7);
   const week = horizon.toISOString().slice(0, 10);
 
