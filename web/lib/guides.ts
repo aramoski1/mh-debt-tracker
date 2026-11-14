@@ -7,7 +7,7 @@ export const GUIDES: Guide[] = [
   { route: "/pipeline", title: "Pipeline", purpose: "Deals you are working, with a probability-weighted price.", steps: ["Drag a card to change stage.", "Set diligence and close dates. They show on Today.", "The forecast ignores Dead."] },
   { route: "/follow-ups", title: "Follow-ups", purpose: "Next actions and note follow-ups.", steps: ["Overdue is anything before today.", "Snooze moves the date seven days."] },
   { route: "/week", title: "This week", purpose: "A call list and how many you have logged.", steps: ["The target is the number of calls, not a dollar quota."] },
-  { route: "/owners", title: "Owners", purpose: "Every park on the book under one recorded name.", steps: ["Open the dossier for debt, the next maturity, and the mailing address.", "Look up an LLC on the Arizona Corporation Commission site yourself. Paste what you find."] },
+  { route: "/owners", title: "Owners", purpose: "One row per owner record. The same recorded name is not one confirmed owner.", steps: ["Open the dossier for the debt and the next maturity on that record.", "Same recorded name lists the other parks and says they are not a confirmed owner. Their debt is not added.", "A blank balance stays blank. A stored zero is $0.", "Look up an LLC on the Arizona Corporation Commission site yourself. Paste what you find."] },
   { route: "/how-it-works", title: "Honest limits", purpose: "What this desk will not pretend to know.", steps: ["Most county-loan maturities are estimated.", "Rent is blank until someone enters it.", "About a third of parks have an owner name. About 13 percent have any loan."] },
 ];
 

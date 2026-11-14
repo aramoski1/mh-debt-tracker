@@ -2,6 +2,26 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-13 — Owner dossier, same recorded name
+
+Branch `team/owner-dossier`, commits 221a310 and e137003. Demo already running at http://127.0.0.1:3010. The header said Demo data. I did not sign in, did not add a contact, did not save a paste, did not save a case, did not change a stage, and did not write the database. I did not open `/freshness`. A stored balance of $0 is not on this demo, so I did not look for a `$0` row. I did not re-run the Playwright suite. The spec `a blank owner balance stays blank, and the same recorded name stays a separate park` is already in `web/e2e/core-workflow.spec.ts`.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** `/owners/eb4c1318-4fd1-45b3-97b9-79167ceb859e`, Silver Spur Holdings LLC. Header: "Los Angeles, CO · llc · 1 park in this desk." Sentence: "Recorded debt on the book is —." Parks `1`. Sites `260`. Debt on file `—`. No `$0`. Section headed "Same recorded name" lists Silver Spur Manufactured Home Community, with the line "Not a confirmed owner." That row has no dollar amount. The link opened `/parks/91e245d4-a308-47af-9f9d-6335b8c6fd53`, heading "Silver Spur Manufactured Home Community", "Lake Havasu City, AZ", 120 sites. The owner link on that park goes to `/owners/e29d7cdb-38b1-4575-be59-1772d789a260`, not back to a merged dossier. Screenshot `docs/team/screens/owner-dossier-silver-spur-rv.png`.
+2. **Pass.** `/owners/e29d7cdb-38b1-4575-be59-1772d789a260`. "Los Angeles, CA · llc · 1 park in this desk." Parks `1`. Sites `120`. Debt on file `$3.2M`. Sentence: "Recorded debt on the book is $3.2M." No "balance not on file" line. "Same recorded name" lists Silver Spur RV Resort and says "Not a confirmed owner." That row has no dollar amount. The park on this record is Silver Spur Manufactured Home Community, Lake Havasu City, 120 sites. Screenshot `docs/team/screens/owner-dossier-silver-spur-mhc.png`.
+3. **Pass.** `/owners/9aa03b5f-4ee5-4034-b6bd-01cb91954ed1`, Palo Verde Partners LLC. "Same recorded name" says "No other park on this desk uses this recorded name." Debt on file `$1.2M`. Sentence: "Recorded debt on the book is $1.2M."
+4. **Pass.** `/owners`. Lede: "Grouped from the park list. This is the name on the record, not a beneficial-owner finding." Columns include Same name. Silver Spur Holdings LLC is two rows: CO, Parks `1`, Sites `260`, Same name "Silver Spur Manufactured Home Community"; CA, Parks `1`, Sites `120`, Same name "Silver Spur RV Resort". Three Sunrise Holdings LLC rows each say "2 other parks" (CA 210 sites, WA 120, IL 24). Palo Verde Partners LLC, Parks `1`, Sites `38`, Same name `—`. Screenshot `docs/team/screens/owners-list-same-name.png`.
+5. **Pass.** `/desk`, Calls worth making, lists Golden Sun Mobile Home Park, Tucson, 45.5, "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." `/parks/c9fb0d5d-d85f-4b91-8e84-921bb3413792`: one Owner pressure `45.5` High, one Acquisition fit `60`. Before you call: "The loan is documented through Sep 2027. Ask what they have lined up to replace it." The loan block says the maturity is from the document, 2027-09-25. I did not open Underwriting and I did not click Save case.
+
+### Defects
+
+None that fail a criterion.
+
+Not a fail of this item. On Silver Spur Manufactured Home Community, the sentence before the call says "The loan is documented through Sep 2027" while Next maturity says "Reported" and the note says "Maturity 2027-09-08 (reported by the lender/servicer)." Golden Sun, on the same Today list, says "reported." I would use the wrong word with the owner. Added as backlog item 24. The two Silver Spur records also disagree on the state: the RV dossier says Los Angeles, CO, and the Havasu dossier says Los Angeles, CA. The "Not a confirmed owner" line is why I do not treat that as one owner. The stage control on both park pages still shows Target. That is item 20. I did not change it.
+
 ## 2026-11-13 — Call-line fix
 
 Branch `team/call-line`, not committed. Demo only. From `web/`, I ran `npm run e2e` (`playwright test`). Playwright started its own server and the suite finished **7 passed (1.1m)**. Ports 3000 and 3100 were free beforehand. I did not sign in, did not click Save case, did not change a stage, did not write the database, and did not run a migration.

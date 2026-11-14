@@ -120,7 +120,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 | `/rates` | **Rate desk.** Treasury tenors, SOFR, prime, the CMBS spread, Arizona unemployment, and charts. |
 | `/signals` | Tabs: FHA, Form D, filings, distress, sales, owners. |
 | `/markets` | Counties ranked by number of parks. |
-| `/owners`, `/owners/[id]` | Recorded owner names, and one owner's parks, debt, and a place to paste an Arizona Corporation Commission page. |
+| `/owners`, `/owners/[id]` | One row per owner record. The list shows the 80 records with the most parks and says when more are left off. Debt on file is the balances on that record: a blank stays blank, and a stored zero prints as $0. Same recorded name lists other parks that use the name and says they are not a confirmed owner. Their debt is not added. A place to paste an Arizona Corporation Commission page. |
 | `/portfolio` | Cooper Cardinal's own parks. |
 | `/alerts` | Maturity windows, distress, score jumps. |
 | `/onboarding` | Mark managed parks and set the buy box. Import matches existing park names. It does not create parks. |
