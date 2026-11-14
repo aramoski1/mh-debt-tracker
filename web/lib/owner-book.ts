@@ -46,9 +46,16 @@ export type NamedPark = {
 export function otherParksWithSameName(parks: readonly NamedPark[], ownerId: string, ownerName: string | null): NamedPark[] {
   const key = recordedNameKey(ownerName);
   if (!key) return [];
+  const ownerKey = ownerId.trim().toLowerCase();
   return parks
-    .filter((park) => park.ownerId !== ownerId && recordedNameKey(park.ownerName) === key)
+    .filter((park) => (park.ownerId ?? "").trim().toLowerCase() !== ownerKey && recordedNameKey(park.ownerName) === key)
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The list keeps the records with the most parks. Say so when some are left off. */
+export function ownerListNote(shown: number, total: number): string | null {
+  if (shown >= total) return null;
+  return `Showing ${shown} of ${total} recorded owners.`;
 }
 
 /** One other park shows its name. Two or more show a count. None shows a blank. */

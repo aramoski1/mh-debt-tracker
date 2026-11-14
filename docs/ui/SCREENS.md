@@ -22,7 +22,7 @@ Arizona counties ranked by parks on the desk. The decision is where the book is 
 
 ## Owners
 
-One row per owner record, with the records that hold the most parks first. A Same name column shows other parks that use that recorded name. It is not a finding that one person controls them, and it is not a beneficial-owner chart.
+One row per owner record, with the records that hold the most parks first. The page says when it is showing 80 of a longer book. A Same name column shows other parks that use that recorded name. It is not a finding that one person controls them, and it is not a beneficial-owner chart.
 
 ## Pipeline
 

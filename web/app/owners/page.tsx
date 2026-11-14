@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/Bits";
-import { otherParksWithSameName, sameNameCell, type NamedPark } from "@/lib/owner-book";
+import { otherParksWithSameName, ownerListNote, sameNameCell, type NamedPark } from "@/lib/owner-book";
 import type { ParkRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -20,11 +20,14 @@ export default async function OwnersPage() {
     cell.sites += row.units ?? 0;
     byOwner.set(row.owner_id, cell);
   }
-  const owners = [...byOwner.values()].sort((a, b) => b.parks - a.parks || b.sites - a.sites).slice(0, 80);
+  const ranked = [...byOwner.values()].sort((a, b) => b.parks - a.parks || b.sites - a.sites);
+  const owners = ranked.slice(0, 80);
+  const listNote = ownerListNote(owners.length, ranked.length);
 
   return (
     <div className="space-y-4">
       <PageHeader kicker="Owners" title="Recorded owners" lede="Grouped from the park list. This is the name on the record, not a beneficial-owner finding." />
+      {listNote && <p className="text-sm text-muted">{listNote}</p>}
       <section className="overflow-x-auto rounded-md border border-line bg-panel">
         <table className="w-full">
           <thead className="bg-sunken text-left text-xs text-muted">

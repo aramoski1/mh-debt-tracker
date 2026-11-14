@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { money } from "./format";
-import { balancesNotOnFile, debtOnFile, otherParksWithSameName, recordedNameKey, sameNameCell } from "./owner-book";
+import { balancesNotOnFile, debtOnFile, otherParksWithSameName, ownerListNote, recordedNameKey, sameNameCell } from "./owner-book";
 
 describe("debt on file", () => {
   it("keeps a blank book blank", () => {
@@ -39,6 +39,19 @@ describe("same recorded name", () => {
     expect(otherParksWithSameName(parks, "1", "Silver Spur Holdings LLC").map((park) => park.name)).toEqual([
       "Silver Spur Manufactured Home Community",
     ]);
+  });
+
+  it("keeps this owner off the list when the id case differs", () => {
+    const rows = [
+      { id: "a", name: "Silver Spur RV Resort", ownerId: "EB4C", ownerName: "Silver Spur Holdings LLC" },
+      { id: "b", name: "Silver Spur Manufactured Home Community", ownerId: "e29d", ownerName: "Silver Spur Holdings LLC" },
+    ];
+    expect(otherParksWithSameName(rows, "eb4c", "Silver Spur Holdings LLC").map((park) => park.id)).toEqual(["b"]);
+  });
+
+  it("says when the owner list is cut", () => {
+    expect(ownerListNote(48, 48)).toBeNull();
+    expect(ownerListNote(80, 760)).toBe("Showing 80 of 760 recorded owners.");
   });
 
   it("labels the owners-list cell", () => {
