@@ -37,3 +37,13 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 | 22 | The prospects rate-shock cell says the coupon is estimated, or stays blank, when the note rate was not on the loan. | Silver Spur RV Resort showed +85 bps with a blank note rate. The park page says 7.00% is estimated. | dev | acquisitions-lead | open |
 | 23 | On the owner dossier, an estimated maturity is labeled estimated, and a date that has already passed is not called the next maturity. | The dossier takes the earliest date on the overview and prints it as "Next maturity" with no basis. Pre-existing. Left out of the blank-balance fix because that sentence was locked as "Next maturity {month}". | dev | code-reviewer | open |
 | 24 | The call line says documented only when the maturity is from a document. A reported maturity says reported. | Silver Spur Manufactured Home Community says "The loan is documented through Sep 2027" while the loan block says the date was reported by the lender, 2027-09-08. Golden Sun already says reported. | dev | acquisitions-lead | open |
+
+## Item 20, locked 13 Nov 2026
+
+Approved. Build only the criteria below. The full wording is the acquisitions-lead's return for this item; the playbook line is the rule.
+
+- Empty Stage label: **Not in the pipeline**. It is not a choice after a stage is saved, and choosing it does not remove the deal.
+- A Next action date before a stage does not create a Target. The field keeps the date and the line says **Pick a stage to save the next action.**
+- Choosing Target on a park that was not in the pipeline is a real save and puts that park on the board.
+- Demo board: Paradise RV Resort stays the Contacted card. Golden Sun, Silver Spur RV Resort, and Saguaro have no card until a stage is saved.
+- Prospects **Add to pipeline**, Dead, Mark managed, and the board's empty sentence stay as they are.

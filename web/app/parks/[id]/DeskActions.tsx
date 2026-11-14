@@ -2,24 +2,36 @@
 
 import { useState } from "react";
 
-import { STAGES } from "@/lib/stages";
+import { NOT_IN_PIPELINE, STAGES, dealSave } from "@/lib/stages";
 
 export default function DeskActions({
   parkId, stage, nextAction, managed,
 }: { parkId: string; stage: string | null; nextAction: string | null; managed: boolean }) {
-  const [s, setS] = useState(stage ?? "target");
+  const [s, setS] = useState(stage ?? "");
   const [when, setWhen] = useState(nextAction ?? "");
   const [on, setOn] = useState(managed);
   const [msg, setMsg] = useState<string | null>(null);
 
   const saveDeal = async (stageValue: string, action: string) => {
-    setS(stageValue);
-    setWhen(action);
+    const plan = dealSave(stageValue, action);
+    if (!plan.post) {
+      setWhen(action);
+      setMsg(plan.message);
+      return;
+    }
+    const previous = s;
+    setS(plan.stage);
+    setWhen(plan.action);
     const res = await fetch("/api/deals", {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ parkId, stage: stageValue, nextAction: action }),
+      body: JSON.stringify({ parkId, stage: plan.stage, nextAction: plan.action }),
     });
-    setMsg(res.ok ? "Pipeline updated." : "Could not save the stage.");
+    if (!res.ok) {
+      setS(previous);
+      setMsg("Could not save the stage.");
+      return;
+    }
+    setMsg("Pipeline updated.");
   };
 
   const toggle = async () => {
@@ -37,6 +49,7 @@ export default function DeskActions({
       <label className="flex flex-col gap-1">
         <span className="text-xs text-muted">Stage</span>
         <select value={s} onChange={(e) => saveDeal(e.target.value, when)} className="h-8 rounded-sm border border-line px-2">
+          {s === "" && <option value="">{NOT_IN_PIPELINE}</option>}
           {STAGES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
       </label>

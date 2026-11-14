@@ -115,7 +115,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 | `/desk` | **Today.** Ranked work for the morning: distress, upcoming maturities, follow-ups, and buy-box fits. Blocks can be hidden or reordered. |
 | `/follow-ups`, `/week` | Follow-ups due, and the week's deadlines. |
 | `/parks/[id]` | **Park page.** Score and why, fit, cadence, maturity range, loan history, documents, buyer email drafts (they open the user's mail client and do not send), the operating figures form, the underwriting desk, a watch flag, and print. |
-| `/pipeline` | Deal stages (Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, Dead) plus the buy-box form. |
+| `/pipeline` | Saved deals only. A park with no stage stays off the board, and the park page says "Not in the pipeline." Stages, once saved: Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, Dead. Plus the buy-box form. |
 | `/loi/[id]` | A printable offer from the saved underwriting. Estimates stay labeled as estimates. |
 | `/rates` | **Rate desk.** Treasury tenors, SOFR, prime, the CMBS spread, Arizona unemployment, and charts. |
 | `/signals` | Tabs: FHA, Form D, filings, distress, sales, owners. |

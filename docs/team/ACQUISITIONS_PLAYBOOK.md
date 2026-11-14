@@ -261,6 +261,7 @@ Source: first feature audit, demo clock pinned to 2026-11-12.
 - Confirmed on the demo walk, 13 Nov 2026. Silver Spur Holdings LLC stays two records. The RV dossier's Debt on file is —. The Havasu dossier's Debt on file is $3.2M and Sites is 120. The two records disagree on state, CO and CA, and the line says "Not a confirmed owner." Source: item 19 test.
 - Do not put "you have held about N years" in a letter. That line is a score phrase.
 - Confirmed on the call-line fix, demo clock 2026-11-12. Silver Spur Village says the Jul 2022 date has passed and the loan was most likely repaid. Canyon Village says the Sep 2023 to Sep 2026 range has already passed and the date is a model. Silver Spur RV Resort, still inside the window, still asks what they have lined up. The 74 percent on Canyon stays in the score note. Source: call-line test, 13 Nov 2026.
+- A park is not a deal until someone saves a stage. The Stage control shows **Not in the pipeline** until then. That label is not a stage, and it is not a way to delete a deal. A next-action date typed before a stage is chosen waits; it does not create a Target. Choosing Target is a real save and puts the park on the board. Source: item 20 criteria, 13 Nov 2026.
 
 ## Sources
 
