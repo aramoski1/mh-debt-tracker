@@ -2,6 +2,28 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-13 — Stage control, not a deal until a stage is saved
+
+Branch `team/stage-label`, commits 21c17d3 and bcc8354. Demo at http://127.0.0.1:3010. The header said Demo data. I did not sign in, did not save a case, a contact, or a paste, and did not write the database. I did not open `/freshness`. Choosing Target on Golden Sun wrote only in the demo's memory. That save is part of this test. I did not run the Playwright suite. The spec `a park with no saved stage is not in the pipeline` is already in `web/e2e/core-workflow.spec.ts`.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** `/parks/4afc56da-ea0a-4cf9-b433-d7696eabeed1`, Golden Sun Mobile Home Park. Stage showed **Not in the pipeline**. I set Next action to 2026-12-01. The field showed 12/01/2026. The line read **Pick a stage to save the next action.** I did not touch Stage. `/pipeline` before the save: **Target · 0**, "Drop a deal here." **Contacted · 1**, Paradise RV Resort, "Overdue 2026-11-06". Columns were Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, and Dead. No "Not in the pipeline" column. The table row was Paradise RV Resort, Apache Junction · Paradise Partners LLC, Contacted, 2026-11-06, 70.9, Aug 2033. The page did not say "No parks in the pipeline." Golden Sun was not on the page. Screenshot `docs/team/screens/item20-golden-sun-date-waits.png` and `docs/team/screens/item20-pipeline-before-target.png`.
+2. **Pass.** Back on Golden Sun, the date had cleared and Stage was still **Not in the pipeline**. I set Next action to 2026-12-01 again and chose Target. The line read **Pipeline updated.** Stage showed **Target**. The list was Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, Dead. **Not in the pipeline** was not in it. The date stayed 12/01/2026. `/pipeline` after the save: **Target · $2.5M · 1**, Golden Sun Mobile Home Park. **Contacted · 1**, Paradise RV Resort, "Overdue 2026-11-06". Table: Golden Sun, Tucson · Robert and Linda Nguyen, Target, 2026-12-01, 45.5, May 2028. Paradise stayed Contacted, 2026-11-06, 70.9, Aug 2033. A later open of Golden Sun still showed Target and 2026-12-01. Screenshots `docs/team/screens/item20-golden-sun-target-saved.png` and `docs/team/screens/item20-pipeline-after-target.png`.
+3. **Pass.** `/parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f`, Paradise RV Resort. Stage showed **Contacted**. Next action was 11/06/2026. The list did not include **Not in the pipeline**. I did not change it. Screenshot `docs/team/screens/item20-paradise-contacted.png`.
+4. **Pass.** `/parks/c9fb0d5d-d85f-4b91-8e84-921bb3413792`, Silver Spur RV Resort. I did not touch Stage. It showed **Not in the pipeline**. Owner pressure **45.5** High. Acquisition fit **60**. Screenshot `docs/team/screens/item20-silver-spur-not-in-pipeline.png`.
+5. **Pass.** `/desk`, Calls worth making, still lists Golden Sun Mobile Home Park, Tucson, Never logged, 45.5, "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." May 2028. The pipeline strip on that page read Target 1 · $2.5M and Contacted 1. I did not save a case. Screenshot `docs/team/screens/item20-desk-golden-sun-call-list.png`.
+
+### Defects
+
+None that fail a criterion. The board does not lie. An unsaved date put no card on it. After the save, Golden Sun is the Target card and Paradise RV Resort is still the only Contacted card.
+
+The price line stayed "Probability-weighted price —." The Target column also reads "$2.5M". I did not open the loan's Balance line on this pass, so I am not calling that dollar a price or a wrong balance.
+
+After the Target save, Golden Sun's cadence line changed from "Tier 2 · every 30 days" to "Tier 1 · every 14 days". That is not a board lie. I am not asking for a change.
+
 ## 2026-11-13 — Owner dossier, same recorded name
 
 Branch `team/owner-dossier`, commits 221a310 and e137003. Demo already running at http://127.0.0.1:3010. The header said Demo data. I did not sign in, did not add a contact, did not save a paste, did not save a case, did not change a stage, and did not write the database. I did not open `/freshness`. A stored balance of $0 is not on this demo, so I did not look for a `$0` row. I did not re-run the Playwright suite. The spec `a blank owner balance stays blank, and the same recorded name stays a separate park` is already in `web/e2e/core-workflow.spec.ts`.

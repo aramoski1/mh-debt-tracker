@@ -26,7 +26,7 @@ One row per owner record, with the records that hold the most parks first. The p
 
 ## Pipeline
 
-Deals already saved, plus the buy box. The decision is what is due today.
+Deals already saved, plus the buy box. A park with no saved stage is not on the board. The decision is what is due today.
 
 ## Alerts, portfolio, sources
 

@@ -32,8 +32,18 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 | 17 | Later: the owner's other parks, after a desk pass names an owner with more than one park and reads the empty state. | The 13 Nov 2026 walk did that pass. See item 18. Do not build a second screen. | acq | acquisitions-lead | open |
 | 18 | The call line has to match the maturity note. A date that has already passed, a range that has already passed, or a note that says the loan was most likely repaid, cannot be written as a future refinance ask. | This is the sentence read before the call. Silver Spur Village and Canyon Village in the 13 Nov 2026 demo walk. | dev | acquisitions-lead | done |
 | 19 | On the owners list and the dossier, show other parks that carry the same recorded name, labeled as the same name and not a confirmed identity. A blank balance stays blank. It must not print as $0. | Silver Spur Holdings LLC is two owner records and the dossier said 1 park and Debt on file $0. | dev | acquisitions-lead | done |
-| 20 | The stage control shows "Not in the pipeline" until a stage is saved. It must not default to Target. | Every park that was not already a deal looked like it was in Target. The board had one card. | dev | acquisitions-lead | open |
+| 20 | The stage control shows "Not in the pipeline" until a stage is saved. It must not default to Target. | Every park that was not already a deal looked like it was in Target. The board had one card. | dev | acquisitions-lead | done |
 | 21 | Owner letters do not say "you have held about N years." A maturity date appears only on the Maturity template, and only when the date is documented or reported. | First-contact drafts quoted a reported date and an estimated hold. The Maturity template already withholds an estimated date. | dev | acquisitions-lead | open |
 | 22 | The prospects rate-shock cell says the coupon is estimated, or stays blank, when the note rate was not on the loan. | Silver Spur RV Resort showed +85 bps with a blank note rate. The park page says 7.00% is estimated. | dev | acquisitions-lead | open |
 | 23 | On the owner dossier, an estimated maturity is labeled estimated, and a date that has already passed is not called the next maturity. | The dossier takes the earliest date on the overview and prints it as "Next maturity" with no basis. Pre-existing. Left out of the blank-balance fix because that sentence was locked as "Next maturity {month}". | dev | code-reviewer | open |
 | 24 | The call line says documented only when the maturity is from a document. A reported maturity says reported. | Silver Spur Manufactured Home Community says "The loan is documented through Sep 2027" while the loan block says the date was reported by the lender, 2027-09-08. Golden Sun already says reported. | dev | acquisitions-lead | open |
+
+## Item 20, locked 13 Nov 2026
+
+Approved. Build only the criteria below. The full wording is the acquisitions-lead's return for this item; the playbook line is the rule.
+
+- Empty Stage label: **Not in the pipeline**. It is not a choice after a stage is saved, and choosing it does not remove the deal.
+- A Next action date before a stage does not create a Target. The field keeps the date and the line says **Pick a stage to save the next action.**
+- Choosing Target on a park that was not in the pipeline is a real save and puts that park on the board.
+- Demo board: Paradise RV Resort stays the Contacted card. Golden Sun, Silver Spur RV Resort, and Saguaro have no card until a stage is saved.
+- Prospects **Add to pipeline**, Dead, Mark managed, and the board's empty sentence stay as they are.

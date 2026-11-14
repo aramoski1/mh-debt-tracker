@@ -15,9 +15,9 @@ export async function POST(req: Request) {
     park_id: body.parkId,
     stage: body.stage,
     next_action: body.nextAction || null,
-    note: body.note ?? null,
     stage_changed_at: new Date().toISOString(),
   };
+  if ("note" in body) row.note = body.note ?? null;
   if ("price" in body) row.price = num(body.price);
   if ("capRate" in body) row.cap_rate = num(body.capRate);
   if ("financing" in body) row.financing = body.financing || null;

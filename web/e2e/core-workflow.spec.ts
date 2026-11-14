@@ -193,3 +193,53 @@ test("a blank owner balance stays blank, and the same recorded name stays a sepa
   await expect(sunrise.first().locator("td").last()).toHaveText("2 other parks");
   await expect(page.locator("tr", { has: page.getByRole("link", { name: "Palo Verde Partners LLC", exact: true }) }).locator("td").last()).toHaveText("—");
 });
+
+const PARADISE_RV = "/parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f";
+
+test("a park with no saved stage is not in the pipeline", async ({ page }) => {
+  const posts = watchWrites(page);
+  const dealBodies: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/deals") dealBodies.push(request.postData() ?? "");
+  });
+  await page.goto(GOLDEN_SUN);
+  const stage = page.getByRole("combobox", { name: /^Stage/ });
+  await expect(stage).toHaveValue("");
+  await expect(stage.locator("option:checked")).toHaveText("Not in the pipeline");
+  await expect(page.getByText("Pipeline updated.")).toHaveCount(0);
+  await page.locator("label", { hasText: "Next action" }).locator("input").fill("2026-12-01");
+  await expect(page.getByText("Pick a stage to save the next action.")).toBeVisible();
+  await expect(page.locator("label", { hasText: "Next action" }).locator("input")).toHaveValue("2026-12-01");
+  expect(posts).not.toContain("/api/deals");
+
+  await page.goto("/follow-ups");
+  await expect(page.getByRole("link", { name: "Golden Sun Mobile Home Park", exact: true })).toHaveCount(0);
+
+  await page.goto(PARADISE_RV);
+  const saved = page.getByRole("combobox", { name: /^Stage/ });
+  await expect(saved).toHaveValue("contacted");
+  await expect(saved.getByRole("option", { name: "Not in the pipeline", exact: true })).toHaveCount(0);
+
+  await page.goto("/pipeline");
+  const board = page.locator("li.cursor-grab");
+  await expect(board.getByRole("link", { name: "Paradise RV Resort", exact: true })).toHaveCount(1);
+  await expect(board.getByRole("link", { name: "Golden Sun Mobile Home Park", exact: true })).toHaveCount(0);
+  await expect(board.getByRole("link", { name: "Silver Spur RV Resort", exact: true })).toHaveCount(0);
+  await expect(board.getByRole("link", { name: "Saguaro MHP", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("table").getByRole("link", { name: "Paradise RV Resort", exact: true })).toHaveCount(1);
+  await expect(page.getByText("No parks in the pipeline. Set a stage on a park page.")).toHaveCount(0);
+  await expect(page.getByText("Not in the pipeline")).toHaveCount(0);
+
+  await page.goto(GOLDEN_SUN);
+  const date = page.locator("label", { hasText: "Next action" }).locator("input");
+  const stagePick = page.getByRole("combobox", { name: /^Stage/ });
+  await date.fill("2026-12-01");
+  await stagePick.selectOption("target");
+  await expect(page.getByText("Pipeline updated.")).toBeVisible();
+  expect(dealBodies).toHaveLength(1);
+  expect(dealBodies[0]).toContain('"stage":"target"');
+  expect(dealBodies[0]).toContain('"nextAction":"2026-12-01"');
+  await page.goto("/pipeline");
+  await expect(page.locator("li.cursor-grab").getByRole("link", { name: "Golden Sun Mobile Home Park", exact: true })).toHaveCount(1);
+  await expect(page.locator("li.cursor-grab").getByRole("link", { name: "Paradise RV Resort", exact: true })).toHaveCount(1);
+});
