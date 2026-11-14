@@ -26,6 +26,8 @@ export function callLine(r: ParkRow): string {
   const equity = typeof gap?.equity_needed === "number" ? gap.equity_needed : null;
   const months = monthsFromNow(r.maturity_date);
   if (r.loan_status === "foreclosure") return "A trustee sale or lis pendens is on the record. Ask if they want a buyer before the sale date.";
+  const passed = pastMaturityLine(r);
+  if (passed) return passed;
   if (months != null && months <= 12 && (r.maturity_basis === "reported" || r.maturity_basis === "document")) {
     return `The loan is documented through ${monthYear(r.maturity_date)}. Ask what they have lined up to replace it.`;
   }
@@ -42,6 +44,38 @@ export function callLine(r: ParkRow): string {
   const why = r.score_components?.owner?.why;
   if (why) return why;
   return "The ownership and the loan timing are worth a conversation about a sale or a refinance.";
+}
+
+function maturityNote(r: ParkRow) {
+  return `${r.maturity_explanation ?? ""} ${r.score_components?.maturity?.why ?? ""}`;
+}
+
+/** A past date is not a loan that is still coming due. The words follow the note already stored. */
+function pastMaturityLine(r: ParkRow): string | null {
+  const point = monthsFromNow(r.maturity_date);
+  const endMonths = monthsFromNow(r.p90_date ?? r.maturity_date);
+  const pointPassed = point != null && point < 0;
+  const rangePassed = r.maturity_basis === "estimated" && endMonths != null && endMonths < 0;
+  if (!pointPassed && !rangePassed) return null;
+  const note = maturityNote(r);
+  if (note.includes("most likely repaid")) {
+    return `The ${monthYear(r.maturity_date)} date has passed. The loan was most likely repaid without a recorded release.`;
+  }
+  if (r.maturity_basis === "estimated" && rangePassed) {
+    const start = monthYear(r.p10_date ?? r.maturity_date);
+    const end = monthYear(r.p90_date ?? r.maturity_date);
+    return `The likely range, ${start} to ${end}, has already passed. The date is a model, not a date to quote.`;
+  }
+  if (r.maturity_basis === "estimated" && pointPassed) {
+    return `The ${monthYear(r.maturity_date)} point date has passed. The likely range runs through ${monthYear(r.p90_date ?? r.maturity_date)}. The date is a model, not a date to quote.`;
+  }
+  if (note.includes("still in the servicer")) {
+    return "The maturity date has passed and the loan is still in the servicer's report. Ask whether it is extended or in default.";
+  }
+  if (note.includes("no payoff recorded")) {
+    return "The date has passed with no payoff recorded. Ask whether it was extended or is in default.";
+  }
+  return `The ${monthYear(r.maturity_date)} date has passed. Confirm whether the loan is still open.`;
 }
 
 const STALE_MS = 60 * 24 * 60 * 60 * 1000;
