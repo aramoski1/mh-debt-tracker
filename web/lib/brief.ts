@@ -1,5 +1,5 @@
 import { BASIS_LABEL, type ParkRow, type ScoreComponent } from "./types";
-import { dollars, monthYear, monthsFromNow } from "./format";
+import { dollars, monthYear, monthsFromNow, now } from "./format";
 
 function coverageCounts(c?: ScoreComponent | null) {
   return Boolean(c && c.scored !== false && c.points != null && c.noi_basis === "reported");
@@ -47,12 +47,12 @@ export function callLine(r: ParkRow): string {
 const STALE_MS = 60 * 24 * 60 * 60 * 1000;
 
 export function callTargets(rows: ParkRow[], limit = 8): ParkRow[] {
-  const now = Date.now();
+  const clock = now().getTime();
   return rows.filter((r) => {
     const months = monthsFromNow(r.maturity_date);
     const hot = (shownPressure(r) ?? 0) >= 40 || (months != null && months <= 12) || r.loan_status === "foreclosure";
     if (!hot) return false;
     if (!r.last_activity_at) return true;
-    return now - new Date(r.last_activity_at).getTime() > STALE_MS;
+    return clock - new Date(r.last_activity_at).getTime() > STALE_MS;
   }).slice(0, limit);
 }

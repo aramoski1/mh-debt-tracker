@@ -21,7 +21,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 - **Pipeline:** Python 3.11, in `pipeline/mhdebt/`.
   - The CLI is `mhdebt`: `ingest`, `build`, `extract`, `model`, `run`, `jobs`, `top`, `probe`, `holdout`, `rates`.
   - Outbound pipeline requests go through `PoliteClient`, which handles per-host rate limits, retries, and a cache.
-  - A nightly GitHub Action (`.github/workflows/pipeline.yml`) is scheduled for 09:17 UTC, which is 2:17 AM Arizona. GitHub may start it later. It runs `mhdebt run`, then `mhdebt jobs`. An empty `DATABASE_URL` stops the run before any download. With `ANTHROPIC_API_KEY` set, the run reads up to `MAX_DOCS_PER_RUN` pending loan documents and then rescores. Both of those Actions secrets are set. CI tests run against a Postgres service.
+  - A nightly GitHub Action (`.github/workflows/pipeline.yml`) is scheduled for 09:17 UTC, which is 2:17 AM Arizona. GitHub may start it later. It runs `mhdebt run`, then `mhdebt jobs`. An empty `DATABASE_URL` stops the run before any download. With `ANTHROPIC_API_KEY` set, the run reads up to `MAX_DOCS_PER_RUN` pending loan documents and then rescores. Both of those Actions secrets are set. CI tests run against a Postgres service, and a second job runs the demo Playwright check (`web/e2e`, date pinned to 2026-11-12).
   - Python, because the data work (EDGAR XML, spreadsheets, fuzzy matching, statistics) is easier there, and the web app only reads from the database.
 - **Web app:** `web/`, built on:
   - Next.js 15.5 (App Router) with React 19, `@supabase/ssr`, Tailwind 4 and design tokens in `web/app/tokens.css`

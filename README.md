@@ -18,4 +18,4 @@ npm run dev
 
 The demo shows fictional parks, owners and loans.
 
-Tests: `cd pipeline && pip install -e ".[dev]" && pytest -q`
+Tests: `cd pipeline && pip install -e ".[dev]" && pytest -q`. The demo desk check is `cd web && npm run e2e`. It pins the date to 2026-11-12 and does not sign in or save a case.

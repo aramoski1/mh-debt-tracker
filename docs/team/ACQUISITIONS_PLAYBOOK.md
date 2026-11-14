@@ -247,6 +247,7 @@ Desk decision, 11 Nov 2026, first team cycle. These are business choices, not ne
 - One fit score: size 25, state 20, kind 15, rate 20, distance 20. Years held stays on owner pressure. A blank flood zone adds nothing.
 - Owner pressure ranks who may need to sell or recapitalize. It is a call list, not a listing score.
 - A document maturity that is already past due is full maturity pressure (35).
+- The Monday readings locked by the demo regression check (Golden Sun on the call list, Silver Spur at 45.5, Saguaro underwriting at 6.05% cash-on-cash, Paradise not scored) are tied to a server date of 2026-11-12. A later calendar date changes the call line. Source: e2e scope, 12 Nov 2026.
 
 ---
 
