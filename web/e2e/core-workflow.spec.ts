@@ -231,11 +231,14 @@ test("a park with no saved stage is not in the pipeline", async ({ page }) => {
   await expect(page.getByText("Not in the pipeline")).toHaveCount(0);
 
   await page.goto(GOLDEN_SUN);
-  await page.locator("label", { hasText: "Next action" }).locator("input").fill("2026-12-01");
-  await page.getByRole("combobox", { name: /^Stage/ }).selectOption("target");
+  const date = page.locator("label", { hasText: "Next action" }).locator("input");
+  const stagePick = page.getByRole("combobox", { name: /^Stage/ });
+  await date.fill("2026-12-01");
+  await stagePick.selectOption("target");
   await expect(page.getByText("Pipeline updated.")).toBeVisible();
-  expect(dealBodies.at(-1)).toContain('"stage":"target"');
-  expect(dealBodies.at(-1)).toContain('"nextAction":"2026-12-01"');
+  expect(dealBodies).toHaveLength(1);
+  expect(dealBodies[0]).toContain('"stage":"target"');
+  expect(dealBodies[0]).toContain('"nextAction":"2026-12-01"');
   await page.goto("/pipeline");
   await expect(page.locator("li.cursor-grab").getByRole("link", { name: "Golden Sun Mobile Home Park", exact: true })).toHaveCount(1);
   await expect(page.locator("li.cursor-grab").getByRole("link", { name: "Paradise RV Resort", exact: true })).toHaveCount(1);
