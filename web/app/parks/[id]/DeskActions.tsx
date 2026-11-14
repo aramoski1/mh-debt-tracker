@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { NOT_IN_PIPELINE, STAGES, dealSave } from "@/lib/stages";
@@ -7,6 +8,7 @@ import { NOT_IN_PIPELINE, STAGES, dealSave } from "@/lib/stages";
 export default function DeskActions({
   parkId, stage, nextAction, managed,
 }: { parkId: string; stage: string | null; nextAction: string | null; managed: boolean }) {
+  const router = useRouter();
   const [s, setS] = useState(stage ?? "");
   const [when, setWhen] = useState(nextAction ?? "");
   const [on, setOn] = useState(managed);
@@ -19,19 +21,24 @@ export default function DeskActions({
       setMsg(plan.message);
       return;
     }
-    const previous = s;
+    const previousStage = s;
+    const previousWhen = when;
     setS(plan.stage);
     setWhen(plan.action);
-    const res = await fetch("/api/deals", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ parkId, stage: plan.stage, nextAction: plan.action }),
-    });
-    if (!res.ok) {
-      setS(previous);
+    try {
+      const res = await fetch("/api/deals", {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ parkId, stage: plan.stage, nextAction: plan.action }),
+      });
+      if (!res.ok) throw new Error("save failed");
+    } catch {
+      setS(previousStage);
+      setWhen(previousWhen);
       setMsg("Could not save the stage.");
       return;
     }
     setMsg("Pipeline updated.");
+    router.refresh();
   };
 
   const toggle = async () => {
