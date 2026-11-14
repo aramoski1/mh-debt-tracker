@@ -80,6 +80,17 @@ test("Silver Spur shows one fit of 60 and owner pressure 45.5, with no cash gap"
   await expect(page.getByText("The loan is documented through Sep 2027. Ask what they have lined up to replace it.", { exact: true })).toBeVisible();
 });
 
+test("a passed maturity is not written as a loan that is still coming due", async ({ page }) => {
+  await page.goto("/parks/7241650e-b31c-441b-8764-9e6c3839a8d6");
+  const village = page.locator("section", { has: page.getByText("Before you call") });
+  await expect(village).toContainText("The Jul 2022 date has passed. The loan was most likely repaid without a recorded release.");
+  await expect(village).not.toContainText("lined up");
+  await page.goto("/parks/d14493f3-3dc0-4621-ba78-acf23d258f8f");
+  const canyon = page.locator("section", { has: page.getByText("Before you call") });
+  await expect(canyon).toContainText("The likely range, Sep 2023 to Sep 2026, has already passed. The date is a model, not a date to quote.");
+  await expect(canyon).not.toContainText("come due");
+});
+
 test("Saguaro leaves the payment blank", async ({ page }) => {
   await page.goto(SAGUARO);
   const card = loanCard(page);

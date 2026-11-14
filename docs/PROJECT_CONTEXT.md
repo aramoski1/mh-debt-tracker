@@ -27,7 +27,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
   - Next.js 15.5 (App Router) with React 19, `@supabase/ssr`, Tailwind 4 and design tokens in `web/app/tokens.css`
   - MapLibre for maps, TanStack Table + Virtual for the prospect table, Radix for dialogs, popovers and tooltips, Recharts for charts
   - the Anthropic SDK
-- **Hosting:** Vercel, not yet deployed. Demo mode (`NEXT_PUBLIC_SUPABASE_URL=demo`) serves fictional data from `web/demo/*.json`.
+- **Hosting:** Vercel, not yet deployed. Demo mode (`NEXT_PUBLIC_SUPABASE_URL=demo`) serves fictional data from `web/demo/*.json`. A call line does not ask what will replace a loan whose maturity date, or whose estimated range, has already passed.
 - **Editor:** Cursor. Project rules are in `.cursor/rules/*.mdc` (`project`, `docs`, `new-source`, `web`, `team`), and `BUILD_GUIDE.md` is the setup walkthrough.
 - **Docs in the repo:**
   - `docs/AUDIT.md`: an honest audit of coverage, accuracy, workflow and UI
