@@ -257,6 +257,7 @@ Source: first feature audit, demo clock pinned to 2026-11-12.
 
 - The sentence above the dial is the one I act on. It has to say the same thing as the maturity note. A date or a range that has already passed, or a note that says the loan was most likely repaid, cannot be written as "ask what they have lined up to replace it."
 - A blank balance is not zero. The same recorded name on two owner records is two records until someone links them. Show the other parks next to the name, and say they are the same name, not a confirmed owner.
+- A stored balance of $0 is zero on file and prints as $0. A blank prints as —. Parks that only share the recorded name are listed beside the record. Their balances, sites, and park count are not added to this record's Debt on file, Sites, or Parks. Source: item 19 criteria, 13 Nov 2026.
 - Do not put "you have held about N years" in a letter. That line is a score phrase.
 - Confirmed on the call-line fix, demo clock 2026-11-12. Silver Spur Village says the Jul 2022 date has passed and the loan was most likely repaid. Canyon Village says the Sep 2023 to Sep 2026 range has already passed and the date is a model. Silver Spur RV Resort, still inside the window, still asks what they have lined up. The 74 percent on Canyon stays in the score note. Source: call-line test, 13 Nov 2026.
 

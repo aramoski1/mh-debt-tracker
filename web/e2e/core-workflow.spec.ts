@@ -159,3 +159,37 @@ test("Golden Sun underwriting uses the figures left on the form", async ({ page 
   expect(posts).not.toContain("/api/underwriting");
   await expect(page.getByText("Saved on this park.")).toHaveCount(0);
 });
+
+test("a blank owner balance stays blank, and the same recorded name stays a separate park", async ({ page }) => {
+  await page.goto("/owners/eb4c1318-4fd1-45b3-97b9-79167ceb859e");
+  await expect(page.getByRole("heading", { name: "Silver Spur Holdings LLC", exact: true })).toBeVisible();
+  await expect(page.getByText("Debt on file", { exact: true }).locator("xpath=following-sibling::p[1]")).toHaveText("—");
+  await expect(page.getByText("Recorded debt on the book is —.")).toBeVisible();
+  await expect(page.getByText("$0")).toHaveCount(0);
+  await expect(page.getByText("Parks", { exact: true }).locator("xpath=following-sibling::p[1]")).toHaveText("1");
+  const same = page.locator("section", { has: page.getByRole("heading", { name: "Same recorded name" }) });
+  await expect(same.getByRole("link", { name: "Silver Spur Manufactured Home Community", exact: true })).toHaveAttribute("href", "/parks/91e245d4-a308-47af-9f9d-6335b8c6fd53");
+  await expect(same.getByText("Not a confirmed owner.")).toBeVisible();
+  await expect(same.getByText(/\$/)).toHaveCount(0);
+
+  await page.goto("/owners/e29d7cdb-38b1-4575-be59-1772d789a260");
+  await expect(page.getByText("Debt on file", { exact: true }).locator("xpath=following-sibling::p[1]")).toHaveText("$3.2M");
+  await expect(page.getByText("Recorded debt on the book is $3.2M.")).toBeVisible();
+  await expect(page.getByText("balance not on file")).toHaveCount(0);
+  const other = page.locator("section", { has: page.getByRole("heading", { name: "Same recorded name" }) });
+  await expect(other.getByRole("link", { name: "Silver Spur RV Resort", exact: true })).toBeVisible();
+  await expect(other.getByText(/\$/)).toHaveCount(0);
+
+  await page.goto("/owners/9aa03b5f-4ee5-4034-b6bd-01cb91954ed1");
+  await expect(page.getByText("No other park on this desk uses this recorded name.")).toBeVisible();
+  await expect(page.getByText("Debt on file", { exact: true }).locator("xpath=following-sibling::p[1]")).toHaveText("$1.2M");
+
+  await page.goto("/owners");
+  const spur = page.locator("tr", { has: page.getByRole("link", { name: "Silver Spur Holdings LLC", exact: true }) });
+  await expect(spur).toHaveCount(2);
+  await expect(spur.nth(0).locator("td").last()).toHaveText("Silver Spur Manufactured Home Community");
+  await expect(spur.nth(1).locator("td").last()).toHaveText("Silver Spur RV Resort");
+  const sunrise = page.locator("tr", { has: page.getByRole("link", { name: "Sunrise Holdings LLC", exact: true }) });
+  await expect(sunrise.first().locator("td").last()).toHaveText("2 other parks");
+  await expect(page.locator("tr", { has: page.getByRole("link", { name: "Palo Verde Partners LLC", exact: true }) }).locator("td").last()).toHaveText("—");
+});

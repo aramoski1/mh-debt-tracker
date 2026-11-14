@@ -2,6 +2,8 @@
 
 Newest first. Each cycle report lists: shipped, cut (and why), blocked (and on what), coverage before vs after, open defects by severity, and next.
 
+2026-11-13 — Owner dossier, scope. The acquisitions-lead approved the smallest fix. A blank balance stays —. A stored $0 prints as $0. Other parks with the same recorded name, after trimming spaces and ignoring letter case, are listed under "Same recorded name" with "Not a confirmed owner." Their balances, sites, and park count stay off this record. The owners list keeps one row per owner record and adds a Same name column. No second screen. Item 17 stays Later.
+
 2026-11-13 — Cycle. Shipped the call line on pull request #5. A maturity that has already passed is no longer written as a loan that is still coming due. The screen audit is recorded. Cut: nothing was removed. `/freshness` is a cut waiting on the user. Blocked: nothing. Coverage was not remeasured. Scoreboard: the demo check went from 6 tests to 7. Open defects went from 0 / 0 / 2 to 0 / 2 / 5, because the walk found the owner dossier and the stage control. Golden parks stay 12. Shipped 1, cut 0. Next: the owner dossier, then the stage control. Retro: the bad sentence was the one read before the dial, so compare that sentence to the maturity note. The month count is still a calendar month.
 
 2026-11-13 — Call line review: approve. Numbers check: numbers correct. A passed maturity still scores 35 in the pipeline. The call line says "most likely repaid" only when the stored note already says that, and it does not copy Canyon Village's 74 percent. A foreclosure sentence still comes first. The month count stays a calendar month, so a date earlier in the current month is not treated as passed.

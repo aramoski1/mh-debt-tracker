@@ -4,6 +4,7 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { shownPressure } from "@/lib/brief";
 import type { ParkRow } from "@/lib/types";
 import { money, monthYear } from "@/lib/format";
+import { balancesNotOnFile, debtOnFile, otherParksWithSameName, type NamedPark } from "@/lib/owner-book";
 import { Metric, MetricStrip } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { Contacts } from "./Contacts";
@@ -27,8 +28,17 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
   const o = parks[0];
   const { data: people } = await supabase.from("contacts").select("id, name, role, phone, email, mailing, source, verified").eq("owner_id", id);
   const { data: notes } = await supabase.from("activities").select("id, kind, body, created_at, park_id").in("park_id", parks.map((park) => park.id)).order("created_at", { ascending: false }).limit(12);
+  const { data: book } = await supabase.from("park_overview").select("id, name, owner_id, owner_name").limit(5000);
+  const others = otherParksWithSameName(
+    ((book ?? []) as { id: string; name: string; owner_id: string | null; owner_name: string | null }[]).map((park): NamedPark => ({
+      id: park.id, name: park.name, ownerId: park.owner_id, ownerName: park.owner_name,
+    })),
+    id,
+    o.owner_name,
+  );
   const sites = parks.reduce((sum, park) => sum + (park.units ?? 0), 0);
-  const debt = parks.reduce((sum, park) => sum + Number(park.current_balance ?? 0), 0);
+  const debt = debtOnFile(parks.map((park) => park.current_balance));
+  const gap = balancesNotOnFile(debt.missing);
   const next = parks.map((park) => park.maturity_date).filter(Boolean).sort()[0] ?? null;
   return (
     <div className="space-y-4">
@@ -41,16 +51,31 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
           {o.owner_entity_type ? ` · ${o.owner_entity_type}` : ""} · {parks.length} park{parks.length === 1 ? "" : "s"} in this desk
         </p>
         <p className="mt-2 text-sm text-body">
-          Recorded debt on the book is {debt ? money(debt) : "—"}. Next maturity {monthYear(next)}.
+          Recorded debt on the book is {money(debt.amount)}.{gap ? ` ${gap}.` : ""} Next maturity {monthYear(next)}.
           {" "}<a className="text-accent" href="https://ecorp.azcc.gov/" target="_blank" rel="noreferrer">Look up this entity on the Arizona Corporation Commission</a>, then paste what you find into a note. This desk does not pull that site.
         </p>
       </header>
       <MetricStrip>
         <Metric label="Parks" value={parks.length.toLocaleString()} />
         <Metric label="Sites" value={sites.toLocaleString()} />
-        <Metric label="Debt on file" value={money(debt)} />
+        <Metric label="Debt on file" value={money(debt.amount)} detail={gap ?? undefined} />
         <Metric label="Next maturity" value={monthYear(next)} />
       </MetricStrip>
+      <section className="rounded-md border border-line bg-panel">
+        <h2 className="border-b border-line px-4 py-2 text-sm font-medium">Same recorded name</h2>
+        {others.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-muted">No other park on this desk uses this recorded name.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {others.map((park) => (
+              <li key={park.id} className="px-4 py-3">
+                <Link href={`/parks/${park.id}`} className="font-medium hover:text-accent">{park.name}</Link>
+                <p className="text-xs text-muted">Not a confirmed owner.</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
       <Contacts ownerId={id} parkId={parks[0]?.id ?? null} rows={(people ?? []) as { id: string; name: string | null; role: string; phone: string | null; email: string | null; mailing: string | null; source: string; verified: boolean }[]} />
       <section className="rounded-md border border-line bg-panel">
         <h2 className="border-b border-line px-4 py-2 text-sm font-medium">Timeline</h2>
