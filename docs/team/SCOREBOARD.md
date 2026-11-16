@@ -6,29 +6,29 @@ Baseline: Arizona, 2,249 parks, from `docs/AUDIT.md`, October 30, 2026.
 
 ## Data (share of Arizona parks)
 
-| Metric | 2026-10-30 | 2026-11-11 | 2026-11-12 | 2026-11-13 | 2026-11-13 walk | 2026-11-13 dossier | 2026-11-13 stage | 2026-11-16 call | 2026-11-16 dossier |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Owner of record | 34% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Owner grouped with related entities | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Any loan on record | 13% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Open loan, reported or document maturity | 2% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Open loan, estimated maturity | 8% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Distress signal tied to a park (24 months) | 0% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Sale comp within 25 miles in 3 years | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Operating figures (rent, occupancy) | 0% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Park → parcel top-1 match rate (labeled set) | no labeled set | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Maturity estimates: known dates inside p10–p90 | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Metric | 2026-10-30 | 2026-11-11 | 2026-11-12 | 2026-11-13 | 2026-11-13 walk | 2026-11-13 dossier | 2026-11-13 stage | 2026-11-16 call | 2026-11-16 dossier | 2026-11-16 audit |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Owner of record | 34% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Owner grouped with related entities | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Any loan on record | 13% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Open loan, reported or document maturity | 2% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Open loan, estimated maturity | 8% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Distress signal tied to a park (24 months) | 0% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Sale comp within 25 miles in 3 years | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Operating figures (rent, occupancy) | 0% | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Park → parcel top-1 match rate (labeled set) | no labeled set | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Maturity estimates: known dates inside p10–p90 | not measured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
 
 ## Product
 
-| Metric | 2026-10-30 | 2026-11-11 | 2026-11-12 | 2026-11-13 | 2026-11-13 walk | 2026-11-13 dossier | 2026-11-13 stage | 2026-11-16 call | 2026-11-16 dossier |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| Highest owner-pressure score on the live list | 50.5 | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Parks scoring 45+ | 5 | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
-| Core-workflow e2e test | none | none | none | 6 demo tests | 7 demo tests | 8 demo tests | 9 demo tests | 10 demo tests | 11 demo tests |
-| Open defects: blocker / major / minor | not tracked | 0 / 0 / 1 | 0 / 0 / 2 | 0 / 0 / 2 | 0 / 2 / 5 | 0 / 2 / 6 | 0 / 1 / 6 | 0 / 1 / 5 | 0 / 0 / 5 |
-| Golden parks passing | none yet | 12 | 12 | 12 | 12 | 12 | 12 | 12 | 12 |
-| Items shipped / cut this cycle | — | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 |
+| Metric | 2026-10-30 | 2026-11-11 | 2026-11-12 | 2026-11-13 | 2026-11-13 walk | 2026-11-13 dossier | 2026-11-13 stage | 2026-11-16 call | 2026-11-16 dossier | 2026-11-16 audit |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Highest owner-pressure score on the live list | 50.5 | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Parks scoring 45+ | 5 | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured | not remeasured |
+| Core-workflow e2e test | none | none | none | 6 demo tests | 7 demo tests | 8 demo tests | 9 demo tests | 10 demo tests | 11 demo tests | 14 demo tests |
+| Open defects: blocker / major / minor | not tracked | 0 / 0 / 1 | 0 / 0 / 2 | 0 / 0 / 2 | 0 / 2 / 5 | 0 / 2 / 6 | 0 / 1 / 6 | 0 / 1 / 5 | 0 / 0 / 5 | 0 / 0 / 7 |
+| Golden parks passing | none yet | 12 | 12 | 12 | 12 | 12 | 12 | 12 | 12 | 12 |
+| Items shipped / cut this cycle | — | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 1 / 0 | 4 / 0 |
 
 The minor on 2026-11-11 is a dev-server hydration warning on the nav link. It did not blank a number.
 
@@ -45,3 +45,5 @@ The stage column closes the Target default. A park with no saved stage says "Not
 The call column closes the documented word on a reported date. Silver Spur Manufactured Home Community says "reported to come due." A document date still says "documented through." One major remains: the dossier still prints "Next maturity" with no basis. Five minors remain. Coverage was not remeasured.
 
 The second dossier column closes that major. Next maturity is only a month still ahead, and the line names Reported, From document, or Estimated. A passed date stays under Passed. No majors remain. The five minors are unchanged. Coverage was not remeasured.
+
+The audit column closes the park tile that called a passed month next, the call line that was only a hold phrase, the filing row that said Linked, and the community-bank notes tagged cmbs. The demo check is 14 tests. No majors remain. Seven minors: the five from the dossier column, plus help text that does not match the screens, and onboarding step 1 pointing at a paste box Portfolio does not have. Coverage was not remeasured.

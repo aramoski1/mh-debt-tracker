@@ -2,6 +2,49 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-16 — Items 25, 26, 27, and 28
+
+Demo only, at http://127.0.0.1:3010. Branch team/audit-labels. The header said Demo data on every page I opened. I did not open port 3000. I did not sign in. I did not save a case, a contact, a stage, or a paste. I did not click Save case, Add contact, or Mark managed. I typed an underwriting case on Saguaro and did not save it. I did not write the database.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** Silver Spur Village tile label Passed, value Jul 2022, line From document. The tile label is not Next maturity. Before you call: "The Jul 2022 date has passed. The loan was most likely repaid without a recorded release."
+2. **Pass.** Canyon Village tile label Passed, value Sep 2026, line "Estimated · Sep 2023 to Sep 2026." The tile label is not Next maturity. Before you call: "The likely range, Sep 2023 to Sep 2026, has already passed. The date is a model, not a date to quote."
+3. **Pass.** Golden Sun tile label Next maturity, value May 2028, line Reported. Before you call: "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." Loan line: "Loan: County record · maturity Reported." Type: Community bank. Debt source cell: County record. The words cmbs and CMBS are not on that card or in that cell. Owner pressure on the screen is 45.5. I did not expect a new score.
+4. **Pass.** Silver Spur RV Resort tile label Next maturity, value Sep 2027, line From document. Owner pressure 45.5. Acquisition fit 60.
+5. **Pass.** Paradise Manufactured Home Community heading No loan found, value —. It does not say Next maturity with a month. Before you call: "No loan is on file." That sentence does not say held about. Fit 60. The score pill says "— No score." The letter draft still says "You have held about 26 years." That stays item 21.
+6. **Pass.** Mountain View MHP in Tucson. Before you call: "The loan is reported to come due Jul 2028." It does not say held about. The score note still says "held about 24 years." That is the score, not the call line.
+7. **Pass.** Silver Spur Manufactured Home Community: Loan: County record, Type Community bank, lender Alliance Bank of Arizona, balance $3.2M, maturity Sep 2027 Reported. Debt source County record. No cmbs. Saguaro: Loan: County record, Type Community bank, lender Arizona Bank & Trust. Debt source County record. No cmbs. Unsaved underwriting, price 6000000, cap 7.5, sites 100, rent 375, occupancy 100, expenses 0, growth 0, bank rate 7: cash-on-cash 6.05%, equity $1,500,000, 5-year IRR 8.99%. I did not click Save case.
+8. **Pass.** Distress: the trustee sale row dated 2026-10-12 names Paradise RV Resort. That name is a link to /parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f, and that page is Paradise RV Resort. The cell is not the word Linked.
+9. **Pass.** Sales: the row names Paradise RV Resort and links to the same park. Parcel DEMO-APN, date 2019-06-01, price $1.8M, owner Paradise Partners LLC.
+10. **Pass.** Today, Calls worth making, Golden Sun: "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." Pipeline: Contacted · 1, one card, Paradise RV Resort, Overdue 2026-11-06. Target is empty.
+
+No blockers. No new backlog items. The first-contact letter on Paradise Manufactured Home Community is still item 21.
+
+### Screenshots
+
+- `docs/team/screens/item25-silver-spur-village-tile.png`
+- `docs/team/screens/item25-canyon-village-tile.png`
+- `docs/team/screens/item28-golden-sun-tile.png`
+- `docs/team/screens/item28-golden-sun-debt.png`
+- `docs/team/screens/item25-silver-spur-rv-scores.png`
+- `docs/team/screens/item25-silver-spur-rv-tile.png`
+- `docs/team/screens/item26-paradise-mhc-pill.png`
+- `docs/team/screens/item26-paradise-mhc-call.png`
+- `docs/team/screens/item25-paradise-mhc-tile.png`
+- `docs/team/screens/item26-mountain-view-call.png`
+- `docs/team/screens/item28-silver-spur-mhc-loan.png`
+- `docs/team/screens/item28-silver-spur-mhc-type.png`
+- `docs/team/screens/item28-silver-spur-mhc-debt.png`
+- `docs/team/screens/item28-saguaro-underwriting.png`
+- `docs/team/screens/item28-saguaro-debt.png`
+- `docs/team/screens/item27-signals-distress.png`
+- `docs/team/screens/item27-signals-sales.png`
+- `docs/team/screens/item25-desk-golden-sun.png`
+- `docs/team/screens/item25-pipeline-contacted.png`
+
 ## 2026-11-16 — Second product audit
 
 Demo only, at http://127.0.0.1:3010. The header said Demo data on every page I opened. The call sentences match the pinned clock, 2026-11-12. I did not open port 3000. I did not sign in. I did not save a case, a contact, a stage, a paste, or a watch. I did not click Save case, Add contact, Mark managed, Add to pipeline, Mark as sent, Save paste, Save quote, Save figures, Save box, Save view, Match, Dismiss, Resolve, or Mark read. I typed an underwriting case on Saguaro and did not save it. I did not write the database.
