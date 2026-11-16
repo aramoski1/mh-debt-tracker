@@ -2,6 +2,40 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-16 — Reported is not documented
+
+Branch `team/reported-line`, commits 387a050 and c74c4cb. Demo already running at http://127.0.0.1:3010. The header said Demo data on every page I opened. I did not use port 3000. I did not sign in, did not save a case, a contact, a stage, or a paste, and did not write the database. I did not open `/freshness`. I did not click Save case. I did not change a stage. I did not run the Playwright suite. Code review was approve. The numbers check was numbers correct. No score changed.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** `/parks/91e245d4-a308-47af-9f9d-6335b8c6fd53`, Silver Spur Manufactured Home Community, Lake Havasu City. Before you call reads exactly "The loan is reported to come due Sep 2027. Ask what they have lined up to replace it." The word documented does not appear on the page. Next maturity says Reported, and the note says "Maturity 2027-09-08 (reported by the lender/servicer)." The same sentence is on Today, in Calls worth making. Stage was left at Not in the pipeline. Screenshot `docs/team/screens/item24-silver-spur-mhc.png`. The desk row is in `docs/team/screens/item24-desk-calls.png`.
+2. **Pass.** `/parks/c9fb0d5d-d85f-4b91-8e84-921bb3413792`, Silver Spur RV Resort, Tucson, 260 sites. Before you call stays exactly "The loan is documented through Sep 2027. Ask what they have lined up to replace it." Owner pressure is 45.5 High. Acquisition fit is 60. The loan block says From document, "Maturity 2027-09-25 (stated in the recorded document)." Stage was left at Not in the pipeline. Screenshots `docs/team/screens/item24-silver-spur-rv.png` and `docs/team/screens/item24-silver-spur-rv-scores.png`.
+3. **Pass.** `/parks/4afc56da-ea0a-4cf9-b433-d7696eabeed1`, Golden Sun Mobile Home Park, Tucson. Before you call stays "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." The loan note says "Maturity 2028-05-12 (reported by the lender/servicer)." Today is `/desk`. In Calls worth making the same sentence is on Golden Sun, Tucson, Never logged, 45.5, May 2028. I did not change the stage. It showed Not in the pipeline. Screenshots `docs/team/screens/item24-golden-sun.png` and `docs/team/screens/item24-desk-calls.png`.
+4. **Pass.** Silver Spur Village, `/parks/7241650e-b31c-441b-8764-9e6c3839a8d6`. Before you call reads "The Jul 2022 date has passed. The loan was most likely repaid without a recorded release." That block does not say come due and does not say lined up. Canyon Village, `/parks/d14493f3-3dc0-4621-ba78-acf23d258f8f`. Before you call reads "The likely range, Sep 2023 to Sep 2026, has already passed. The date is a model, not a date to quote." That block does not say come due and does not say lined up. The same Canyon sentence is in Calls worth making. Screenshots `docs/team/screens/item24-silver-spur-village.png` and `docs/team/screens/item24-canyon-village.png`.
+5. **Pass.** I did not change a stage and I did not click Save case. On Today, Paradise RV Resort is still the Contacted follow-up, dated 2026-11-06. The pipeline strip is Target 0 and Contacted 1. I left Paradise as it was.
+
+### Defects
+
+None that fail a criterion.
+
+Canyon's call box also says "The date is a model, not a fact from the note. Confirm it before you quote it." That is the right warning. I am not asking for a change. The score note under Why it scores 34.1 still uses "comes due" inside the model explanation. It is not the sentence before the call. I am leaving it there.
+
+### Screenshots
+
+- `docs/team/screens/item24-silver-spur-mhc.png`
+- `docs/team/screens/item24-silver-spur-rv.png`
+- `docs/team/screens/item24-silver-spur-rv-scores.png`
+- `docs/team/screens/item24-golden-sun.png`
+- `docs/team/screens/item24-desk-calls.png`
+- `docs/team/screens/item24-silver-spur-village.png`
+- `docs/team/screens/item24-canyon-village.png`
+
+### Backlog added
+
+None.
+
 ## 2026-11-13 — Stage control, not a deal until a stage is saved
 
 Branch `team/stage-label`, commits 21c17d3 and bcc8354. Demo at http://127.0.0.1:3010. The header said Demo data. I did not sign in, did not save a case, a contact, or a paste, and did not write the database. I did not open `/freshness`. Choosing Target on Golden Sun wrote only in the demo's memory. That save is part of this test. I did not run the Playwright suite. The spec `a park with no saved stage is not in the pipeline` is already in `web/e2e/core-workflow.spec.ts`.
