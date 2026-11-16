@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
 import { shownPressure } from "@/lib/brief";
 import type { ParkRow } from "@/lib/types";
-import { money, monthYear } from "@/lib/format";
-import { balancesNotOnFile, debtOnFile, otherParksWithSameName, type NamedPark } from "@/lib/owner-book";
+import { money } from "@/lib/format";
+import { balancesNotOnFile, debtOnFile, otherParksWithSameName, ownerMaturity, parkMaturity, type NamedPark } from "@/lib/owner-book";
 import { Metric, MetricStrip } from "@/components/ui/Bits";
 import { ScorePill } from "@/components/ui/ScorePill";
 import { Contacts } from "./Contacts";
@@ -14,7 +14,8 @@ export const dynamic = "force-dynamic";
 type Park = {
   id: string; name: string; city: string | null; state: string; units: number | null;
   score: number | null; loan_id: string | null; score_components: ParkRow["score_components"];
-  maturity_date: string | null; owner_name: string | null;
+  maturity_date: string | null; maturity_basis: string | null;
+  p10_date: string | null; p90_date: string | null; owner_name: string | null;
   owner_city: string | null; owner_state: string | null; owner_entity_type: string | null;
   current_balance: number | null; original_amount: number | null;
 };
@@ -39,7 +40,7 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
   const sites = parks.reduce((sum, park) => sum + (park.units ?? 0), 0);
   const debt = debtOnFile(parks.map((park) => park.current_balance));
   const gap = balancesNotOnFile(debt.missing);
-  const next = parks.map((park) => park.maturity_date).filter(Boolean).sort()[0] ?? null;
+  const next = ownerMaturity(parks);
   return (
     <div className="space-y-4">
       <Link href="/" className="text-xs text-muted hover:text-accent">← Prospects</Link>
@@ -51,7 +52,7 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
           {o.owner_entity_type ? ` · ${o.owner_entity_type}` : ""} · {parks.length} park{parks.length === 1 ? "" : "s"} in this desk
         </p>
         <p className="mt-2 text-sm text-body">
-          Recorded debt on the book is {money(debt.amount)}.{gap ? ` ${gap}.` : ""} Next maturity {monthYear(next)}.
+          Recorded debt on the book is {money(debt.amount)}.{gap ? ` ${gap}.` : ""} {next.sentence}
           {" "}<a className="text-accent" href="https://ecorp.azcc.gov/" target="_blank" rel="noreferrer">Look up this entity on the Arizona Corporation Commission</a>, then paste what you find into a note. This desk does not pull that site.
         </p>
       </header>
@@ -59,7 +60,7 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
         <Metric label="Parks" value={parks.length.toLocaleString()} />
         <Metric label="Sites" value={sites.toLocaleString()} />
         <Metric label="Debt on file" value={money(debt.amount)} detail={gap ?? undefined} />
-        <Metric label="Next maturity" value={monthYear(next)} />
+        <Metric label={next.tileLabel} value={next.tileValue} detail={next.tileDetail ?? undefined} />
       </MetricStrip>
       <section className="rounded-md border border-line bg-panel">
         <h2 className="border-b border-line px-4 py-2 text-sm font-medium">Same recorded name</h2>
@@ -94,7 +95,7 @@ export default async function OwnerPage({ params }: { params: Promise<{ id: stri
           <li key={p.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <div>
               <Link href={`/parks/${p.id}`} className="font-medium hover:text-accent">{p.name}</Link>
-              <div className="text-xs text-muted">{p.city}, {p.state}{p.units != null ? ` · ${p.units} sites` : ""} · matures {monthYear(p.maturity_date)}</div>
+              <div className="text-xs text-muted">{p.city}, {p.state}{p.units != null ? ` · ${p.units} sites` : ""} · {parkMaturity(p).row}</div>
             </div>
             <ScorePill score={shownPressure(p)} />
           </li>

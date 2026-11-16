@@ -2,6 +2,59 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-16 — Dossier maturity, passed dates stay passed
+
+Branch `team/dossier-maturity`, commit e4ef84a. Demo already running at http://127.0.0.1:3010. The header said Demo data on every dossier I opened and on Today. Clock is the pinned demo clock, 2026-11-12. I did not use port 3000. I did not sign in. I did not save a case, a contact, a stage, or a paste. I did not click Save case, Add contact, or Save paste. I did not change a stage. I did not open `/freshness`. I did not write the database. I did not run the Playwright suite. Code review was approve. The numbers check was numbers correct. No dollar figure and no score changed.
+
+**Verdict: ship.**
+
+### Acceptance criteria
+
+1. **Pass.** `/owners/caeb0fd4-ab30-4dbb-b239-10e27028065a`, Canyon Partners LLC, Canyon Village. Sentence: "No maturity still ahead. Estimated range Sep 2023 to Sep 2026 has already passed." Tile label Passed. Tile value Sep 2026. Line under the value: "Estimated · Sep 2023 to Sep 2026." Park row: "Estimated range Sep 2023 to Sep 2026 has passed." The words Next maturity are not the tile label. They do not appear on the page. Screenshots `docs/team/screens/item23-canyon-village.png`, `docs/team/screens/item23-canyon-partners-passed.png`, `docs/team/screens/item23-canyon-partners-park.png`.
+2. **Pass.** `/owners/3cb675a0-61a6-46b9-805a-b83e6a585e6c`, Canyon Partners LLC, Canyon Mobile Home Park, Glendale. Sentence: "Next maturity Jan 2027. Estimated. Likely range Jan 2026 to Jan 2029." Tile Next maturity, value Jan 2027, line "Estimated · Jan 2026 to Jan 2029." Park row: "matures Jan 2027 · Estimated · Jan 2026 to Jan 2029." Screenshots `docs/team/screens/item23-canyon-mhp-sentence.png`, `docs/team/screens/item23-canyon-mhp-tile.png`, `docs/team/screens/item23-canyon-mhp-park.png`.
+3. **Pass.** `/owners/8c5ebf1d-a0ec-4aa1-b8b4-7435732209bd`, Whitaker Family Trust, Golden Sun Village. Sentence: "Next maturity Nov 2029. Estimated. Likely range Nov 2027 to Nov 2034." The tile is Next maturity, Nov 2029, line "Estimated · Nov 2027 to Nov 2034." The park row reads "matures Nov 2029 · Estimated · Nov 2027 to Nov 2034." Screenshots `docs/team/screens/item23-golden-sun-village-sentence.png`, `docs/team/screens/item23-golden-sun-village-tile.png`.
+4. **Pass.** `/owners/2852fba8-4ac9-4061-9ccc-6efac7286c98`, Robert and Linda Kowalski, Silver Spur Village. Sentence: "No maturity still ahead. Jul 2022 has passed. From document." Tile Passed, value Jul 2022, line From document. Park row: "Jul 2022 has passed · From document." The page does not say the loan was most likely repaid, and it does not say documented. Screenshots `docs/team/screens/item23-silver-spur-village-sentence.png`, `docs/team/screens/item23-silver-spur-village-tile.png`, `docs/team/screens/item23-silver-spur-village-park.png`.
+5. **Pass.** `/owners/0e915da9-6813-4db4-9056-69abfaf6dd3f`, Robert and Linda Nguyen, Golden Sun Mobile Home Park. Sentence: "Next maturity May 2028. Reported." Tile Next maturity, value May 2028, line Reported. Park row: "matures May 2028 · Reported." The page does not say documented. Owner pressure on the row is still 45.5 High. Screenshots `docs/team/screens/item23-golden-sun-mhp-sentence.png`, `docs/team/screens/item23-golden-sun-mhp-tile.png`, `docs/team/screens/item23-golden-sun-mhp-park.png`.
+6. **Pass.** `/owners/eb4c1318-4fd1-45b3-97b9-79167ceb859e`, Silver Spur Holdings LLC, Silver Spur RV Resort. Sentence includes "Next maturity Sep 2027. From document." Debt on file is —. It is not $0. No dollar sign appears on the page. Same recorded name lists Silver Spur Manufactured Home Community and says "Not a confirmed owner." That row has no dollar amount, and 120 sites does not appear. The park row reads "matures Sep 2027 · From document." Owner pressure on the row is still 45.5 High. The page does not say documented. Screenshots `docs/team/screens/item23-silver-spur-rv-sentence.png`, `docs/team/screens/item23-silver-spur-rv-tile.png`, `docs/team/screens/item23-silver-spur-rv-park.png`.
+7. **Pass.** `/owners/c120f130-7d5c-4daa-a206-ce7bb5fb449d`, Hansen Family Trust, Canyon Estates. Sentence: "No maturity on file." Tile Next maturity, value an em dash, with no line under it. Park row: "no maturity on file." Screenshots `docs/team/screens/item23-canyon-estates-sentence.png`, `docs/team/screens/item23-canyon-estates-tile.png`, `docs/team/screens/item23-canyon-estates-park.png`.
+
+### Regression
+
+`/desk`, read only. Calls worth making still has Canyon Village on "The likely range, Sep 2023 to Sep 2026, has already passed. The date is a model, not a date to quote." Golden Sun still says reported to come due May 2028, 45.5. Silver Spur RV Resort still says documented through Sep 2027, 45.5. That word stays on the park call line. Silver Spur Manufactured Home Community still says reported to come due Sep 2027. Paradise RV Resort is still the Contacted follow-up, 2026-11-06. The pipeline strip is Target 0 and Contacted 1. I did not change a stage.
+
+### Defects
+
+None that fail a criterion.
+
+The mailing line still says Los Angeles with the wrong state on a few of these records (CO on the RV dossier, IL on Kowalski and Hansen, WA on Nguyen). That is the recorded address, and the same-name line is why I do not treat two Silver Spurs as one owner. I am not asking for a change on this item.
+
+### Screenshots
+
+- `docs/team/screens/item23-canyon-village.png`
+- `docs/team/screens/item23-canyon-partners-passed.png`
+- `docs/team/screens/item23-canyon-partners-park.png`
+- `docs/team/screens/item23-canyon-mhp-sentence.png`
+- `docs/team/screens/item23-canyon-mhp-tile.png`
+- `docs/team/screens/item23-canyon-mhp-park.png`
+- `docs/team/screens/item23-golden-sun-village-sentence.png`
+- `docs/team/screens/item23-golden-sun-village-tile.png`
+- `docs/team/screens/item23-silver-spur-village-sentence.png`
+- `docs/team/screens/item23-silver-spur-village-tile.png`
+- `docs/team/screens/item23-silver-spur-village-park.png`
+- `docs/team/screens/item23-golden-sun-mhp-sentence.png`
+- `docs/team/screens/item23-golden-sun-mhp-tile.png`
+- `docs/team/screens/item23-golden-sun-mhp-park.png`
+- `docs/team/screens/item23-silver-spur-rv-sentence.png`
+- `docs/team/screens/item23-silver-spur-rv-tile.png`
+- `docs/team/screens/item23-silver-spur-rv-park.png`
+- `docs/team/screens/item23-canyon-estates-sentence.png`
+- `docs/team/screens/item23-canyon-estates-tile.png`
+- `docs/team/screens/item23-canyon-estates-park.png`
+
+### Backlog added
+
+None.
+
 ## 2026-11-16 — Reported is not documented
 
 Branch `team/reported-line`, commits 387a050 and c74c4cb. Demo already running at http://127.0.0.1:3010. The header said Demo data on every page I opened. I did not use port 3000. I did not sign in, did not save a case, a contact, a stage, or a paste, and did not write the database. I did not open `/freshness`. I did not click Save case. I did not change a stage. I did not run the Playwright suite. Code review was approve. The numbers check was numbers correct. No score changed.
