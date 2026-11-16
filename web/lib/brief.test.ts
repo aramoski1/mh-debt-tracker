@@ -90,6 +90,26 @@ describe("call line", () => {
     expect(line).not.toContain("come due");
   });
 
+  it("says reported to come due when the lender reported a date inside twelve months", () => {
+    pin();
+    const line = callLine(row({
+      maturity_date: "2027-09-08",
+      maturity_basis: "reported",
+      maturity_explanation: "Maturity 2027-09-08 (reported by the lender/servicer).",
+    }));
+    expect(line).toBe("The loan is reported to come due Sep 2027. Ask what they have lined up to replace it.");
+    expect(line).not.toContain("documented");
+  });
+
+  it("keeps the hold question when a reported date is outside twelve months", () => {
+    pin();
+    const line = callLine(row({
+      maturity_date: "2028-05-12",
+      maturity_basis: "reported",
+    }));
+    expect(line).toBe("The loan is reported to come due May 2028. Confirm the real date and whether they want to hold.");
+  });
+
   it("still asks about a replacement when the documented date is ahead", () => {
     pin();
     const line = callLine(row({
