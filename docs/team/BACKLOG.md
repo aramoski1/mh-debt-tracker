@@ -38,6 +38,16 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 | 23 | On the owner dossier, an estimated maturity is labeled estimated, and a date that has already passed is not called the next maturity. | The dossier takes the earliest date on the overview and prints it as "Next maturity" with no basis. Pre-existing. Left out of the blank-balance fix because that sentence was locked as "Next maturity {month}". | dev | code-reviewer | open |
 | 24 | The call line says documented only when the maturity is from a document. A reported maturity says reported. | Silver Spur Manufactured Home Community says "The loan is documented through Sep 2027" while the loan block says the date was reported by the lender, 2027-09-08. Golden Sun already says reported. | dev | acquisitions-lead | open |
 
+## Item 24, locked 16 Nov 2026
+
+Approved. Build only the criteria below.
+
+- Clock 2026-11-12. Silver Spur Manufactured Home Community, maturity 2027-09-08, basis reported, says exactly: "The loan is reported to come due Sep 2027. Ask what they have lined up to replace it."
+- Silver Spur RV Resort, maturity 2027-09-25, basis document, keeps: "The loan is documented through Sep 2027. Ask what they have lined up to replace it."
+- Golden Sun, maturity 2028-05-12, basis reported, keeps: "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold."
+- A passed date and a foreclosure stay on their current sentences. Estimated, unknown, and a blank basis do not get either of the twelve-month sentences.
+- Owner letters stay item 21.
+
 ## Item 20, locked 13 Nov 2026
 
 Approved. Build only the criteria below. The full wording is the acquisitions-lead's return for this item; the playbook line is the rule.

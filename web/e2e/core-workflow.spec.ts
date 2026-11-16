@@ -2,6 +2,7 @@ import { expect, type Locator, type Page, test } from "@playwright/test";
 
 const GOLDEN_SUN = "/parks/4afc56da-ea0a-4cf9-b433-d7696eabeed1";
 const SILVER_SPUR = "/parks/c9fb0d5d-d85f-4b91-8e84-921bb3413792";
+const SILVER_SPUR_MHC = "/parks/91e245d4-a308-47af-9f9d-6335b8c6fd53";
 const SAGUARO = "/parks/470e74b1-65a9-4b3c-9569-0c854cde6599";
 const PARADISE = "/parks/ad423472-c660-4094-9560-78989e6bb64c";
 
@@ -78,6 +79,13 @@ test("Silver Spur shows one fit of 60 and owner pressure 45.5, with no cash gap"
   await expect(fact(loanCard(page), "Balance")).toHaveText("—");
   await expect(page.getByText("Cash the owner must bring")).toHaveCount(0);
   await expect(page.getByText("The loan is documented through Sep 2027. Ask what they have lined up to replace it.", { exact: true })).toBeVisible();
+});
+
+test("a reported maturity inside twelve months does not say documented", async ({ page }) => {
+  await page.goto(SILVER_SPUR_MHC);
+  await expect(page.getByRole("heading", { name: "Silver Spur Manufactured Home Community" })).toBeVisible();
+  await expect(page.getByText("The loan is reported to come due Sep 2027. Ask what they have lined up to replace it.", { exact: true })).toBeVisible();
+  await expect(page.getByText("documented through")).toHaveCount(0);
 });
 
 test("a passed maturity is not written as a loan that is still coming due", async ({ page }) => {

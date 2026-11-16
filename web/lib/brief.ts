@@ -28,8 +28,11 @@ export function callLine(r: ParkRow): string {
   if (r.loan_status === "foreclosure") return "A trustee sale or lis pendens is on the record. Ask if they want a buyer before the sale date.";
   const passed = pastMaturityLine(r);
   if (passed) return passed;
-  if (months != null && months <= 12 && (r.maturity_basis === "reported" || r.maturity_basis === "document")) {
+  if (months != null && months <= 12 && r.maturity_basis === "document") {
     return `The loan is documented through ${monthYear(r.maturity_date)}. Ask what they have lined up to replace it.`;
+  }
+  if (months != null && months <= 12 && r.maturity_basis === "reported") {
+    return `The loan is reported to come due ${monthYear(r.maturity_date)}. Ask what they have lined up to replace it.`;
   }
   if (equity != null && equity > 0 && coverageCounts(gap) && gap?.balance_basis === "reported") {
     if (String(gap.why ?? "").includes("75% of price (desk cap) binds")) {
