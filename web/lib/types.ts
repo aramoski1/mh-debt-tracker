@@ -77,3 +77,17 @@ export const BASIS_LABEL: Record<string, string> = {
   estimated: "Estimated",
   unknown: "Unknown",
 };
+
+export const SOURCE_LABEL: Record<string, string> = {
+  county: "County record",
+  cmbs: "CMBS filing",
+  hud: "FHA",
+  sba: "SBA",
+  edgar: "SEC filing",
+};
+
+/** The filing the row came from. A missing source is not a loan type. */
+export function sourceLabel(source: string | null | undefined) {
+  if (!source) return "none on the primary loan";
+  return SOURCE_LABEL[source] ?? source.replaceAll("_", " ");
+}

@@ -37,6 +37,13 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 | 22 | The prospects rate-shock cell says the coupon is estimated, or stays blank, when the note rate was not on the loan. | Silver Spur RV Resort showed +85 bps with a blank note rate. The park page says 7.00% is estimated. | dev | acquisitions-lead | open |
 | 23 | On the owner dossier, an estimated maturity is labeled estimated, and a date that has already passed is not called the next maturity. | The dossier takes the earliest date on the overview and prints it as "Next maturity" with no basis. Pre-existing. Left out of the blank-balance fix because that sentence was locked as "Next maturity {month}". | dev | code-reviewer | done |
 | 24 | The call line says documented only when the maturity is from a document. A reported maturity says reported. | Silver Spur Manufactured Home Community says "The loan is documented through Sep 2027" while the loan block says the date was reported by the lender, 2027-09-08. Golden Sun already says reported. | dev | acquisitions-lead | done |
+| 25 | On the park, a passed date is labeled Passed. A park with no loan says No loan found. | The dossier already does this. Silver Spur Village and Canyon Village still head the tile Next maturity. | dev | acquisitions-lead | in progress |
+| 26 | A call line that is only a hold phrase says the loan fact. No loan says no loan is on file. | Paradise Manufactured Home Community and Mountain View MHP in Tucson. Owner letters stay item 21. | dev | acquisitions-lead | in progress |
+| 27 | A distress row and a sale row name the park and link to it. | The distress cell said Linked and was not a link. The sale row stopped at the parcel. | dev | acquisitions-lead | in progress |
+| 28 | A community-bank note is not tagged cmbs. The filing line says County record. | Golden Sun, Silver Spur Manufactured Home Community, and Saguaro said Loan: cmbs and Type: Community bank. The data scout said the type is the loan. | data → dev | acquisitions-lead | in progress |
+| 29 | Remove This week. The calls already sit on Today, and passed dates were counted as call targets. | Cut in the 16 Nov 2026 audit. The user asked for the recommended cuts. | dev | acquisitions-lead | open |
+| 30 | Remove /freshness, the Admin link Data sources, and the Data issues link Source freshness. | Cut in the 13 Nov and 16 Nov audits. One raw JSON row. The rate desk already has the as-of date. | dev | acquisitions-lead | open |
+| 31 | Later: the 16 Nov simplifications. Today drops the repeated call blocks. Prospects drops the lists above the table and opens the park from the row. The rate desk drops blank day and year changes and Shelter CPI. Admin drops the Rate desk and Buy box links. Help drops the repeated Honest limits block. Signals hides FHA, Form D, and Filings until a row names a park. Onboarding drops the duplicated steps. | Approved as simplify. Not in the three items with acceptance criteria. | dev | acquisitions-lead | open |
 
 ## Item 23, locked 16 Nov 2026
 
@@ -52,6 +59,39 @@ Approved. Build only the criteria below. Clock 2026-11-12. A month has passed wh
 - If the estimated point month has passed and the range end has not: "The {point} point date has passed. Estimated. Likely range {start} to {end}." Tile Estimated range.
 - A date with no basis says Basis unknown. The dossier does not say documented, and it does not say the loan was most likely repaid.
 - When one month is still ahead, a passed month does not take the Next maturity line.
+
+## Item 28, locked 16 Nov 2026
+
+Approved. The data scout's answer. Build only the criteria below. Do not change the maturity basis, the lender type, the balance, or the score.
+
+- Golden Sun, Silver Spur Manufactured Home Community, and Saguaro show Loan: County record and Type: Community bank. The words cmbs and CMBS are not on that loan card or in the Debt source cell.
+- The same correction covers every demo loan whose source was cmbs and whose lender is not a CMBS trust. There were 12.
+- A real CMBS filing still says CMBS filing. This demo book has none.
+- `make_demo.py` writes county for a known date unless the lender kind is a CMBS trust.
+
+## Item 27, locked 16 Nov 2026
+
+Approved. Build only the criteria below.
+
+- The distress row for the trustee sale notice recorded 2026-10-12 names Paradise RV Resort, and that name links to the park. The cell is not the word Linked.
+- The sales row names Paradise RV Resort and links to the park. The parcel, date, price, and owner stay on the row.
+
+## Item 26, locked 16 Nov 2026
+
+Approved. Build only the criteria below. Owner letters stay item 21.
+
+- Paradise Manufactured Home Community, no loan: Before you call says "No loan is on file." It does not say "held about."
+- Mountain View MHP in Tucson, reported 2028-07-03, whose owner line is only "held about 24 years": "The loan is reported to come due Jul 2028."
+- An owner line that also names a state or an entity stays as it is. Golden Sun's twelve-month and eighteen-month sentences stay as they are.
+
+## Item 25, locked 16 Nov 2026
+
+Approved. Build only the criteria below. Clock 2026-11-12. The call lines on these parks stay as they are.
+
+- Silver Spur Village: tile label Passed, value Jul 2022, line From document. Next maturity is not the tile label.
+- Canyon Village: tile label Passed, value Sep 2026, line "Estimated · Sep 2023 to Sep 2026." Next maturity is not the tile label.
+- Golden Sun stays Next maturity, May 2028, Reported. Silver Spur RV Resort stays Next maturity, Sep 2027, From document.
+- Paradise Manufactured Home Community says No loan found. It does not say Next maturity with a month.
 
 ## Item 24, locked 16 Nov 2026
 

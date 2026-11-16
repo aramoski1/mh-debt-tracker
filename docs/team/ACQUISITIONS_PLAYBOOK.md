@@ -268,6 +268,18 @@ Source: first feature audit, demo clock pinned to 2026-11-12.
 - A park is not a deal until someone saves a stage. The Stage control shows **Not in the pipeline** until then. That label is not a stage, and it is not a way to delete a deal. A next-action date typed before a stage is chosen waits; it does not create a Target. Choosing Target is a real save and puts the park on the board. Source: item 20 criteria, 13 Nov 2026.
 - Confirmed on the demo at http://127.0.0.1:3010, 13 Nov 2026. Golden Sun showed Not in the pipeline. Next action 2026-12-01 did not put a card on the board. Choosing Target saved it. The line said Pipeline updated. Golden Sun was the Target card and Paradise RV Resort stayed the Contacted card. Silver Spur stayed Not in the pipeline, owner pressure 45.5, acquisition fit 60. Golden Sun stayed on the call list. Source: item 20 test.
 
+## 12. What the 16 Nov 2026 screen walk taught
+
+Source: second feature audit, demo at http://127.0.0.1:3010, clock pinned to 2026-11-12.
+
+- Today is the morning list. This week is the same list with loans whose dates have already passed counted as call targets. I would remove This week.
+- The dossier already puts a passed date under Passed. The park tile still says Next maturity for Silver Spur Village (Jul 2022) and Canyon Village (Sep 2026). The call line on those parks is already right.
+- A call reason that is only "held about N years" is a score phrase. On a park with no loan, Paradise Manufactured Home Community, that phrase is the whole sentence before the call.
+- A distress row that says Linked, and is not a link, does not get me to the park. The sale row with no park name does not either.
+- `/freshness` is still one row of raw JSON. The rate desk already has the as-of date.
+- A source line that says `cmbs` on a loan the type calls a community bank is not a fact I will act on. Golden Sun, Silver Spur Manufactured Home Community, and Saguaro. The data scout has to say which word is the loan before anyone flags those notes as assumable.
+- The data scout's answer, 16 Nov 2026: those three notes are community-bank loans. The `cmbs` tag was a demo shortcut. The filing line says County record. The type stays Community bank. The maturity word stays Reported. They are not assumable from this label.
+
 ## Sources
 
 - [A.R.S. 33-1476.01, Change in use](https://www.azleg.gov/ars/33/01476-01.htm)

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabaseServer } from "@/lib/supabase/server";
-import { BASIS_LABEL, KIND_LABEL, LENDER_LABEL, type ParkRow, type ScoreComponent } from "@/lib/types";
+import { BASIS_LABEL, KIND_LABEL, LENDER_LABEL, sourceLabel, type ParkRow, type ScoreComponent } from "@/lib/types";
+import { parkMaturity } from "@/lib/owner-book";
 import { dollars, money, monthYear, pct } from "@/lib/format";
 import { paymentMonths } from "@/lib/underwrite";
 import { callLine, shownPressure } from "@/lib/brief";
@@ -114,6 +115,8 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
   ]);
   if (!park) notFound();
   const p = park as ParkRow;
+  const maturity = parkMaturity(p);
+  const noLoan = p.loan_id == null;
   const comps = p.score_components ?? {};
   const op = mergeOperating((opRows ?? []) as OperatingRow[]);
   const hasOp = Object.keys(op).length > 0;
@@ -283,20 +286,17 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
         </section>
 
         <section className="rounded-sm border border-line bg-panel p-4">
-          <h2 className="mb-3 font-semibold">Next maturity</h2>
-          <div className="num text-2xl font-semibold">{monthYear(p.maturity_date)}</div>
-          <p className="text-body">{p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "No loan found"}</p>
+          <h2 className="mb-3 font-semibold">{noLoan ? "No loan found" : maturity.tileLabel}</h2>
+          <div className="num text-2xl font-semibold">{noLoan ? "—" : maturity.tileValue}</div>
+          {!noLoan && maturity.tileDetail && <p className="text-body">{maturity.tileDetail}</p>}
           {p.loan_status === "foreclosure" && (
             <p className="mt-2 rounded bg-negative-soft px-2 py-1 text-accent">A trustee sale notice or lis pendens has been recorded.</p>
-          )}
-          {p.maturity_basis === "estimated" && p.p10_date && (
-            <p className="mt-1 text-xs text-muted">Likely range {monthYear(p.p10_date)} to {monthYear(p.p90_date)}</p>
           )}
           {p.maturity_explanation && <p className="mt-2 text-xs text-muted">{p.maturity_explanation}</p>}
           <div className="mt-4 border-t border-line pt-3">
             <h3 className="text-xs font-medium text-muted">Sources for this park</h3>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>Loan: {p.loan_source ?? "none on the primary loan"} · maturity {p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "—"}</li>
+              <li>Loan: {sourceLabel(p.loan_source)} · maturity {p.maturity_basis ? BASIS_LABEL[p.maturity_basis] : "—"}</li>
               {((parcels ?? []) as { apn?: string; county?: string }[]).slice(0, 3).map((parcel) => (
                 <li key={parcel.apn}>
                   Parcel {parcel.apn} ({parcel.county})
@@ -359,7 +359,7 @@ export default async function ParkPage({ params }: { params: Promise<{ id: strin
               return (
                 <tr key={l.id} className="border-t border-line">
                   <td className="num px-4 py-2">{l.recording_date ?? l.origination_date ?? "—"}</td>
-                  <td className="px-4 py-2 uppercase text-muted">{l.source}</td>
+                  <td className="px-4 py-2 text-muted">{sourceLabel(l.source)}</td>
                   <td className="px-4 py-2">{l.lenders?.name ?? l.lender_name_raw ?? "—"}</td>
                   <td className="num px-4 py-2 text-right">{money(l.current_balance ?? l.original_amount)}</td>
                   <td className="num px-4 py-2">

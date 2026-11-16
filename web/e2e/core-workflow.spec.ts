@@ -93,10 +93,49 @@ test("a passed maturity is not written as a loan that is still coming due", asyn
   const village = page.locator("section", { has: page.getByText("Before you call") });
   await expect(village).toContainText("The Jul 2022 date has passed. The loan was most likely repaid without a recorded release.");
   await expect(village).not.toContainText("lined up");
+  await expect(page.getByRole("heading", { name: "Passed", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Next maturity", exact: true })).toHaveCount(0);
   await page.goto("/parks/d14493f3-3dc0-4621-ba78-acf23d258f8f");
   const canyon = page.locator("section", { has: page.getByText("Before you call") });
   await expect(canyon).toContainText("The likely range, Sep 2023 to Sep 2026, has already passed. The date is a model, not a date to quote.");
   await expect(canyon).not.toContainText("come due");
+  await expect(page.getByRole("heading", { name: "Passed", exact: true })).toBeVisible();
+  await expect(page.getByText("Estimated · Sep 2023 to Sep 2026")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Next maturity", exact: true })).toHaveCount(0);
+});
+
+test("a hold phrase is not the whole reason to call", async ({ page }) => {
+  await page.goto(PARADISE);
+  const noLoan = page.locator("section", { has: page.getByText("Before you call") });
+  await expect(noLoan).toContainText("No loan is on file.");
+  await expect(noLoan).not.toContainText("held about");
+  await expect(page.getByRole("heading", { name: "No loan found", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Next maturity", exact: true })).toHaveCount(0);
+  await page.goto("/parks/b0c25b61-c93f-4cdd-a1e8-05cf0e9b061e");
+  const mountain = page.locator("section", { has: page.getByText("Before you call") });
+  await expect(mountain).toContainText("The loan is reported to come due Jul 2028.");
+  await expect(mountain).not.toContainText("held about");
+});
+
+test("a filing row names the park", async ({ page }) => {
+  await page.goto("/signals");
+  await page.getByRole("tab", { name: "Distress" }).click();
+  const distress = page.getByRole("link", { name: "Paradise RV Resort", exact: true });
+  await expect(distress).toHaveAttribute("href", "/parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f");
+  await expect(page.getByText("Linked", { exact: true })).toHaveCount(0);
+  await page.getByRole("tab", { name: "Sales" }).click();
+  await expect(page.getByRole("link", { name: "Paradise RV Resort", exact: true })).toHaveAttribute("href", "/parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f");
+});
+
+test("a community bank loan is not labeled as CMBS", async ({ page }) => {
+  await page.goto(GOLDEN_SUN);
+  const card = loanCard(page);
+  await expect(card).toContainText("Loan: County record");
+  await expect(fact(card, "Type")).toHaveText("Community bank");
+  await expect(card).not.toContainText("cmbs");
+  await page.getByRole("tab", { name: "Debt" }).click();
+  await expect(page.getByRole("cell", { name: "County record", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("cell", { name: "CMBS", exact: true })).toHaveCount(0);
 });
 
 test("Saguaro leaves the payment blank", async ({ page }) => {

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
 import { isDemo } from "@/lib/supabase/demo";
 import { money, monthYear, pct } from "@/lib/format";
@@ -32,6 +33,13 @@ export default async function SignalsPage() {
     supabase.from("transactions").select("*").order("sale_date", { ascending: false }).limit(40),
     supabase.from("entities").select("id, name, zip, kind").order("name").limit(30),
   ]);
+  const distressRows = (distress ?? []) as Distress[];
+  const saleRows = (sales ?? []) as Sale[];
+  const parkIds = [...new Set([...distressRows, ...saleRows].map((row) => row.park_id).filter((id): id is string => Boolean(id)))];
+  const { data: named } = parkIds.length
+    ? await supabase.from("park_overview").select("id, name").in("id", parkIds)
+    : { data: [] as { id: string; name: string }[] };
+  const parkName = new Map((named ?? []).map((row) => [String(row.id), String(row.name)]));
 
   return (
     <div className="space-y-4">
@@ -123,12 +131,12 @@ export default async function SignalsPage() {
             </tr>
           </thead>
           <tbody>
-            {((distress ?? []) as Distress[]).map((row) => (
+            {distressRows.map((row) => (
               <tr key={row.source_id + row.event_type} className="border-t border-line">
                 <td className="px-4 py-2">{row.title || row.event_type}<span className="block text-xs text-muted">{row.county}</span></td>
                 <td className="num px-4 py-2">{row.event_date}</td>
                 <td className="num px-4 py-2 text-right">{money(row.amount)}</td>
-                <td className="px-4 py-2 text-xs">{row.park_id ? "Linked" : "Unlinked"}</td>
+                <td className="px-4 py-2 text-xs">{parkLink(row.park_id, parkName)}</td>
               </tr>
             ))}
             {!distress?.length && <Empty cols={4} label="No trustee-sale or lis pendens documents stored." />}
@@ -141,6 +149,7 @@ export default async function SignalsPage() {
         <table className="w-full">
           <thead className="bg-sunken text-left text-xs text-muted">
             <tr>
+              <th className="px-4 py-2 font-medium">Park</th>
               <th className="px-4 py-2 font-medium">Parcel</th>
               <th className="px-4 py-2 font-medium">Date</th>
               <th className="px-4 py-2 text-right font-medium">Price</th>
@@ -149,8 +158,9 @@ export default async function SignalsPage() {
             </tr>
           </thead>
           <tbody>
-            {((sales ?? []) as Sale[]).map((row) => (
+            {saleRows.map((row) => (
               <tr key={row.source_id} className="border-t border-line">
+                <td className="px-4 py-2">{parkLink(row.park_id, parkName)}</td>
                 <td className="px-4 py-2">{row.apn}<span className="block text-xs text-muted">{row.county}</span></td>
                 <td className="num px-4 py-2">{row.sale_date}</td>
                 <td className="num px-4 py-2 text-right">{money(row.price)}</td>
@@ -158,7 +168,7 @@ export default async function SignalsPage() {
                 <td className="px-4 py-2">{row.owner_name}</td>
               </tr>
             ))}
-            {!sales?.length && <Empty cols={5} label="No assessor sale prices on park parcels." />}
+            {!sales?.length && <Empty cols={6} label="No assessor sale prices on park parcels." />}
           </tbody>
         </table>
       </Section>
@@ -185,6 +195,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       {children}
     </section>
   );
+}
+
+function parkLink(parkId: string | null, names: Map<string, string>) {
+  if (!parkId) return "Unlinked";
+  const name = names.get(parkId);
+  if (!name) return <Link className="text-accent" href={`/parks/${parkId}`}>Open the park</Link>;
+  return <Link className="text-accent" href={`/parks/${parkId}`}>{name}</Link>;
 }
 
 function Empty({ cols, label }: { cols: number; label: string }) {

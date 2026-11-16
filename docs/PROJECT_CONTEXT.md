@@ -27,7 +27,7 @@ Paste this at the start of a new chat. It covers the client, the product, the co
   - Next.js 15.5 (App Router) with React 19, `@supabase/ssr`, Tailwind 4 and design tokens in `web/app/tokens.css`
   - MapLibre for maps, TanStack Table + Virtual for the prospect table, Radix for dialogs, popovers and tooltips, Recharts for charts
   - the Anthropic SDK
-- **Hosting:** Vercel, not yet deployed. Demo mode (`NEXT_PUBLIC_SUPABASE_URL=demo`) serves fictional data from `web/demo/*.json`. A call line does not ask what will replace a loan whose maturity date, or whose estimated range, has already passed. Documented means the date was read from a recorded document. A reported date inside twelve months says reported to come due.
+- **Hosting:** Vercel, not yet deployed. Demo mode (`NEXT_PUBLIC_SUPABASE_URL=demo`) serves fictional data from `web/demo/*.json`. A call line does not ask what will replace a loan whose maturity date, or whose estimated range, has already passed. Documented means the date was read from a recorded document. A reported date inside twelve months says reported to come due. On the park, a passed date is labeled Passed, and a park with no loan says no loan is on file. A community-bank note says County record, not a CMBS filing.
 - **Editor:** Cursor. Project rules are in `.cursor/rules/*.mdc` (`project`, `docs`, `new-source`, `web`, `team`), and `BUILD_GUIDE.md` is the setup walkthrough.
 - **Docs in the repo:**
   - `docs/AUDIT.md`: an honest audit of coverage, accuracy, workflow and UI
@@ -114,11 +114,11 @@ Paste this at the start of a new chat. It covers the client, the product, the co
 | `/` | **Prospects.** Four counts, a "calls worth making" list with a one-sentence call line (`lib/brief.ts`), a virtualized table with filters, and a map. Keyboard navigation with j/k. |
 | `/desk` | **Today.** Ranked work for the morning: distress, upcoming maturities, follow-ups, and buy-box fits. Blocks can be hidden or reordered. |
 | `/follow-ups`, `/week` | Follow-ups due, and the week's deadlines. |
-| `/parks/[id]` | **Park page.** Score and why, fit, cadence, maturity range, loan history, documents, buyer email drafts (they open the user's mail client and do not send), the operating figures form, the underwriting desk, a watch flag, and print. |
+| `/parks/[id]` | **Park page.** Score and why, fit, cadence, maturity (Next maturity only while the month is still ahead; a passed date is labeled Passed; no loan says No loan found), loan history, documents, buyer email drafts (they open the user's mail client and do not send), the operating figures form, the underwriting desk, a watch flag, and print. |
 | `/pipeline` | Saved deals only. A park with no stage stays off the board, and the park page says "Not in the pipeline." Stages, once saved: Target, Contacted, In conversation, Underwriting, LOI, Due diligence, Closed, Dead. Plus the buy-box form. |
 | `/loi/[id]` | A printable offer from the saved underwriting. Estimates stay labeled as estimates. |
 | `/rates` | **Rate desk.** Treasury tenors, SOFR, prime, the CMBS spread, Arizona unemployment, and charts. |
-| `/signals` | Tabs: FHA, Form D, filings, distress, sales, owners. |
+| `/signals` | Tabs: FHA, Form D, filings, distress, sales, owners. A distress row and a sale row name the park and link to it. |
 | `/markets` | Counties ranked by number of parks. |
 | `/owners`, `/owners/[id]` | One row per owner record. The list shows the 80 records with the most parks and says when more are left off. Debt on file is the balances on that record: a blank stays blank, and a stored zero prints as $0. Same recorded name lists other parks that use the name and says they are not a confirmed owner. Their debt is not added. Next maturity is only a month still ahead, and the line names Reported, From document, or Estimated. A passed date stays under Passed. A place to paste an Arizona Corporation Commission page. |
 | `/portfolio` | Cooper Cardinal's own parks. |

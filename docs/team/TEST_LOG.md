@@ -2,6 +2,98 @@
 
 Newest first. Written by the acquisitions-lead. Each session lists: date, what was tested and with which data, pass/fail per acceptance criterion, and defects with severity, steps to reproduce, expected vs actual, and a screenshot path.
 
+## 2026-11-16 — Second product audit
+
+Demo only, at http://127.0.0.1:3010. The header said Demo data on every page I opened. The call sentences match the pinned clock, 2026-11-12. I did not open port 3000. I did not sign in. I did not save a case, a contact, a stage, a paste, or a watch. I did not click Save case, Add contact, Mark managed, Add to pipeline, Mark as sent, Save paste, Save quote, Save figures, Save box, Save view, Match, Dismiss, Resolve, or Mark read. I typed an underwriting case on Saguaro and did not save it. I did not write the database.
+
+**Verdict: ship the audit.** The walk is done. Nothing blocked me from judging the screens.
+
+Items 18, 19, 20, 23, and 24 stay closed. I re-read them and they still hold. Items 21 and 22 are still open and still true. I am not filing them again.
+
+### Screen marks
+
+| Screen | Verdict | One sentence |
+|---|---|---|
+| `/desk` Today | simplify | Paradise RV Resort is on this page six times, and the second row of Do these today only says Contacted. |
+| `/` Prospects | simplify | The morning call list sits above the book, and a row opens a preview instead of the park. |
+| Park page | improve | The call line is honest, and a date that has already passed is still headed Next maturity. |
+| `/follow-ups` | keep | Overdue, today, and upcoming, and the one overdue item is Paradise RV Resort, Contacted, 2026-11-06. |
+| `/week` This week | cut | It is Today's list plus three loans whose dates have already passed, and it counts those as call targets. |
+| `/pipeline` | keep | One card, Paradise RV Resort in Contacted, empty columns say to drop a deal, and the weighted price stays blank. |
+| `/rates` Rate desk | simplify | The series are dated and labeled as the fictional demo set, and blank day and year changes do not help a call. |
+| `/markets` | keep | County counts from the parks already loaded, and it says this is not a rent series. |
+| `/signals` | improve | The distress cell says Linked and is not a link, and the sale row has no park name. |
+| `/owners` | keep | Same recorded name is its own column, and Silver Spur Holdings LLC stays two rows. |
+| Owner dossier | keep | A blank balance stays blank, a passed date stays under Passed, and the same name is not merged. |
+| `/portfolio` | keep | The empty state says to mark a park managed before distance counts. |
+| `/alerts` | keep | Four rows under 2026-10-27, and snooze says it lasts until reload. |
+| `/admin` | simplify | Rate desk and Buy box are already in the nav, and Data sources opens `/freshness`. |
+| `/admin/audit` | keep | The empty state says nothing in this book matches the audit rules. |
+| `/admin/issues` | keep | One failed recorder run, in a sentence, dated 2026-10-30. |
+| `/how-it-works` | improve | The coverage percents have no date, and the snooze and Enter lines do not match the screens. |
+| `/onboarding` | improve | Step 1 says to paste names on Portfolio, and Portfolio has no paste box. |
+| `/freshness` | cut | One row, the result is raw JSON, it is not in the nav, and the rate desk already has the as-of date. |
+| `/styleguide` | cut | It says hidden in production, it is not in the nav, and the numbers are samples. |
+
+### Core path
+
+1. **Pass, with the same simplify.** Today lists Golden Sun. The call line is "The loan is reported to come due May 2028. Confirm the real date and whether they want to hold." Paradise RV Resort is the trustee-sale row, the overdue Contacted follow-up dated 2026-11-06, a call, a high score, and a foreclosure notice.
+2. **Pass.** Golden Sun loan: Commerce Bank of Arizona, community bank, balance $2.5M, rate 3.56%, payment blank because the amortization was not on the loan. Maturity May 2028, labeled Reported. Stage was Not in the pipeline. I did not change it. The source line also says `cmbs`. That clash is a defect below, not a wrong balance.
+3. **Pass.** Silver Spur Holdings LLC, the RV record, Debt on file —, Next maturity Sep 2027, From document. Same recorded name lists Silver Spur Manufactured Home Community and says Not a confirmed owner. Sites stay 260. The $3.2M balance is not on this record.
+4. **Pass, looked only.** Pipeline still has Paradise RV Resort as the Contacted card, overdue 2026-11-06. Target is 0. I did not drag a card and I did not click Save box.
+5. **Pass.** Saguaro underwriting, unsaved. Price 6000000, cap 7.5, sites 100, lot rent 375, occupancy 100, expenses 0, growth 0, bank rate 7. Tiles: cash-on-cash 6.05%, equity $1,500,000, IRR 8.99%, DSCR 1.25x. Hand check: 100 × $375 × 12 = $450,000 NOI. 75% of $6,000,000 is $4,500,000 and that cap binds. The draft says year-1 NOI $450,000, a 30-year desk loan at 7.00% for $4,500,000, cash-on-cash 6.05%, and year-5 IRR 8.99% at a 7.5% cap. It does not mention 4.91% or the existing balance. I did not click Save case.
+
+### Parks I opened
+
+- Golden Sun. Call line reported May 2028. Fit 80. Pressure 45.5. Stage Not in the pipeline.
+- Silver Spur RV Resort. Call line documented through Sep 2027. Fit 60. Pressure 45.5. Balance blank. Rate blank. The score line says borrowed at 7.00% (estimated). Stage Not in the pipeline.
+- Silver Spur Manufactured Home Community. Call line reported to come due Sep 2027. The word documented is not on that sentence. Balance $3.2M, rate 4.87%, Alliance Bank of Arizona, community bank. The source line says `cmbs`.
+- Silver Spur Village. Call line: "The Jul 2022 date has passed. The loan was most likely repaid without a recorded release." The tile heading is still Next maturity, value Jul 2022, From document.
+- Canyon Village. Call line: the range Sep 2023 to Sep 2026 has already passed. The tile heading is still Next maturity, value Sep 2026, Estimated.
+- Paradise Manufactured Home Community. "Not scored — no loan on file." Fit 60. The sentence before the call is "held about 26 years; owner based in IL; owned by a trust."
+- Saguaro. Call line reported to come due Jun 2027. Pressure 53.1. Fit 55, because 24 sites is outside 50–400. Underwriting as above.
+
+### Owners I opened
+
+- Robert and Linda Nguyen. Next maturity May 2028, Reported. Debt on file $2.5M. Same name: Shady Village, Not a confirmed owner. Header "Los Angeles, WA".
+- Silver Spur Holdings LLC, the RV record. As in the core path.
+- Canyon Partners LLC, Canyon Village. "No maturity still ahead." Tile Passed, Sep 2026. Debt on file —. Same name: Canyon Mobile Home Park, Not a confirmed owner.
+- Hansen Family Trust, Canyon Estates. "No maturity on file." Tile Next maturity, value —. Debt on file —.
+
+### Still open, not filed again
+
+- Item 21. Silver Spur RV first contact says "The recorded maturity is 2027-09. You have held about 25 years." Silver Spur Village first contact quotes 2022-07 and "You have held about 12 years." Canyon Village first contact does not quote the estimated date and does say "You have held about 10 years."
+- Item 22. Prospects rate shock on Silver Spur RV Resort is +85 bps with the note rate blank.
+
+### Defects
+
+1. **Major.** The same loan is labeled two ways. Golden Sun overview says "Loan: cmbs" and Type "Community bank," lender Commerce Bank of Arizona, balance $2.5M, maturity May 2028 Reported. The Debt tab source column says CMBS. Silver Spur Manufactured Home Community and Saguaro say `cmbs` on the source line and community bank on the type. I will not treat those loans as CMBS, and I will not treat them as assumable, until the data scout says which word is the loan.
+2. **Minor.** Help says "j and k move the table. Enter opens the park." Clicking a Prospects row opened a preview of Silver Spur RV Resort with Close and "Open the full page." Help says "Snooze moves the date seven days" under Follow-ups. Follow-ups has no snooze. Alerts says snooze hides the row until reload. Help says "Set diligence and close dates. They show on Today." I did not find those fields on the pipeline or on Today.
+3. **Minor.** Onboarding step 1 says "paste names on Portfolio." Portfolio says "Use Mark managed on a park page" and has no paste box. The paste box is on `/onboarding`. I did not click Match.
+4. **Polish.** Today and Prospects say "1 foreclosure notices." Park pages say "cadence is due ." with a space before the period.
+
+A Next.js issues badge was on the page. I did not open it. It is the dev server, not a desk defect.
+
+### Screenshots
+
+- `docs/team/screens/audit2-today.png`
+- `docs/team/screens/audit2-prospects.png`
+- `docs/team/screens/audit2-prospects-desktop.png`
+- `docs/team/screens/audit2-week.png`
+- `docs/team/screens/audit2-rates.png`
+- `docs/team/screens/audit2-signals-distress.png`
+- `docs/team/screens/audit2-freshness.png`
+- `docs/team/screens/audit2-styleguide.png`
+- `docs/team/screens/audit2-onboarding.png`
+- `docs/team/screens/audit2-golden-sun-debt.png`
+- `docs/team/screens/audit2-how-it-works.png`
+- `docs/team/screens/audit2-canyon-maturity-tile.png` (the crop shows the rent notebook on Canyon Village)
+- `docs/team/screens/audit2-canyon-next-maturity.png` (same rent notebook, higher on the page)
+
+### Backlog added
+
+None in `BACKLOG.md`. The cuts, simplifications, and the three improvements are in this entry. Items 21 and 22 stay as they are.
+
 ## 2026-11-16 — Dossier maturity, passed dates stay passed
 
 Branch `team/dossier-maturity`, commit e4ef84a. Demo already running at http://127.0.0.1:3010. The header said Demo data on every dossier I opened and on Today. Clock is the pinned demo clock, 2026-11-12. I did not use port 3000. I did not sign in. I did not save a case, a contact, a stage, or a paste. I did not click Save case, Add contact, or Save paste. I did not change a stage. I did not open `/freshness`. I did not write the database. I did not run the Playwright suite. Code review was approve. The numbers check was numbers correct. No dollar figure and no score changed.

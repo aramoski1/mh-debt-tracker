@@ -80,3 +80,11 @@ Every integration reports these numbers in `docs/COVERAGE.md` / `docs/ACCURACY.m
 6. Write the source spec. Write the module, probe and tests.
 7. Hand off to the developer with the before/after metric.
 8. If it didn't move the metric, say so and remove it from the plan.
+
+## 6. Loan source and lender type (16 Nov 2026)
+
+`loans.source` is the filing that wrote the row (`cmbs` means an SEC CMBS trust tape). `lenders.kind` is a separate classification of the lender on that same row. The park page prints the source code as "Loan:" and the kind as "Type:".
+
+A real CMBS row is source `cmbs` and kind `cmbs_trust`. The trust is the lender. An originating bank, if the filing names one, stays in `raw.originator` and does not become the kind. A community-bank note is source `county` and kind `community_bank`.
+
+The demo book breaks that pair. `make_demo.py` stamps `cmbs` on any fictional loan it gives a stated maturity, including Commerce Bank of Arizona, Alliance Bank of Arizona, and Arizona Bank & Trust. Those three notes are community-bank loans. The source word is the false field. See the 16 Nov 2026 entry in `DATA_LOG.md`.

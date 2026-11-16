@@ -120,6 +120,39 @@ describe("call line", () => {
     expect(line).toBe("The loan is documented through Sep 2027. Ask what they have lined up to replace it.");
   });
 
+  it("says no loan is on file when the only words would be how long they have held", () => {
+    pin();
+    const line = callLine(row({
+      loan_id: null,
+      score_components: { owner: { why: "held about 26 years; owner based in IL; owned by a trust", points: 12 } },
+    }));
+    expect(line).toBe("No loan is on file.");
+    expect(line).not.toContain("held about");
+  });
+
+  it("names a reported maturity when the hold phrase would be the whole sentence", () => {
+    pin();
+    const line = callLine(row({
+      loan_id: "606f881d-d250-4e6e-b937-3af4855d32b0",
+      maturity_date: "2028-07-03",
+      maturity_basis: "reported",
+      score_components: { owner: { why: "held about 24 years", points: 5 } },
+    }));
+    expect(line).toBe("The loan is reported to come due Jul 2028.");
+    expect(line).not.toContain("held about");
+  });
+
+  it("keeps an owner fact that is more than the hold phrase", () => {
+    pin();
+    const line = callLine(row({
+      loan_id: "loan",
+      maturity_date: "2030-07-05",
+      maturity_basis: "reported",
+      score_components: { owner: { why: "held about 30 years; owner based in CA", points: 8 } },
+    }));
+    expect(line).toBe("held about 30 years; owner based in CA");
+  });
+
   it("keeps the trustee-sale sentence when the maturity has also passed", () => {
     pin();
     const line = callLine(row({
