@@ -204,6 +204,28 @@ test("a blank owner balance stays blank, and the same recorded name stays a sepa
 
 const PARADISE_RV = "/parks/45d5112a-cefd-4b95-83dc-f24d6b13e37f";
 
+test("the dossier does not call a passed month the next maturity", async ({ page }) => {
+  await page.goto("/owners/caeb0fd4-ab30-4dbb-b239-10e27028065a");
+  await expect(page.getByText("No maturity still ahead. Estimated range Sep 2023 to Sep 2026 has already passed.")).toBeVisible();
+  await expect(page.locator("p", { hasText: /^Next maturity$/ })).toHaveCount(0);
+  await expect(page.locator("p", { hasText: /^Passed$/ })).toBeVisible();
+  await expect(page.getByText("Estimated range Sep 2023 to Sep 2026 has passed")).toBeVisible();
+
+  await page.goto("/owners/2852fba8-4ac9-4061-9ccc-6efac7286c98");
+  await expect(page.getByText("No maturity still ahead. Jul 2022 has passed. From document.")).toBeVisible();
+  await expect(page.getByText("Jul 2022 has passed · From document")).toBeVisible();
+
+  await page.goto("/owners/0e915da9-6813-4db4-9056-69abfaf6dd3f");
+  await expect(page.getByText("Next maturity May 2028. Reported.")).toBeVisible();
+  await expect(page.getByText("matures May 2028 · Reported")).toBeVisible();
+
+  await page.goto("/owners/eb4c1318-4fd1-45b3-97b9-79167ceb859e");
+  await expect(page.getByText("Next maturity Sep 2027. From document.")).toBeVisible();
+
+  await page.goto("/owners/c120f130-7d5c-4daa-a206-ce7bb5fb449d");
+  await expect(page.getByText("No maturity on file.")).toBeVisible();
+});
+
 test("a park with no saved stage is not in the pipeline", async ({ page }) => {
   const posts = watchWrites(page);
   const dealBodies: string[] = [];

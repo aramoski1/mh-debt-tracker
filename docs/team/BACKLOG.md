@@ -38,6 +38,21 @@ Ranked work for the team. Wrong numbers and broken workflows first, then by valu
 | 23 | On the owner dossier, an estimated maturity is labeled estimated, and a date that has already passed is not called the next maturity. | The dossier takes the earliest date on the overview and prints it as "Next maturity" with no basis. Pre-existing. Left out of the blank-balance fix because that sentence was locked as "Next maturity {month}". | dev | code-reviewer | open |
 | 24 | The call line says documented only when the maturity is from a document. A reported maturity says reported. | Silver Spur Manufactured Home Community says "The loan is documented through Sep 2027" while the loan block says the date was reported by the lender, 2027-09-08. Golden Sun already says reported. | dev | acquisitions-lead | done |
 
+## Item 23, locked 16 Nov 2026
+
+Approved. Build only the criteria below. Clock 2026-11-12. A month has passed when the year and month are before the clock. The current month has not.
+
+- Golden Sun's owner: "Next maturity May 2028. Reported." Tile Next maturity, value May 2028, line Reported. Park row "matures May 2028 · Reported".
+- Silver Spur RV Resort's owner: "Next maturity Sep 2027. From document."
+- Canyon Mobile Home Park's owner: "Next maturity Jan 2027. Estimated. Likely range Jan 2026 to Jan 2029."
+- Golden Sun Village's owner: "Next maturity Nov 2029. Estimated. Likely range Nov 2027 to Nov 2034."
+- Canyon Village's owner: "No maturity still ahead. Estimated range Sep 2023 to Sep 2026 has already passed." Tile Passed, value Sep 2026. Park row "Estimated range Sep 2023 to Sep 2026 has passed".
+- Silver Spur Village's owner: "No maturity still ahead. Jul 2022 has passed. From document." Tile Passed. A passed reported date uses the same shape with Reported.
+- Canyon Estates' owner: "No maturity on file." Tile Next maturity, value —. Park row "no maturity on file".
+- If the estimated point month has passed and the range end has not: "The {point} point date has passed. Estimated. Likely range {start} to {end}." Tile Estimated range.
+- A date with no basis says Basis unknown. The dossier does not say documented, and it does not say the loan was most likely repaid.
+- When one month is still ahead, a passed month does not take the Next maturity line.
+
 ## Item 24, locked 16 Nov 2026
 
 Approved. Build only the criteria below.
