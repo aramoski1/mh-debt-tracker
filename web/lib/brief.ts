@@ -20,12 +20,27 @@ export function reportedCashGap(r: Pick<ParkRow, "score_components">): number | 
   return gap.equity_needed;
 }
 
+/** The owner-score phrase, with nothing else in the sentence. */
+function onlyHoldPhrase(why: string) {
+  return /^held about \d+ years(?: \(reported owned-since date\))?$/.test(why.trim());
+}
+
+/** A date outside the call window, stated as a fact. Not a question about holding. */
+function datedFact(r: ParkRow): string {
+  const month = monthYear(r.maturity_date);
+  if (r.maturity_basis === "reported") return `The loan is reported to come due ${month}.`;
+  if (r.maturity_basis === "document") return `The loan is documented through ${month}.`;
+  if (r.maturity_basis === "estimated") return `The date is estimated for ${month}. The date is a model, not a date to quote.`;
+  return `A maturity is on file for ${month}. Basis unknown.`;
+}
+
 /** One sentence to say out loud before dialing. Built only from fields already on the park. */
 export function callLine(r: ParkRow): string {
   const gap = r.score_components?.refi_gap;
   const equity = typeof gap?.equity_needed === "number" ? gap.equity_needed : null;
   const months = monthsFromNow(r.maturity_date);
   if (r.loan_status === "foreclosure") return "A trustee sale or lis pendens is on the record. Ask if they want a buyer before the sale date.";
+  if (r.loan_id === null) return "No loan is on file.";
   const passed = pastMaturityLine(r);
   if (passed) return passed;
   if (months != null && months <= 12 && r.maturity_basis === "document") {
@@ -45,6 +60,7 @@ export function callLine(r: ParkRow): string {
     return `The loan is ${basis} to come due ${monthYear(r.maturity_date)}. Confirm the real date and whether they want to hold.`;
   }
   const why = r.score_components?.owner?.why;
+  if (why && onlyHoldPhrase(why) && r.maturity_date) return datedFact(r);
   if (why) return why;
   return "The ownership and the loan timing are worth a conversation about a sale or a refinance.";
 }
