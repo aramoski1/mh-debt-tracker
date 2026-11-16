@@ -128,14 +128,16 @@ test("a filing row names the park", async ({ page }) => {
 });
 
 test("a community bank loan is not labeled as CMBS", async ({ page }) => {
-  await page.goto(GOLDEN_SUN);
-  const card = loanCard(page);
-  await expect(card).toContainText("Loan: County record");
-  await expect(fact(card, "Type")).toHaveText("Community bank");
-  await expect(card).not.toContainText("cmbs");
-  await page.getByRole("tab", { name: "Debt" }).click();
-  await expect(page.getByRole("cell", { name: "County record", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("cell", { name: "CMBS", exact: true })).toHaveCount(0);
+  for (const path of [GOLDEN_SUN, SILVER_SPUR_MHC, SAGUARO]) {
+    await page.goto(path);
+    const card = loanCard(page);
+    await expect(card).toContainText("Loan: County record");
+    await expect(fact(card, "Type")).toHaveText("Community bank");
+    await expect(card).not.toContainText("cmbs");
+    await page.getByRole("tab", { name: "Debt" }).click();
+    await expect(page.getByRole("cell", { name: "County record", exact: true }).first()).toBeVisible();
+    await expect(page.getByRole("cell", { name: /CMBS/ })).toHaveCount(0);
+  }
 });
 
 test("Saguaro leaves the payment blank", async ({ page }) => {

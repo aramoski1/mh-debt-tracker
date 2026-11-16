@@ -6,7 +6,7 @@ The acquisitions desk opens here. The eye lands on the four counts, then the cal
 
 ## Park
 
-One community. The eye lands on the name and score, the call line, then the loan. The decision is whether the pressure is real enough to log a call. Documented on that sentence means the date was read from a recorded document. A reported date that is still ahead says reported to come due. Next maturity is only a month still ahead. A passed date is labeled Passed. A park with no loan says No loan found, and the sentence before the call says no loan is on file. A call line that would only say how long the owner has held the park names the maturity instead. The filing line says County record or CMBS filing. A community-bank note is not labeled CMBS.
+One community. The eye lands on the name and score, the call line, then the loan. The decision is whether the pressure is real enough to log a call. Documented on that sentence means the date was read from a recorded document. A reported date that is still ahead says reported to come due. Next maturity is only a month still ahead. A passed date is labeled Passed. A park with no loan says No loan found, and the sentence before the call says no loan is on file. A call line that would only say how long the owner has held the park names the maturity instead. The filing line says County record, CMBS filing, Fannie Mae, Freddie Mac, SBA, or FHA. Anything else says Source not labeled. A community-bank note is not labeled CMBS.
 
 ## Rate desk
 

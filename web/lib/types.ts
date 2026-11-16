@@ -78,16 +78,18 @@ export const BASIS_LABEL: Record<string, string> = {
   unknown: "Unknown",
 };
 
+/** Every loans.source value the pipeline writes. Anything else stays unlabeled. */
 export const SOURCE_LABEL: Record<string, string> = {
   county: "County record",
   cmbs: "CMBS filing",
-  hud: "FHA",
+  fannie: "Fannie Mae",
+  freddie: "Freddie Mac",
   sba: "SBA",
-  edgar: "SEC filing",
+  hud: "FHA",
 };
 
-/** The filing the row came from. A missing source is not a loan type. */
+/** The filing the row came from. A missing source is not a loan type. An unknown code is not printed. */
 export function sourceLabel(source: string | null | undefined) {
   if (!source) return "none on the primary loan";
-  return SOURCE_LABEL[source] ?? source.replaceAll("_", " ");
+  return SOURCE_LABEL[source] ?? "Source not labeled";
 }

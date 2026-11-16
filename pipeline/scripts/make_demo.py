@@ -75,7 +75,13 @@ def main(url: str, out: Path) -> None:
                        maturity_basis="reported", note_rate=round(random.uniform(3.4, 5.2), 2),
                        current_balance=round(amount * 0.9, -3))
             # A known date on a bank or private note is a county record. CMBS is only a CMBS trust.
-            db.upsert_loan(conn, "cmbs" if lkind == "cmbs_trust" else "county", f"demo-{i}", rec)
+            filing = "cmbs" if lkind == "cmbs_trust" else "county"
+            if filing != "cmbs":
+                conn.execute(
+                    "delete from loans where source = 'cmbs' and source_loan_id = %s",
+                    (f"demo-{i}",),
+                )
+            db.upsert_loan(conn, filing, f"demo-{i}", rec)
         else:
             if random.random() < 0.3:
                 rec.update(maturity_date=start + timedelta(days=5 * 365), maturity_basis="document")
